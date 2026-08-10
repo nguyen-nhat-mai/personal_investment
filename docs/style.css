@@ -1,0 +1,591 @@
+  :root {
+    color-scheme: light;
+    --page-plane:     #f9f9f7;
+    --surface-1:      #fcfcfb;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --baseline:       #c3c2b7;
+    --series-1:       #2a78d6; /* blue */
+    --series-2:       #eb6834; /* orange */
+    --diverging-pos:  #2a78d6; /* blue */
+    --diverging-neg:  #e34948; /* red */
+    --good-text:      #006300;
+    --border:         rgba(11, 11, 11, 0.10);
+    /* Sequential ramp (choropleth): reuses the documented blue sequential ramp's own
+       endpoints - step 100 (near-surface, "low") to step 700 ("high"). */
+    --seq-low:        #cde2fb;
+    --seq-high:       #0d366b;
+    --no-data-fill:   #e1e0d9;
+    /* Wealth simulator categorical series (stacked area, bottom = safety -> top = growth).
+       Slots 1-7 of the same validated 8-hue categorical order series-1/series-2/diverging-neg
+       already sample from - already-adopted, no new palette validation needed. */
+    --wealth-livret-a:      #2a78d6; /* blue */
+    --wealth-ldds:          #eb6834; /* orange */
+    --wealth-av-fonds-euro: #1baf7a; /* aqua/green */
+    --wealth-scpi-av:       #eda100; /* yellow */
+    --wealth-cat:           #e87ba4; /* magenta */
+    --wealth-pea:           #008300; /* green */
+    --wealth-real-estate:   #4a3aa7; /* violet */
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page-plane:     #0d0d0d;
+      --surface-1:      #1a1a19;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --baseline:       #383835;
+      --series-1:       #3987e5;
+      --series-2:       #d95926;
+      --diverging-pos:  #3987e5;
+      --diverging-neg:  #e66767;
+      --good-text:      #0ca30c;
+      --border:         rgba(255, 255, 255, 0.10);
+      /* Dark sequential ramp: "low" sits close to the dark surface (muted, barely-there - the
+         same relationship light mode's step-100 has to its surface), "high" is a bright blue
+         that pops against the dark surface (mirrors how dark mode's categorical/status steps
+         go brighter, not darker, for emphasis). */
+      --seq-low:        #1f3350;
+      --seq-high:       #86b6ef;
+      --no-data-fill:   #2c2c2a;
+      --wealth-livret-a:      #3987e5;
+      --wealth-ldds:          #d95926;
+      --wealth-av-fonds-euro: #199e70;
+      --wealth-scpi-av:       #c98500;
+      --wealth-cat:           #d55181;
+      --wealth-pea:           #17b317;
+      --wealth-real-estate:   #9085e9;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page-plane:     #0d0d0d;
+    --surface-1:      #1a1a19;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --baseline:       #383835;
+    --series-1:       #3987e5;
+    --series-2:       #d95926;
+    --diverging-pos:  #3987e5;
+    --diverging-neg:  #e66767;
+    --good-text:      #0ca30c;
+    --border:         rgba(255, 255, 255, 0.10);
+    --seq-low:        #1f3350;
+    --seq-high:       #86b6ef;
+    --no-data-fill:   #2c2c2a;
+    --wealth-livret-a:      #3987e5;
+    --wealth-ldds:          #d95926;
+    --wealth-av-fonds-euro: #199e70;
+    --wealth-scpi-av:       #c98500;
+    --wealth-cat:           #d55181;
+    --wealth-pea:           #17b317;
+    --wealth-real-estate:   #9085e9;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--page-plane);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.45;
+  }
+  main { max-width: 1080px; margin: 0 auto; padding: 0 20px 64px; }
+
+  header.page-header {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 28px 20px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .subtitle { color: var(--text-secondary); font-size: 14px; margin: 0; max-width: 60ch; }
+  .meta-line { color: var(--text-muted); font-size: 12px; margin-top: 6px; }
+
+  button.theme-toggle {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  button.theme-toggle:hover { color: var(--text-primary); }
+
+  nav.tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+    margin: 20px 0 24px;
+  }
+  nav.tabs button {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 14px;
+    cursor: pointer;
+  }
+  nav.tabs button[aria-selected="true"] {
+    color: var(--text-primary);
+    border-bottom-color: var(--series-1);
+  }
+  nav.tabs button:hover { color: var(--text-primary); }
+
+  section.panel[hidden] { display: none; }
+
+  .filters-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .filters-row label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .filters-row select {
+    background: var(--surface-1);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 13px;
+  }
+
+  .sim-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px 20px;
+    margin-bottom: 20px;
+  }
+  .sim-controls label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .sim-controls select {
+    background: var(--surface-1);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 13px;
+  }
+  .sim-controls output {
+    font-size: 12px;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--gridline);
+    margin: 4px 0;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--series-1);
+    border: 2px solid var(--surface-1);
+    cursor: pointer;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--series-1);
+    border: 2px solid var(--surface-1);
+    cursor: pointer;
+  }
+  input[type="range"]::-moz-range-track {
+    background: var(--gridline);
+    height: 4px;
+    border-radius: 2px;
+  }
+
+  .wealth-area { stroke: var(--surface-1); stroke-width: 2; }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat-tile {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  /* Marks the currently-selected option among a row of otherwise-equivalent stat tiles (e.g.
+     the wealth simulator's risk-tolerance comparison) - same accent token nav.tabs already
+     uses for "this one is active". */
+  .stat-tile.selected { border-color: var(--series-1); box-shadow: inset 0 0 0 1px var(--series-1); }
+  .stat-tile .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+  .stat-tile .value { font-size: 24px; font-weight: 600; }
+  .stat-tile .sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+  figure.chart-card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px 16px;
+    margin: 0 0 20px;
+  }
+  figure.chart-card figcaption {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  figure.chart-card figcaption .title { font-size: 14px; font-weight: 600; }
+  figure.chart-card figcaption .caption-note { font-size: 12px; color: var(--text-muted); }
+
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 4px;
+  }
+  .legend-item[aria-pressed="false"] { opacity: 0.4; }
+  .legend-swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+  /* Bar chart (HTML/CSS) */
+  .bar-chart { display: flex; flex-direction: column; }
+  .bar-row {
+    display: grid;
+    grid-template-columns: 150px 1fr 70px;
+    align-items: center;
+    gap: 10px;
+    padding: 3px 0;
+  }
+  .bar-row + .bar-row { margin-top: 2px; }
+  .bar-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .bar-track {
+    position: relative;
+    height: 18px;
+    background: transparent;
+    border-bottom: 1px solid var(--gridline);
+  }
+  .bar-track.diverging { border-bottom: none; border-top: 1px solid var(--gridline); }
+  .bar-fill {
+    position: absolute;
+    top: 0;
+    height: 18px;
+    border-radius: 0 4px 4px 0;
+  }
+  .bar-fill.neg { border-radius: 4px 0 0 4px; }
+  .bar-zero-line {
+    position: absolute;
+    top: -3px;
+    bottom: -3px;
+    width: 1px;
+    background: var(--baseline);
+  }
+  .bar-value {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+  .bar-row:hover .bar-label, .bar-row:focus-within .bar-label { color: var(--text-primary); }
+  .bar-row { outline: none; }
+  .bar-row:focus-visible .bar-track { outline: 1px solid var(--series-1); outline-offset: 2px; }
+
+  /* "How it works" tab */
+  .about-section h2 {
+    font-size: 15px;
+    margin: 28px 0 12px;
+  }
+  .about-section h2:first-child { margin-top: 4px; }
+  .about-section > p { font-size: 13px; color: var(--text-secondary); max-width: 72ch; margin: 0 0 16px; }
+  .about-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+  }
+  .about-card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .about-card h3 { font-size: 13px; margin: 0 0 6px; }
+  .about-card p { font-size: 12.5px; color: var(--text-secondary); margin: 0; line-height: 1.5; }
+  .about-section code {
+    background: var(--surface-1);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+
+  .pipeline-flow {
+    display: flex;
+    align-items: stretch;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 4px 0 24px;
+  }
+  .pipeline-step {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    min-width: 110px;
+  }
+  .pipeline-step span { font-size: 11px; font-weight: 400; color: var(--text-muted); margin-top: 2px; }
+  .pipeline-arrow {
+    display: flex;
+    align-items: center;
+    color: var(--text-muted);
+    font-size: 16px;
+  }
+
+  /* Methodology disclosure */
+  .methodology-toggle {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-bottom: 14px;
+  }
+  .methodology-toggle:hover { color: var(--text-primary); }
+  .methodology-panel {
+    font-size: 13px;
+    color: var(--text-secondary);
+    background: var(--page-plane);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+  }
+  .methodology-panel h3 { font-size: 12px; color: var(--text-primary); margin: 0 0 6px; }
+  .methodology-panel p { margin: 0 0 10px; }
+  .methodology-panel p:last-child { margin-bottom: 0; }
+  .methodology-panel code {
+    background: var(--surface-1);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+
+  /* Choropleth map (SVG) */
+  .map-layout {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .map-wrap { flex: 1 1 400px; min-width: 260px; }
+  svg.choropleth { width: 100%; height: auto; display: block; }
+  .map-top-depts {
+    flex: 0 0 200px;
+    min-width: 180px;
+  }
+  .map-top-depts h4 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+    margin: 0 0 8px;
+    font-weight: 600;
+  }
+  .map-top-item {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--gridline);
+    font-size: 13px;
+  }
+  .map-top-item:last-child { border-bottom: none; }
+  .map-top-rank {
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    width: 14px;
+    flex-shrink: 0;
+  }
+  .map-top-name {
+    color: var(--text-primary);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .map-top-score {
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .map-dept {
+    stroke: var(--surface-1);
+    stroke-width: 1;
+    fill: color-mix(in srgb, var(--seq-low), var(--seq-high) calc(var(--t, 0) * 100%));
+    cursor: pointer;
+  }
+  .map-dept:hover, .map-dept:focus-visible { stroke: var(--text-primary); stroke-width: 1.5; outline: none; }
+  .map-dept.no-data { fill: var(--no-data-fill); cursor: default; }
+  .map-legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 10px;
+  }
+  .map-legend-bar {
+    flex: 1;
+    max-width: 200px;
+    height: 8px;
+    border-radius: 4px;
+    background: linear-gradient(to right, var(--seq-low), var(--seq-high));
+  }
+  .map-legend-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    background: var(--no-data-fill);
+    display: inline-block;
+  }
+
+  /* Scatter (SVG) */
+  .scatter-wrap { width: 100%; }
+  svg.scatter { width: 100%; height: auto; display: block; }
+
+  /* Wealth simulator stacked-area chart (SVG) - shares the scatter's gridline/axis-label look */
+  .chart-wrap { width: 100%; }
+  svg.wealth-chart { width: 100%; height: auto; display: block; }
+  .wealth-chart .gridline { stroke: var(--gridline); stroke-width: 1; }
+  .wealth-chart .axis-line { stroke: var(--baseline); stroke-width: 1; }
+  .wealth-chart .axis-label { fill: var(--text-muted); font-size: 10px; }
+  .scatter .gridline { stroke: var(--gridline); stroke-width: 1; }
+  .scatter .axis-line { stroke: var(--baseline); stroke-width: 1; }
+  .scatter .axis-label { fill: var(--text-muted); font-size: 10px; }
+  .scatter .dot { stroke: var(--surface-1); stroke-width: 2; cursor: pointer; }
+  .scatter .dot-hit { fill: transparent; cursor: pointer; }
+  .scatter .dot.dim { opacity: 0.15; }
+
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  table.data-table th, table.data-table td {
+    text-align: left;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--gridline);
+    white-space: nowrap;
+  }
+  table.data-table th { color: var(--text-secondary); font-weight: 600; }
+  table.data-table td { font-variant-numeric: tabular-nums; }
+  .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+
+  .table-toggle {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-bottom: 12px;
+  }
+  .table-toggle:hover { color: var(--text-primary); }
+
+  .empty-state {
+    color: var(--text-muted);
+    font-size: 13px;
+    padding: 32px 20px;
+    text-align: center;
+    background: var(--surface-1);
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+  }
+  .empty-state code {
+    background: var(--page-plane);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  #tooltip {
+    position: fixed;
+    z-index: 50;
+    background: var(--text-primary);
+    color: var(--page-plane);
+    font-size: 12px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    pointer-events: none;
+    max-width: 240px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  }
+  #tooltip[hidden] { display: none; }
+  #tooltip .tt-title { font-weight: 600; margin-bottom: 4px; }
+  #tooltip .tt-row { display: flex; justify-content: space-between; gap: 12px; }
+  #tooltip .tt-row .tt-key { opacity: 0.75; }
+  #tooltip .tt-row .tt-val { font-variant-numeric: tabular-nums; }
+
+  footer {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 24px 20px 40px;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+  footer a { color: var(--text-secondary); }
+
+  @media (max-width: 560px) {
+    .bar-row { grid-template-columns: 96px 1fr 56px; }
+    .bar-label { font-size: 11px; }
+  }

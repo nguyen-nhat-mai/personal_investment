@@ -136,12 +136,16 @@ giving anyone BigQuery access:
    credentials live in CI, and you see exactly what's about to go public before it does. Once
    GitHub Pages is on, this repo (and everything in `docs/`) is public.
 
-The dashboard itself (`docs/index.html`) is a single self-contained page — no build step, no
-CDN dependencies, light/dark mode, filters, a table view alongside every chart, full
-keyboard/hover tooltips, a France choropleth map (département boundaries from
+The dashboard itself (`docs/`) is a handful of plain static files — no build step, no npm
+install, no CDN dependencies, still just `<link>`/`<script src>` tags a browser reads directly.
+`index.html` holds markup only; `style.css` and `js/*.js` are split by concern (`utils.js`/
+`charts.js` are shared primitives, `real-estate.js`/`portfolio.js`/`wealth-sim.js` are one per
+tab, `main.js` is the bootstrap that ties them together — load order in `index.html` matters,
+each depends on the ones before it). Light/dark mode, filters, a table view alongside every
+chart, full keyboard/hover tooltips, a France choropleth map (département boundaries from
 [gregoiredavid/france-geojson](https://github.com/gregoiredavid/france-geojson), MIT-licensed,
 committed at `docs/data/departements.geojson`), and an in-page "How is this calculated?"
-methodology disclosure.
+methodology disclosure per tab.
 
 ## Repo layout
 
@@ -155,7 +159,10 @@ dbt/
   models/intermediate/  aggregations not yet business-facing
   models/marts/      commune_opportunity_score, department_opportunity_score, equity_performance_summary
 scripts/            export_marts.py (BigQuery marts -> docs/data/*.json)
-docs/               static dashboard published via GitHub Pages (index.html + data/*.json + departements.geojson)
+docs/               static dashboard published via GitHub Pages
+docs/style.css       all dashboard CSS
+docs/js/             utils.js, charts.js (shared) -> real-estate.js, portfolio.js, wealth-sim.js (per tab) -> main.js (bootstrap)
+docs/data/           *.json marts export + departements.geojson
 ```
 
 ## Ideas for later (not built yet)
