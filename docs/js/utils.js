@@ -73,7 +73,15 @@ function renderTable(container, rows, columns) {
     var tr = document.createElement("tr");
     columns.forEach(function (c) {
       var td = document.createElement("td");
-      td.textContent = c.format ? c.format(row[c.key]) : (row[c.key] == null ? "" : row[c.key]);
+      var v = row[c.key];
+      td.textContent = c.format ? c.format(v) : (v == null ? "" : v);
+      // colorFn is optional (e.g. "vs Avg." delta columns) - green/red on sign, same
+      // --diverging-pos/--diverging-neg tokens used everywhere else a +/- carries meaning.
+      // Existing column defs without colorFn are unaffected.
+      if (c.colorFn) {
+        var color = c.colorFn(v, row);
+        if (color) td.style.color = color;
+      }
       tr.appendChild(td);
     });
     tbody.appendChild(tr);
@@ -104,6 +112,9 @@ function svgEl(tag, attrs) {
 }
 
 /* ---------- stat tile (used by every tab) ---------- */
+// sub accepts either a plain string (existing callers, colored via subColor) or an array of
+// { text, color } lines (e.g. two independent notes on one tile) - both render as stacked
+// ".sub" divs, so no new CSS is needed either way.
 function addStatTile(container, label, value, sub, selected, subColor) {
   var tile = document.createElement("div");
   tile.className = "stat-tile" + (selected ? " selected" : "");
@@ -115,15 +126,17 @@ function addStatTile(container, label, value, sub, selected, subColor) {
   v.textContent = value;
   tile.appendChild(l);
   tile.appendChild(v);
-  if (sub) {
+  var subLines = Array.isArray(sub) ? sub : (sub ? [{ text: sub, color: subColor }] : []);
+  subLines.forEach(function (line) {
+    if (!line || !line.text) return;
     var s = document.createElement("div");
     s.className = "sub";
-    // subColor is for a delta/comparison sub-line (e.g. "+12 345 EUR vs. current") where
+    // color is for a delta/comparison sub-line (e.g. "+12 345 EUR vs. current") where
     // sign carries real meaning - same --diverging-pos/--diverging-neg tokens the bar charts
     // already use for gains/losses, not a new color language.
-    if (subColor) s.style.color = subColor;
-    s.textContent = sub;
+    if (line.color) s.style.color = line.color;
+    s.textContent = line.text;
     tile.appendChild(s);
-  }
+  });
   container.appendChild(tile);
 }

@@ -429,12 +429,20 @@ function initWealthSimulator(assumptions) {
     // still the correct final after-tax figure either way - CAT's tax is already baked into
     // its balance, not double-counted here, this is just for a complete "Tax:" display.
     var totalTaxOverHorizon = afterTax.taxPaid + result.catTaxPaidCumulative;
+    var totalContributed = params.startingCapital + params.monthlySavings * 12 * params.horizonYears;
+    var vsContributed = afterTax.total - totalContributed;
 
     var statsEl = document.getElementById("ws-stats");
     statsEl.innerHTML = "";
     addStatTile(statsEl, "Net worth (year " + params.horizonYears + ")", fmtEUR0.format(finalRow.totalNetWorth), "CAT taxed annually as accrued; other vehicles' tax is due at liquidation, below");
-    addStatTile(statsEl, "After-tax net worth if liquidated", fmtEUR0.format(afterTax.total), "Total tax over the horizon: " + fmtEUR0.format(totalTaxOverHorizon));
-    addStatTile(statsEl, "Total contributed", fmtEUR0.format(params.startingCapital + params.monthlySavings * 12 * params.horizonYears), null);
+    addStatTile(statsEl, "After-tax net worth if liquidated", fmtEUR0.format(afterTax.total), [
+      { text: "Total tax over the horizon: " + fmtEUR0.format(totalTaxOverHorizon) },
+      {
+        text: fmtEUR0Signed.format(vsContributed) + " vs. total contributed",
+        color: vsContributed >= 0 ? "var(--diverging-pos)" : "var(--diverging-neg)"
+      }
+    ]);
+    addStatTile(statsEl, "Total contributed", fmtEUR0.format(totalContributed), null);
 
     currentRows = result.rows;
     renderWealthChart(document.getElementById("ws-chart"), document.getElementById("ws-legend"), result.rows);

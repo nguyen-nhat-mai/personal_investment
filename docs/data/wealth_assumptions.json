@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-08-10T11:14:12.504814+00:00",
+  "exported_at": "2026-08-10T11:32:10.324243+00:00",
   "project": "personal-investment-505011",
   "dataset": "analytics",
   "equities": {
@@ -433,7 +433,7 @@
       {
         "code_departement": "04",
         "nom_departement": "Alpes-de-Haute-Provence",
-        "median_price_cagr": 0.0344424928088356
+        "median_price_cagr": 0.03652993214178979
       },
       {
         "code_departement": "05",
@@ -453,7 +453,7 @@
       {
         "code_departement": "08",
         "nom_departement": "Ardennes",
-        "median_price_cagr": 0.049555668510939954
+        "median_price_cagr": 0.04416562551300518
       },
       {
         "code_departement": "09",
@@ -468,7 +468,7 @@
       {
         "code_departement": "11",
         "nom_departement": "Aude",
-        "median_price_cagr": 0.020755096676680962
+        "median_price_cagr": 0.019566012541403888
       },
       {
         "code_departement": "12",
@@ -483,7 +483,7 @@
       {
         "code_departement": "14",
         "nom_departement": "Calvados",
-        "median_price_cagr": 0.03482183871278921
+        "median_price_cagr": 0.033398140282631106
       },
       {
         "code_departement": "15",
@@ -498,7 +498,7 @@
       {
         "code_departement": "17",
         "nom_departement": "Charente-Maritime",
-        "median_price_cagr": 0.024399807259133155
+        "median_price_cagr": 0.024561844561307167
       },
       {
         "code_departement": "18",
@@ -538,7 +538,7 @@
       {
         "code_departement": "26",
         "nom_departement": "Drome",
-        "median_price_cagr": 0.02459996353762639
+        "median_price_cagr": 0.025106714725310342
       },
       {
         "code_departement": "27",
@@ -583,12 +583,12 @@
       {
         "code_departement": "33",
         "nom_departement": "Gironde",
-        "median_price_cagr": -0.004895863408075685
+        "median_price_cagr": -0.0037428192401992577
       },
       {
         "code_departement": "34",
         "nom_departement": "Herault",
-        "median_price_cagr": 0.02112557747334698
+        "median_price_cagr": 0.02082083383409694
       },
       {
         "code_departement": "35",
@@ -608,7 +608,7 @@
       {
         "code_departement": "38",
         "nom_departement": "Isere",
-        "median_price_cagr": 0.0038010252061368988
+        "median_price_cagr": 0.0038410209977450815
       },
       {
         "code_departement": "39",
@@ -623,7 +623,7 @@
       {
         "code_departement": "41",
         "nom_departement": "Loir-et-Cher",
-        "median_price_cagr": 0.020413775479336982
+        "median_price_cagr": 0.020110261548440755
       },
       {
         "code_departement": "42",
@@ -638,7 +638,7 @@
       {
         "code_departement": "44",
         "nom_departement": "Loire-Atlantique",
-        "median_price_cagr": 0.010310005155547586
+        "median_price_cagr": 0.011272365139302076
       },
       {
         "code_departement": "45",
@@ -668,7 +668,7 @@
       {
         "code_departement": "50",
         "nom_departement": "Manche",
-        "median_price_cagr": 0.050443020638550884
+        "median_price_cagr": 0.05020439204773264
       },
       {
         "code_departement": "51",
@@ -698,7 +698,7 @@
       {
         "code_departement": "56",
         "nom_departement": "Morbihan",
-        "median_price_cagr": 0.04629788450131511
+        "median_price_cagr": 0.04633951144112247
       },
       {
         "code_departement": "58",
@@ -708,7 +708,7 @@
       {
         "code_departement": "59",
         "nom_departement": "Nord",
-        "median_price_cagr": 0.0040128015051017485
+        "median_price_cagr": 0.0022261872223170442
       },
       {
         "code_departement": "60",
@@ -733,17 +733,17 @@
       {
         "code_departement": "64",
         "nom_departement": "Pyrenees-Atlantiques",
-        "median_price_cagr": 0.024374200544801328
+        "median_price_cagr": 0.02383958724029478
       },
       {
         "code_departement": "65",
         "nom_departement": "Hautes-Pyrenees",
-        "median_price_cagr": 0.034195196995033594
+        "median_price_cagr": 0.03216059943602101
       },
       {
         "code_departement": "66",
         "nom_departement": "Pyrenees-Orientales",
-        "median_price_cagr": 0.0312843646777754
+        "median_price_cagr": 0.030992981807911546
       },
       {
         "code_departement": "69",
@@ -778,17 +778,17 @@
       {
         "code_departement": "76",
         "nom_departement": "Seine-Maritime",
-        "median_price_cagr": 0.011804548762022193
+        "median_price_cagr": 0.012418394242984965
       },
       {
         "code_departement": "77",
         "nom_departement": "Seine-et-Marne",
-        "median_price_cagr": -0.0064662340444503474
+        "median_price_cagr": -0.005893473637724633
       },
       {
         "code_departement": "78",
         "nom_departement": "Yvelines",
-        "median_price_cagr": -0.012791055037208565
+        "median_price_cagr": -0.01320991723693643
       },
       {
         "code_departement": "79",
@@ -798,7 +798,7 @@
       {
         "code_departement": "80",
         "nom_departement": "Somme",
-        "median_price_cagr": 0.012785600948424847
+        "median_price_cagr": 0.011482059576767956
       },
       {
         "code_departement": "81",
@@ -808,7 +808,7 @@
       {
         "code_departement": "82",
         "nom_departement": "Tarn-et-Garonne",
-        "median_price_cagr": 0.03216710453870397
+        "median_price_cagr": 0.030766341813997622
       },
       {
         "code_departement": "83",
@@ -818,12 +818,12 @@
       {
         "code_departement": "84",
         "nom_departement": "Vaucluse",
-        "median_price_cagr": 0.017783699682450305
+        "median_price_cagr": 0.017184214302738976
       },
       {
         "code_departement": "85",
         "nom_departement": "Vendee",
-        "median_price_cagr": 0.03329357664539989
+        "median_price_cagr": 0.033018513501754665
       },
       {
         "code_departement": "86",
@@ -833,7 +833,7 @@
       {
         "code_departement": "87",
         "nom_departement": "Haute-Vienne",
-        "median_price_cagr": -0.0028480930809545724
+        "median_price_cagr": -0.0027855297492901387
       },
       {
         "code_departement": "88",
