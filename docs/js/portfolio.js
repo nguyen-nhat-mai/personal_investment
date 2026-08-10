@@ -1,14 +1,16 @@
 "use strict";
 // PEA tab. Depends on utils.js and charts.js - must load after both.
 
-// Sort helper: treats a real 0% return correctly (unlike `value || fallback`, which
-// would coerce 0 to the fallback since 0 is falsy) and sorts missing values last. Sorts by
-// annualized_return, not period_return_pct - the latter isn't comparable across tickers with
-// different amounts of ingested history (a ticker with 2 years of data and one with 5 days
-// aren't on the same footing), and it's exactly what let GLE.PA briefly show +327% (see
+// Sort helper: treats a real 0 value correctly (unlike `value || fallback`, which would
+// coerce 0 to the fallback since 0 is falsy) and sorts missing values last. metricCfg.valueKey
+// is always annualized_return or sharpe_ratio (both ultimately built on annualized_return), not
+// period_return_pct - the latter isn't comparable across tickers with different amounts of
+// ingested history (a ticker with 2 years of data and one with 5 days aren't on the same
+// footing), and it's exactly what let GLE.PA briefly show +327% (see
 // equity_performance_summary.sql's first_last_price CTE for the underlying fix too).
-function retVal(d) {
-  return typeof d.annualized_return === "number" ? d.annualized_return : -Infinity;
+function sortVal(d, metricCfg) {
+  var v = d[metricCfg.valueKey];
+  return typeof v === "number" ? v : -Infinity;
 }
 
 function initPortfolio(data) {
@@ -66,19 +68,22 @@ function initPortfolio(data) {
     legendEl.appendChild(btn);
   });
 
-  // Bar chart ranking metric - a single-select toggle (only one active at a time), reusing
-  // .legend-item's visual style (including the aria-pressed="false" dim-opacity rule) even
-  // though semantically this isn't a multi-select filter like the Stock/ETF legend above.
-  // Scoped to just this chart: the table and "Best performer"/"Avg." stats always stay ranked
-  // by annualized_return regardless of this toggle.
+  // Ranking metric - a single-select toggle (only one active at a time), reusing .legend-item's
+  // visual style (including the aria-pressed="false" dim-opacity rule) even though semantically
+  // this isn't a multi-select filter like the Stock/ETF legend above. Drives BOTH the bar
+  // chart's ranking and the table's row order (and, transitively, "Best performer (annualized)"
+  // is unaffected - that stat always finds its own max regardless of table order) - one control,
+  // one mental model, rather than the bar chart and table silently disagreeing on rank order.
   var BAR_METRICS = {
     annualized_return: {
       title: "Annualized return by ticker",
+      tableSortLabel: "annualized return",
       valueKey: "annualized_return",
       valueFormatter: function (v) { return fmtPct1.format(v); }
     },
     sharpe_ratio: {
       title: "Sharpe ratio by ticker",
+      tableSortLabel: "Sharpe ratio",
       valueKey: "sharpe_ratio",
       valueFormatter: function (v) { return fmtScore.format(v); }
     }
@@ -93,7 +98,7 @@ function initPortfolio(data) {
       if (barMetric === key) return;
       barMetric = key;
       Object.keys(barMetricButtons).forEach(function (k) { barMetricButtons[k].setAttribute("aria-pressed", String(k === key)); });
-      render(currentFilteredData);
+      resortAndRender();
     });
   });
 
@@ -114,9 +119,27 @@ function initPortfolio(data) {
   ];
 
   var currentFilteredData = data;
+  var tableSortNoteEl = document.getElementById("pf-table-sort-note");
   var invalidateTable = wireTableToggle("pf-table-toggle", "pf-table-wrap", function () {
     renderTable(document.getElementById("pf-table-wrap"), currentFilteredData, columns);
   });
+
+  function sortByCurrentMetric(rows) {
+    var metricCfg = BAR_METRICS[barMetric];
+    return rows.slice().sort(function (a, b) { return sortVal(b, metricCfg) - sortVal(a, metricCfg); });
+  }
+
+  // Re-sorts the already-filtered data by whichever metric is currently selected and re-renders
+  // both the chart and (if open) the table - used both when the filter/legend changes and when
+  // the ranking-metric toggle itself changes, so the two never fall out of sync.
+  function resortAndRender() {
+    currentFilteredData = sortByCurrentMetric(currentFilteredData);
+    render(currentFilteredData);
+    tableSortNoteEl.textContent = "Sorted by " + BAR_METRICS[barMetric].tableSortLabel;
+    var wrap = document.getElementById("pf-table-wrap");
+    if (!wrap.hidden) { renderTable(wrap, currentFilteredData, columns); }
+    invalidateTable();
+  }
 
   function applyFilters() {
     var type = typeSelect.value;
@@ -126,11 +149,8 @@ function initPortfolio(data) {
       if (d.asset_type === "etf" && !legendState.etf) return false;
       return true;
     });
-    currentFilteredData = filtered.slice().sort(function (a, b) { return retVal(b) - retVal(a); });
-    render(currentFilteredData);
-    var wrap = document.getElementById("pf-table-wrap");
-    if (!wrap.hidden) { renderTable(wrap, currentFilteredData, columns); }
-    invalidateTable();
+    currentFilteredData = filtered;
+    resortAndRender();
   }
 
   function render(filtered) {
@@ -142,10 +162,19 @@ function initPortfolio(data) {
     // null to 0 here would silently average in every not-yet-reliable ticker as if it were a
     // real 0%, understating the true figure (in the extreme - no ticker qualifying yet -
     // showing a misleading "0%" instead of "not enough data").
-    var retValues = filtered.map(function (d) { return d.annualized_return; }).filter(function (v) { return v != null; });
-    var avgReturn = retValues.length ? retValues.reduce(function (s, v) { return s + v; }, 0) / retValues.length : null;
-    var volValues = filtered.map(function (d) { return d.annualized_volatility; }).filter(function (v) { return v != null; });
-    var avgVol = volValues.length ? volValues.reduce(function (s, v) { return s + v; }, 0) / volValues.length : null;
+    function avgOf(rows, key) {
+      var values = rows.map(function (d) { return d[key]; }).filter(function (v) { return v != null; });
+      return values.length ? values.reduce(function (s, v) { return s + v; }, 0) / values.length : null;
+    }
+    var avgReturn = avgOf(filtered, "annualized_return");
+    var avgVol = avgOf(filtered, "annualized_volatility");
+    // Split out for the "Avg. annualized return" tile's sub-note: stocks and ETFs have
+    // structurally different return profiles (individual-stock-picking vs. diversified index
+    // exposure - see the Wealth simulator's PEA assumption, which deliberately uses the ETF-only
+    // figure for exactly this reason), so the blended average alone can hide that one group is
+    // pulling it in a direction the other isn't.
+    var avgReturnStock = avgOf(filtered.filter(function (d) { return d.asset_type === "stock"; }), "annualized_return");
+    var avgReturnEtf = avgOf(filtered.filter(function (d) { return d.asset_type === "etf"; }), "annualized_return");
     var bestSharpe = filtered.filter(function (d) { return d.sharpe_ratio != null; }).sort(function (a, b) { return b.sharpe_ratio - a.sharpe_ratio; })[0];
     var stockCount = filtered.filter(function (d) { return d.asset_type === "stock"; }).length;
     var etfCount = filtered.filter(function (d) { return d.asset_type === "etf"; }).length;
@@ -155,7 +184,12 @@ function initPortfolio(data) {
     // doesn't say much about the watchlist as a whole; the average makes it visible when a
     // headline figure is an outlier rather than representative (e.g. one stock at +327% next
     // to a watchlist averaging a much more modest figure).
-    addStatTile(statsEl, "Avg. annualized return", avgReturn != null ? fmtPct1.format(avgReturn) : "–", null);
+    addStatTile(
+      statsEl,
+      "Avg. annualized return",
+      avgReturn != null ? fmtPct1.format(avgReturn) : "–",
+      "Stocks " + (avgReturnStock != null ? fmtPct1.format(avgReturnStock) : "–") + " · ETFs " + (avgReturnEtf != null ? fmtPct1.format(avgReturnEtf) : "–")
+    );
     addStatTile(statsEl, "Avg. annualized volatility", avgVol != null ? fmtPct1Plain.format(avgVol) : "–", null);
     addStatTile(statsEl, "Best risk-adjusted (Sharpe)", bestSharpe ? bestSharpe.ticker : "–", bestSharpe ? "Sharpe " + fmtScore.format(bestSharpe.sharpe_ratio) : "Needs 60+ trading days of history");
 

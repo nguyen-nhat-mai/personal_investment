@@ -32,8 +32,8 @@ function initRealEstate(data, departmentsGeo) {
     "<p>Property tax rate isn't a full sixth weighted factor (reweighting all five above is still a pending decision), but egregious outliers now cost points as a guard rail: communes with a property tax rate (taux_foncier_bati) above 35% lose points, ramping linearly up to a maximum 15-point deduction at 2&times; that threshold (70%) &mdash; e.g. a commune at 73.1% would take the full 15-point penalty. Below 35%, or where no tax data is on file, there's no penalty.</p>" +
     "<h3>Price &amp; population CAGR</h3>" +
     "<p><strong>Price CAGR</strong>: compound annual growth rate between the earliest and latest years with at least 5 qualifying sales for that commune/type &mdash; not a fixed window, just whatever span of reliable DVF years is ingested (currently up to 2021&ndash;2024). Communes without at least a 2-year reliable window score as neutral (0%) rather than being excluded. <strong>Population CAGR</strong>: growth rate across 2017&ndash;2021 (the fullest reliable series available - see &ldquo;How it works&rdquo; for why it's not more current), from official INSEE census figures, not DVF.</p>" +
-    "<h3>&ldquo;vs Avg.&rdquo; columns (table view)</h3>" +
-    "<p>Price, income, and population are hard to judge in isolation, so each has a companion column showing the row's percentage difference from the national median &mdash; green above, red below. Price vs Avg. reuses the national median price/m&sup2; already computed above; income and population medians are computed the same way, across all communes currently loaded, counting each commune once (not once per property type) so a commune with both a Maison and an Appartement row isn't double-weighted.</p>" +
+    "<h3>&ldquo;vs Nat. Median&rdquo; columns (table view)</h3>" +
+    "<p>Price, income, and population are hard to judge in isolation, so each has a companion column showing the row's percentage difference from the national median (also shown as its own stat tile above) &mdash; green above, red below. Price vs Nat. Median reuses the national median price/m&sup2; already computed above; income and population medians are computed the same way, across all communes currently loaded, counting each commune once (not once per property type) so a commune with both a Maison and an Appartement row isn't double-weighted.</p>" +
     "<h3>Data-quality filters</h3>" +
     "<p>Excludes forced auctions, property exchanges, and expropriations (none reflect a market price), and excludes transactions priced below &euro;100/m&sup2; or above &euro;30,000/m&sup2; (data-entry errors, not real outliers &mdash; found via a real anomaly that showed a +2,933,233% year-over-year change before these filters existed).</p>";
   var methodologyBtn = document.getElementById("re-methodology-toggle");
@@ -44,7 +44,7 @@ function initRealEstate(data, departmentsGeo) {
     methodologyBtn.textContent = expanded ? "How is this calculated?" : "Hide methodology";
   });
 
-  // National medians for the table's "vs Avg." columns, so a reader can tell at a glance
+  // National medians for the table's "vs Nat. Median" columns, so a reader can tell at a glance
   // whether a row's price/income/population is high or low without cross-referencing another
   // tab. Price/m² already has a national median precomputed in the mart (national_median_price_per_sqm
   // + price_vs_national_median_ratio, same value on every row) - reused as-is rather than
@@ -62,9 +62,9 @@ function initRealEstate(data, departmentsGeo) {
   var nationalMedianIncome = medianOf(nationalIncomes);
   var nationalMedianPopulation = medianOf(nationalPopulations);
   data.forEach(function (d) {
-    d.price_vs_avg_pct = d.price_vs_national_median_ratio == null ? null : d.price_vs_national_median_ratio - 1;
-    d.income_vs_avg_pct = (d.median_disposable_income == null || !nationalMedianIncome) ? null : d.median_disposable_income / nationalMedianIncome - 1;
-    d.population_vs_avg_pct = (d.population == null || !nationalMedianPopulation) ? null : d.population / nationalMedianPopulation - 1;
+    d.price_vs_national_median_pct = d.price_vs_national_median_ratio == null ? null : d.price_vs_national_median_ratio - 1;
+    d.income_vs_national_median_pct = (d.median_disposable_income == null || !nationalMedianIncome) ? null : d.median_disposable_income / nationalMedianIncome - 1;
+    d.population_vs_national_median_pct = (d.population == null || !nationalMedianPopulation) ? null : d.population / nationalMedianPopulation - 1;
   });
 
   var depts = Array.from(new Set(data.map(function (d) { return d.code_departement + " — " + (d.nom_departement || ""); })))
@@ -109,14 +109,14 @@ function initRealEstate(data, departmentsGeo) {
     legendEl.appendChild(btn);
   });
 
-  // Shared by every "vs Avg." column below: green above the national median, red below,
+  // Shared by every "vs Nat. Median" column below: green above the national median, red below,
   // neutral ink when there's nothing to compare (null). Sign carries the meaning here, not
   // magnitude, so the same two tokens the rest of the dashboard uses for gains/losses apply.
-  function vsAvgColor(v) {
+  function vsNationalMedianColor(v) {
     if (v == null) return null;
     return v >= 0 ? "var(--diverging-pos)" : "var(--diverging-neg)";
   }
-  function fmtVsAvg(v) { return v == null ? "–" : fmtPct1.format(v); }
+  function fmtVsNationalMedian(v) { return v == null ? "–" : fmtPct1.format(v); }
 
   var tableColumns = [
     { key: "nom_commune", label: "Commune" },
@@ -124,17 +124,17 @@ function initRealEstate(data, departmentsGeo) {
     { key: "type_local", label: "Type" },
     { key: "opportunity_score", label: "Score", format: function (v) { return fmtScore.format(v); } },
     { key: "median_price_per_sqm", label: "Price/m²", format: function (v) { return v == null ? "–" : fmtEUR0.format(v); } },
-    { key: "price_vs_avg_pct", label: "Price vs Avg.", format: fmtVsAvg, colorFn: vsAvgColor },
+    { key: "price_vs_national_median_pct", label: "Price vs Nat. Median", format: fmtVsNationalMedian, colorFn: vsNationalMedianColor },
     { key: "price_cagr", label: "Price CAGR", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
     { key: "transactions_per_capita", label: "Sales/capita", format: function (v) { return v == null ? "–" : fmtPct1Plain.format(v); } },
     { key: "median_disposable_income", label: "Median income", format: function (v) { return v == null ? "–" : fmtEUR0.format(v); } },
-    { key: "income_vs_avg_pct", label: "Income vs Avg.", format: fmtVsAvg, colorFn: vsAvgColor },
+    { key: "income_vs_national_median_pct", label: "Income vs Nat. Median", format: fmtVsNationalMedian, colorFn: vsNationalMedianColor },
     // taux_foncier_bati is already a percentage value (e.g. 43.9 meaning 43.9%), not a 0-1
     // fraction like the other percent fields here - divide by 100 before reusing the
     // percent formatter rather than adding a whole separate formatter for one field.
     { key: "taux_foncier_bati", label: "Property tax", format: function (v) { return v == null ? "–" : fmtPct1Plain.format(v / 100); } },
     { key: "population", label: "Population", format: function (v) { return v == null ? "–" : fmtInt.format(v); } },
-    { key: "population_vs_avg_pct", label: "Pop. vs Avg.", format: fmtVsAvg, colorFn: vsAvgColor },
+    { key: "population_vs_national_median_pct", label: "Pop. vs Nat. Median", format: fmtVsNationalMedian, colorFn: vsNationalMedianColor },
     { key: "population_cagr", label: "Pop. CAGR", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
     { key: "population_share_of_department", label: "% of dept. pop.", format: function (v) { return v == null ? "–" : fmtPct1Plain.format(v); } }
   ];
@@ -168,6 +168,12 @@ function initRealEstate(data, departmentsGeo) {
     addStatTile(statsEl, "Communes analyzed", fmtInt.format(communeCount), null);
     addStatTile(statsEl, "Top opportunity", top ? top.nom_commune : "–", top ? "Score " + fmtScore.format(top.opportunity_score) : null);
     addStatTile(statsEl, "National median price/m²", nationalMedian != null ? fmtEUR0.format(nationalMedian) : "–", filtered.length ? "Year " + filtered[0].year : null);
+    // Both computed once in initRealEstate (deduped by code_commune, across the full unfiltered
+    // dataset) - same "nationwide constant, unaffected by the dept./type filters" behavior as
+    // National median price/m² above, so all three vs Nat. Median columns compare against a
+    // fixed baseline rather than one that shifts as the reader filters the table.
+    addStatTile(statsEl, "National median income", nationalMedianIncome != null ? fmtEUR0.format(nationalMedianIncome) : "–", null);
+    addStatTile(statsEl, "National median population", nationalMedianPopulation != null ? fmtInt.format(nationalMedianPopulation) : "–", null);
 
     // map: department medians recomputed from whatever the filters currently show
     if (departmentsGeo) {

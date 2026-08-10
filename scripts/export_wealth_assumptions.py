@@ -5,7 +5,9 @@ numbers into one output file, and keeping that blend visible in one place (rathe
 it into export_marts.py's generic "select * from every mart" loop) is the point.
 
   - Real market data, queried from BigQuery: PEA-eligible equity return/volatility
-    (equity_performance_summary) and real-estate price CAGR (department_opportunity_score).
+    (equity_performance_summary, blended both across all qualifying tickers and, separately,
+    across ETFs only - see etf_blended_default, what the Wealth simulator's PEA growth
+    assumption actually uses) and real-estate price CAGR (department_opportunity_score).
   - Hand-set constants that are NOT market data at all - Livret A/LDDS/PEA are legal caps and
     decreed/regulated rates, Assurance Vie/SCPI-in-AV/CAT/mortgage are illustrative
     market-average assumptions with no source anywhere in this pipeline. See CONSTANTS below;
@@ -178,6 +180,24 @@ def export(project: str, dataset: str) -> None:
         blended_default = dict(CONSTANTS["equities_fallback"])
         blended_default["method"] = "fallback illustrative assumption - no pea_eligible ticker yet has enough trading-day history (see constants.equities_fallback and equity_performance_summary.trading_days)"
 
+    # ETF-only blend, separate from blended_default above: the wealth simulator's PEA growth
+    # assumption uses this one, not the all-ticker blend. A PEA investor buying a diversified
+    # index tracker (CW8.PA world, PE500.PA S&P500, ...) gets a materially different return
+    # profile than one stock-picking individual large caps (the qualifying set is CAC40-heavy) -
+    # averaging both together would represent neither strategy. asset_type is lowercase "etf"
+    # in dbt/seeds/pea_watchlist.csv.
+    etf_qualifying = [r for r in qualifying if r.get("asset_type") == "etf"]
+    print(f"  {len(etf_qualifying)} of those are ETFs with enough trading-day history to trust", file=sys.stderr)
+    if etf_qualifying:
+        etf_blended_default = {
+            "annualized_return": sum(r["annualized_return"] for r in etf_qualifying) / len(etf_qualifying),
+            "annualized_volatility": sum(r["annualized_volatility"] for r in etf_qualifying) / len(etf_qualifying),
+            "method": f"equal-weighted mean across {len(etf_qualifying)} pea_eligible ETFs with enough trading-day history (see equity_performance_summary.trading_days)",
+        }
+    else:
+        etf_blended_default = dict(CONSTANTS["equities_fallback"])
+        etf_blended_default["method"] = "fallback illustrative assumption - no pea_eligible ETF yet has enough trading-day history (see constants.equities_fallback and equity_performance_summary.trading_days)"
+
     print("Querying department_opportunity_score (national median CAGR) ...", file=sys.stderr)
     national = _rows_as_dicts(client, REAL_ESTATE_NATIONAL_QUERY.format(project=project, dataset=dataset))
     national_median_price_cagr = national[0]["national_median_price_cagr"] if national else None
@@ -196,6 +216,7 @@ def export(project: str, dataset: str) -> None:
         "equities": {
             "pea_eligible": equities,
             "blended_default": blended_default,
+            "etf_blended_default": etf_blended_default,
         },
         "real_estate": {
             "national_median_price_cagr": national_median_price_cagr,
