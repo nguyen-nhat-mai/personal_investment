@@ -46,5 +46,5 @@ from dvf_latest d
 left join {{ ref('int_insee__commune_indicators') }} i on d.code_commune = i.code_insee
 left join {{ ref('departements') }} dep on d.code_departement = dep.code_departement
 cross join national_median n
-where d.transaction_count >= 5  -- drop thin markets where the median is noisy
+where d.transaction_count >= {{ var('min_reliable_transaction_count') }}  -- drop thin markets where the median is noisy
 order by opportunity_score desc

@@ -25,6 +25,8 @@ x-airflow-common: &airflow-common
   volumes:
     - ../dags:/opt/airflow/dags
     - ../dbt:/opt/airflow/dbt
+    - ../scripts:/opt/airflow/scripts
+    - ../docs:/opt/airflow/docs
     - airflow-logs:/opt/airflow/logs
     - ${GCP_KEY_PATH}:/opt/airflow/keys/gcp-service-account.json:ro
   user: "${AIRFLOW_UID:-50000}:0"

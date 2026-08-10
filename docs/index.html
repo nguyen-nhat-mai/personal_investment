@@ -21,6 +21,11 @@
     --diverging-neg:  #e34948; /* red */
     --good-text:      #006300;
     --border:         rgba(11, 11, 11, 0.10);
+    /* Sequential ramp (choropleth): reuses the documented blue sequential ramp's own
+       endpoints - step 100 (near-surface, "low") to step 700 ("high"). */
+    --seq-low:        #cde2fb;
+    --seq-high:       #0d366b;
+    --no-data-fill:   #e1e0d9;
   }
   @media (prefers-color-scheme: dark) {
     :root:where(:not([data-theme="light"])) {
@@ -38,6 +43,13 @@
       --diverging-neg:  #e66767;
       --good-text:      #0ca30c;
       --border:         rgba(255, 255, 255, 0.10);
+      /* Dark sequential ramp: "low" sits close to the dark surface (muted, barely-there - the
+         same relationship light mode's step-100 has to its surface), "high" is a bright blue
+         that pops against the dark surface (mirrors how dark mode's categorical/status steps
+         go brighter, not darker, for emphasis). */
+      --seq-low:        #1f3350;
+      --seq-high:       #86b6ef;
+      --no-data-fill:   #2c2c2a;
     }
   }
   :root[data-theme="dark"] {
@@ -55,6 +67,9 @@
     --diverging-neg:  #e66767;
     --good-text:      #0ca30c;
     --border:         rgba(255, 255, 255, 0.10);
+    --seq-low:        #1f3350;
+    --seq-high:       #86b6ef;
+    --no-data-fill:   #2c2c2a;
   }
 
   * { box-sizing: border-box; }
@@ -245,6 +260,71 @@
   .bar-row { outline: none; }
   .bar-row:focus-visible .bar-track { outline: 1px solid var(--series-1); outline-offset: 2px; }
 
+  /* Methodology disclosure */
+  .methodology-toggle {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-bottom: 14px;
+  }
+  .methodology-toggle:hover { color: var(--text-primary); }
+  .methodology-panel {
+    font-size: 13px;
+    color: var(--text-secondary);
+    background: var(--page-plane);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+  }
+  .methodology-panel h3 { font-size: 12px; color: var(--text-primary); margin: 0 0 6px; }
+  .methodology-panel p { margin: 0 0 10px; }
+  .methodology-panel p:last-child { margin-bottom: 0; }
+  .methodology-panel code {
+    background: var(--surface-1);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+
+  /* Choropleth map (SVG) */
+  .map-wrap { width: 100%; }
+  svg.choropleth { width: 100%; height: auto; display: block; }
+  .map-dept {
+    stroke: var(--surface-1);
+    stroke-width: 1;
+    fill: color-mix(in srgb, var(--seq-low), var(--seq-high) calc(var(--t, 0) * 100%));
+    cursor: pointer;
+  }
+  .map-dept:hover, .map-dept:focus-visible { stroke: var(--text-primary); stroke-width: 1.5; outline: none; }
+  .map-dept.no-data { fill: var(--no-data-fill); cursor: default; }
+  .map-legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 10px;
+  }
+  .map-legend-bar {
+    flex: 1;
+    max-width: 200px;
+    height: 8px;
+    border-radius: 4px;
+    background: linear-gradient(to right, var(--seq-low), var(--seq-high));
+  }
+  .map-legend-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    background: var(--no-data-fill);
+    display: inline-block;
+  }
+
   /* Scatter (SVG) */
   .scatter-wrap { width: 100%; }
   svg.scatter { width: 100%; height: auto; display: block; }
@@ -367,7 +447,21 @@
     </div>
 
     <div id="re-content">
+      <button class="methodology-toggle" id="re-methodology-toggle" type="button" aria-expanded="false">How is this calculated?</button>
+      <div class="methodology-panel" id="re-methodology-panel" hidden></div>
+
       <div class="stat-row" id="re-stats"></div>
+
+      <figure class="chart-card">
+        <figcaption>
+          <span class="title">Opportunity score by d&eacute;partement</span>
+          <span class="caption-note">Median across communes &middot; darker = higher score</span>
+        </figcaption>
+        <div class="map-wrap" id="re-map"></div>
+        <div class="map-legend" id="re-map-legend"></div>
+      </figure>
+
+      <div class="legend" id="re-legend"></div>
 
       <figure class="chart-card">
         <figcaption>
@@ -579,7 +673,7 @@
       var widthPct = max > 0 ? (item.value / max) * 100 : 0;
       fill.style.width = widthPct + "%";
       fill.style.left = "0";
-      fill.style.background = "var(--series-1)";
+      fill.style.background = item.color || "var(--series-1)";
       track.appendChild(fill);
 
       var value = document.createElement("div");
@@ -721,6 +815,123 @@
     return svg;
   }
 
+  /* ---------- choropleth map (SVG, hand-rolled equirectangular projection) ---------- */
+  // No mapping library - France is small/simple enough at country scale that a plain
+  // equirectangular projection with a latitude-corrected longitude scale (so 1 degree of
+  // longitude and 1 degree of latitude cover the same true distance at France's latitude)
+  // looks correct without pulling in a dependency.
+  function computeGeoBounds(geojson) {
+    var lonMin = Infinity, lonMax = -Infinity, latMin = Infinity, latMax = -Infinity;
+    function visit(coords, depth) {
+      if (depth === 0) {
+        var lon = coords[0], lat = coords[1];
+        if (lon < lonMin) lonMin = lon;
+        if (lon > lonMax) lonMax = lon;
+        if (lat < latMin) latMin = lat;
+        if (lat > latMax) latMax = lat;
+      } else {
+        coords.forEach(function (c) { visit(c, depth - 1); });
+      }
+    }
+    geojson.features.forEach(function (f) {
+      var g = f.geometry;
+      visit(g.coordinates, g.type === "Polygon" ? 2 : 3);
+    });
+    return { lonMin: lonMin, lonMax: lonMax, latMin: latMin, latMax: latMax };
+  }
+
+  function buildProjection(bounds, targetWidth) {
+    var cosLat0 = Math.cos((bounds.latMin + bounds.latMax) / 2 * Math.PI / 180);
+    var k = targetWidth / ((bounds.lonMax - bounds.lonMin) * cosLat0);
+    var height = (bounds.latMax - bounds.latMin) * k;
+    return {
+      width: targetWidth,
+      height: height,
+      project: function (lon, lat) {
+        return [(lon - bounds.lonMin) * cosLat0 * k, (bounds.latMax - lat) * k];
+      }
+    };
+  }
+
+  function ringToPathD(ring, project) {
+    return ring.map(function (pt, i) {
+      var p = project(pt[0], pt[1]);
+      return (i === 0 ? "M" : "L") + p[0].toFixed(1) + "," + p[1].toFixed(1);
+    }).join(" ") + " Z";
+  }
+
+  function geometryToPathD(geometry, project) {
+    if (geometry.type === "Polygon") {
+      return geometry.coordinates.map(function (ring) { return ringToPathD(ring, project); }).join(" ");
+    }
+    if (geometry.type === "MultiPolygon") {
+      return geometry.coordinates.map(function (poly) {
+        return poly.map(function (ring) { return ringToPathD(ring, project); }).join(" ");
+      }).join(" ");
+    }
+    return "";
+  }
+
+  function renderChoropleth(container, legendContainer, geojson, dataByCode, opts) {
+    // dataByCode: { [code_departement]: { value, label, extra } }
+    container.innerHTML = "";
+    legendContainer.innerHTML = "";
+
+    var bounds = computeGeoBounds(geojson);
+    var proj = buildProjection(bounds, opts.width || 640);
+    var values = Object.keys(dataByCode).map(function (k) { return dataByCode[k].value; });
+    var min = Math.min.apply(null, values), max = Math.max.apply(null, values);
+
+    var svg = svgEl("svg", {
+      class: "choropleth",
+      viewBox: "0 0 " + proj.width.toFixed(1) + " " + proj.height.toFixed(1),
+      role: "img",
+      "aria-label": opts.ariaLabel || "choropleth map"
+    });
+
+    geojson.features.forEach(function (f) {
+      var code = f.properties.code;
+      var d = geometryToPathD(f.geometry, proj.project);
+      var entry = dataByCode[code];
+      var path = svgEl("path", { d: d, tabindex: "0" });
+
+      if (entry) {
+        path.setAttribute("class", "map-dept");
+        var t = max > min ? (entry.value - min) / (max - min) : 0.5;
+        path.style.setProperty("--t", t.toFixed(3));
+        var tipRows = (entry.extra || []).concat([[opts.valueLabel || "Value", opts.valueFormatter(entry.value)]]);
+        path.addEventListener("pointermove", function (e) { showTooltip(e, entry.label, tipRows); });
+        path.addEventListener("pointerleave", hideTooltip);
+        path.addEventListener("focus", function (e) { showTooltip(e, entry.label, tipRows); });
+        path.addEventListener("blur", hideTooltip);
+      } else {
+        path.setAttribute("class", "map-dept no-data");
+        var name = f.properties.nom || code;
+        path.addEventListener("pointermove", function (e) { showTooltip(e, name, [["Status", "No DVF data (excluded or no qualifying sales)"]]); });
+        path.addEventListener("pointerleave", hideTooltip);
+      }
+      svg.appendChild(path);
+    });
+
+    container.appendChild(svg);
+
+    var lowLabel = document.createElement("span");
+    lowLabel.textContent = opts.valueFormatter(min);
+    var bar = document.createElement("span");
+    bar.className = "map-legend-bar";
+    var highLabel = document.createElement("span");
+    highLabel.textContent = opts.valueFormatter(max);
+    var noDataSwatch = document.createElement("span");
+    noDataSwatch.className = "map-legend-swatch";
+    var noDataLabel = document.createElement("span");
+    noDataLabel.textContent = "No data";
+    legendContainer.appendChild(lowLabel);
+    legendContainer.appendChild(bar);
+    legendContainer.appendChild(highLabel);
+    legendContainer.appendChild(noDataSwatch);
+    legendContainer.appendChild(noDataLabel);
+  }
+
   /* ---------- data loading ---------- */
   function fetchJson(path) {
     return fetch(path, { cache: "no-cache" }).then(function (r) {
@@ -729,14 +940,21 @@
     }).catch(function () { return null; });
   }
 
+  // Note: department_opportunity_score.json (the dbt mart) is exported alongside these but
+  // deliberately not fetched here - the map below recomputes department medians client-side
+  // from whatever the commune-level filters currently show, so it stays consistent with the
+  // rest of the page instead of always displaying a static all-types blend. The dbt mart is
+  // still a legitimate standalone artifact for anyone querying BigQuery/the JSON directly.
   Promise.all([
     fetchJson("data/commune_opportunity_score.json"),
+    fetchJson("data/departements.geojson"),
     fetchJson("data/equity_performance_summary.json"),
     fetchJson("data/meta.json")
   ]).then(function (res) {
     var realEstate = res[0] || [];
-    var portfolio = res[1] || [];
-    var meta = res[2];
+    var departmentsGeo = res[1];
+    var portfolio = res[2] || [];
+    var meta = res[3];
 
     var metaLine = document.getElementById("meta-line");
     if (meta && meta.exported_at) {
@@ -745,12 +963,21 @@
       metaLine.textContent = "No export yet — see footer for how to publish one.";
     }
 
-    initRealEstate(realEstate);
+    initRealEstate(realEstate, departmentsGeo);
     initPortfolio(portfolio);
   });
 
   /* ---------- Real estate tab ---------- */
-  function initRealEstate(data) {
+  function medianOf(arr) {
+    if (!arr.length) return null;
+    var sorted = arr.slice().sort(function (a, b) { return a - b; });
+    var mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+  var TYPE_COLORS = { Maison: "var(--series-1)", Appartement: "var(--series-2)" };
+  function typeColor(t) { return TYPE_COLORS[t] || "var(--series-1)"; }
+
+  function initRealEstate(data, departmentsGeo) {
     var emptyEl = document.getElementById("re-empty");
     var contentEl = document.getElementById("re-content");
     if (!data.length) {
@@ -759,6 +986,24 @@
       emptyEl.innerHTML = "No real-estate data published yet. Run <code>python scripts/export_marts.py</code> after dvf_ingest, insee_ingest, and dbt_transform have run at least once.";
       return;
     }
+
+    // methodology disclosure - static content, wired once
+    var methodologyPanel = document.getElementById("re-methodology-panel");
+    methodologyPanel.innerHTML =
+      "<h3>Opportunity score</h3>" +
+      "<p>For each commune and property type, using the most recent DVF year in the data, communes need at least 5 qualifying sales that year to be scored at all &mdash; thinner markets are dropped rather than shown with a noisy number.</p>" +
+      "<p>The score (0&ndash;100) blends three factors: up to 50 points for being cheaper than the national median price/m&sup2; (capped once a commune reaches 2&times; the national median); up to 25 points for positive year-over-year price momentum, capped at &plusmn;20%; up to 25 points for local median disposable income, capped at &euro;30,000. See <code>dbt/models/marts/real_estate/commune_opportunity_score.sql</code> for the exact formula &mdash; it's simple and transparent on purpose, tune the weights to what you actually care about.</p>" +
+      "<h3>Year-over-year change</h3>" +
+      "<p>Compares the current year's median price/m&sup2; to the prior year's, but only when the prior year also had at least 5 qualifying sales &mdash; otherwise shown as “–” rather than a number a single outlier sale could swing wildly.</p>" +
+      "<h3>Data-quality filters</h3>" +
+      "<p>Excludes forced auctions, property exchanges, and expropriations (none reflect a market price), and excludes transactions priced below &euro;100/m&sup2; or above &euro;30,000/m&sup2; (data-entry errors, not real outliers &mdash; found via a real anomaly that showed a +2,933,233% year-over-year change before these filters existed).</p>";
+    var methodologyBtn = document.getElementById("re-methodology-toggle");
+    methodologyBtn.addEventListener("click", function () {
+      var expanded = methodologyBtn.getAttribute("aria-expanded") === "true";
+      methodologyBtn.setAttribute("aria-expanded", String(!expanded));
+      methodologyPanel.hidden = expanded;
+      methodologyBtn.textContent = expanded ? "How is this calculated?" : "Hide methodology";
+    });
 
     var depts = Array.from(new Set(data.map(function (d) { return d.code_departement + " — " + (d.nom_departement || ""); })))
       .sort();
@@ -779,16 +1024,41 @@
       typeSelect.appendChild(opt);
     });
 
+    // legend: property type, doubles as a toggle-to-isolate filter alongside the dropdown
+    var legendState = {};
+    types.forEach(function (t) { legendState[t] = true; });
+    var legendEl = document.getElementById("re-legend");
+    types.forEach(function (t) {
+      var btn = document.createElement("button");
+      btn.className = "legend-item";
+      btn.setAttribute("aria-pressed", "true");
+      var sw = document.createElement("span");
+      sw.className = "legend-swatch";
+      sw.style.background = typeColor(t);
+      btn.appendChild(sw);
+      var lbl = document.createElement("span");
+      lbl.textContent = t;
+      btn.appendChild(lbl);
+      btn.addEventListener("click", function () {
+        legendState[t] = !legendState[t];
+        btn.setAttribute("aria-pressed", String(legendState[t]));
+        applyFilters();
+      });
+      legendEl.appendChild(btn);
+    });
+
+    var tableColumns = [
+      { key: "nom_commune", label: "Commune" },
+      { key: "code_departement", label: "Dept" },
+      { key: "type_local", label: "Type" },
+      { key: "median_price_per_sqm", label: "Price/m²", format: function (v) { return v == null ? "–" : fmtEUR0.format(v); } },
+      { key: "yoy_price_change_pct", label: "YoY", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
+      { key: "median_disposable_income", label: "Median income", format: function (v) { return v == null ? "–" : fmtEUR0.format(v); } },
+      { key: "opportunity_score", label: "Score", format: function (v) { return fmtScore.format(v); } }
+    ];
+
     var invalidateTable = wireTableToggle("re-table-toggle", "re-table-wrap", function () {
-      renderTable(document.getElementById("re-table-wrap"), currentFiltered(), [
-        { key: "nom_commune", label: "Commune" },
-        { key: "code_departement", label: "Dept" },
-        { key: "type_local", label: "Type" },
-        { key: "median_price_per_sqm", label: "Price/m²", format: function (v) { return v == null ? "–" : fmtEUR0.format(v); } },
-        { key: "yoy_price_change_pct", label: "YoY", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
-        { key: "median_disposable_income", label: "Median income", format: function (v) { return v == null ? "–" : fmtEUR0.format(v); } },
-        { key: "opportunity_score", label: "Score", format: function (v) { return fmtScore.format(v); } }
-      ]);
+      renderTable(document.getElementById("re-table-wrap"), currentFiltered(), tableColumns);
     });
 
     var currentFilteredData = data;
@@ -797,21 +1067,13 @@
     function applyFilters() {
       var dept = deptSelect.value, type = typeSelect.value;
       var filtered = data.filter(function (d) {
-        return (!dept || d.code_departement === dept) && (!type || d.type_local === type);
+        return (!dept || d.code_departement === dept) && (!type || d.type_local === type) && legendState[d.type_local];
       });
       currentFilteredData = filtered.slice().sort(function (a, b) { return b.opportunity_score - a.opportunity_score; });
       render(currentFilteredData);
       invalidateTable();
       var wrap = document.getElementById("re-table-wrap");
-      if (!wrap.hidden) renderTable(wrap, currentFilteredData, [
-        { key: "nom_commune", label: "Commune" },
-        { key: "code_departement", label: "Dept" },
-        { key: "type_local", label: "Type" },
-        { key: "median_price_per_sqm", label: "Price/m²", format: function (v) { return v == null ? "–" : fmtEUR0.format(v); } },
-        { key: "yoy_price_change_pct", label: "YoY", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
-        { key: "median_disposable_income", label: "Median income", format: function (v) { return v == null ? "–" : fmtEUR0.format(v); } },
-        { key: "opportunity_score", label: "Score", format: function (v) { return fmtScore.format(v); } }
-      ]);
+      if (!wrap.hidden) renderTable(wrap, currentFilteredData, tableColumns);
     }
 
     function render(filtered) {
@@ -825,24 +1087,50 @@
       addStatTile(statsEl, "Top opportunity", top ? top.nom_commune : "–", top ? "Score " + fmtScore.format(top.opportunity_score) : null);
       addStatTile(statsEl, "National median price/m²", nationalMedian != null ? fmtEUR0.format(nationalMedian) : "–", filtered.length ? "Year " + filtered[0].year : null);
 
-      // bar chart: top 15
+      // map: department medians recomputed from whatever the filters currently show
+      if (departmentsGeo) {
+        var byDept = {};
+        filtered.forEach(function (d) {
+          (byDept[d.code_departement] = byDept[d.code_departement] || { rows: [], nom: d.nom_departement }).rows.push(d);
+        });
+        var dataByCode = {};
+        Object.keys(byDept).forEach(function (code) {
+          var rows = byDept[code];
+          var med = medianOf(rows.rows.map(function (r) { return r.opportunity_score; }));
+          dataByCode[code] = {
+            value: med,
+            label: rows.nom || code,
+            extra: [["Communes", fmtInt.format(new Set(rows.rows.map(function (r) { return r.code_commune; })).size)]]
+          };
+        });
+        renderChoropleth(document.getElementById("re-map"), document.getElementById("re-map-legend"), departmentsGeo, dataByCode, {
+          width: 640,
+          valueLabel: "Median score",
+          valueFormatter: function (v) { return fmtScore.format(v); },
+          ariaLabel: "Median opportunity score by département"
+        });
+      }
+
+      // bar chart: top 15, colored by property type
       var top15 = filtered.slice().sort(function (a, b) { return b.opportunity_score - a.opportunity_score; }).slice(0, 15);
       renderMagnitudeBarChart(document.getElementById("re-bar"), top15.map(function (d) {
         return {
           label: d.nom_commune,
           value: d.opportunity_score,
-          extra: [["Price/m²", fmtEUR0.format(d.median_price_per_sqm)], ["Dept", d.code_departement]]
+          color: typeColor(d.type_local),
+          extra: [["Type", d.type_local], ["Price/m²", fmtEUR0.format(d.median_price_per_sqm)], ["Dept", d.code_departement]]
         };
       }), { valueFormatter: function (v) { return fmtScore.format(v); } });
 
-      // scatter
+      // scatter, colored by property type
       renderScatterChart(document.getElementById("re-scatter"), filtered.filter(function (d) { return d.median_price_per_sqm != null; }).map(function (d) {
         return {
           x: d.median_price_per_sqm,
           y: d.opportunity_score,
           label: d.nom_commune,
-          color: "var(--series-1)",
-          extra: [["Price/m²", fmtEUR0.format(d.median_price_per_sqm)], ["Score", fmtScore.format(d.opportunity_score)], ["Dept", d.code_departement]]
+          color: typeColor(d.type_local),
+          group: d.type_local,
+          extra: [["Type", d.type_local], ["Price/m²", fmtEUR0.format(d.median_price_per_sqm)], ["Score", fmtScore.format(d.opportunity_score)], ["Dept", d.code_departement]]
         };
       }), {
         width: 900, height: 340,

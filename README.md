@@ -30,15 +30,21 @@ Two pipelines feed one warehouse:
 ## What it builds
 
 - **`marts/real_estate/commune_opportunity_score`** — every French commune (DVF-covered
-  départements), ranked on price/m² vs. the national median, year-over-year price momentum,
-  and local median income.
+  départements) with at least 5 qualifying sales in the latest year, ranked on price/m² vs.
+  the national median, year-over-year price momentum, and local median income. Excludes
+  non-market transactions (forced auctions, exchanges, expropriations) and implausible prices
+  (below €100/m² or above €30,000/m² — both found via a real data anomaly, see
+  [`int_dvf__commune_period_stats.sql`](dbt/models/intermediate/int_dvf__commune_period_stats.sql)).
+- **`marts/real_estate/department_opportunity_score`** — department-level median rollup of the
+  above, for the dashboard's choropleth map.
 - **`marts/portfolio/equity_performance_summary`** — one row per CAC40/PEA-ETF ticker with
   period return, annualized volatility, and dividends.
 
-Both are starting points for your own research, not investment advice — the opportunity score
+All are starting points for your own research, not investment advice — the opportunity score
 in particular uses simple, transparent, hand-picked weights (see the comments in
-[`commune_opportunity_score.sql`](dbt/models/marts/real_estate/commune_opportunity_score.sql))
-that you should tune to what you actually care about.
+[`commune_opportunity_score.sql`](dbt/models/marts/real_estate/commune_opportunity_score.sql),
+or the "How is this calculated?" panel on the dashboard itself) that you should tune to what
+you actually care about.
 
 ## Data sources
 
@@ -151,8 +157,11 @@ giving anyone BigQuery access:
    GitHub Pages is on, this repo (and everything in `docs/`) is public.
 
 The dashboard itself (`docs/index.html`) is a single self-contained page — no build step, no
-CDN dependencies, light/dark mode, filters, a table view alongside every chart, and full
-keyboard/hover tooltips.
+CDN dependencies, light/dark mode, filters, a table view alongside every chart, full
+keyboard/hover tooltips, a France choropleth map (département boundaries from
+[gregoiredavid/france-geojson](https://github.com/gregoiredavid/france-geojson), MIT-licensed,
+committed at `docs/data/departements.geojson`), and an in-page "How is this calculated?"
+methodology disclosure.
 
 ## Repo layout
 
@@ -164,9 +173,9 @@ dbt/
   seeds/            departements.csv (DVF-covered), cac40_tickers.csv (watchlist)
   models/staging/    1:1 cleanup per source (dvf, insee, equities)
   models/intermediate/  aggregations not yet business-facing
-  models/marts/      commune_opportunity_score, equity_performance_summary
+  models/marts/      commune_opportunity_score, department_opportunity_score, equity_performance_summary
 scripts/            export_marts.py (BigQuery marts -> docs/data/*.json)
-docs/               static dashboard published via GitHub Pages (index.html + data/*.json)
+docs/               static dashboard published via GitHub Pages (index.html + data/*.json + departements.geojson)
 ```
 
 ## Ideas for later (not built yet)

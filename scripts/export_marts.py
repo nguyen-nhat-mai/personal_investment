@@ -28,6 +28,7 @@ OUTPUT_DIR = REPO_ROOT / "docs" / "data"
 
 MARTS = {
     "commune_opportunity_score": "real_estate",
+    "department_opportunity_score": "real_estate",
     "equity_performance_summary": "portfolio",
 }
 

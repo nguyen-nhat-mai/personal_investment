@@ -18,3 +18,14 @@ models:
             - code_commune
             - type_local
             - year
+
+  - name: department_opportunity_score
+    description: Department-level rollup of commune_opportunity_score, for the dashboard's choropleth map.
+    columns:
+      - name: code_departement
+        tests:
+          - not_null
+          - unique
+      - name: median_opportunity_score
+        tests:
+          - not_null
