@@ -1847,7 +1847,13 @@
     wealthDepositInto(state.avFondsEuro, init.tier3 / 3, Infinity);
     wealthDepositInto(state.scpiInAv, init.tier3 / 3, Infinity);
     wealthDepositInto(state.cat, init.tier3 / 3, Infinity);
-    wealthDepositInto(state.pea, init.tier4 * WEALTH_TIER4_SUBSPLIT.pea, C.pea.cap);
+    // PEA's EUR150k contribution cap can bind even on the initial deposit for a large starting
+    // capital - route any overflow into the (uncapped) preservation tier rather than losing it,
+    // same treatment the ongoing per-year contribution loop below uses.
+    var peaOverflowInit = wealthDepositInto(state.pea, init.tier4 * WEALTH_TIER4_SUBSPLIT.pea, C.pea.cap);
+    wealthDepositInto(state.avFondsEuro, peaOverflowInit / 3, Infinity);
+    wealthDepositInto(state.scpiInAv, peaOverflowInit / 3, Infinity);
+    wealthDepositInto(state.cat, peaOverflowInit / 3, Infinity);
     var realEstate = wealthBuildRealEstatePosition(init.tier4 * WEALTH_TIER4_SUBSPLIT.realEstate, C.mortgage, reCagr);
 
     var annualContribution = params.monthlySavings * 12;
@@ -1865,7 +1871,13 @@
       wealthDepositInto(state.avFondsEuro, yr.tier3 / 3, Infinity);
       wealthDepositInto(state.scpiInAv, yr.tier3 / 3, Infinity);
       wealthDepositInto(state.cat, yr.tier3 / 3, Infinity);
-      wealthDepositInto(state.pea, yr.tier4, C.pea.cap); // 100% of ongoing tier-4 -> PEA
+      // 100% of ongoing tier-4 -> PEA, until its EUR150k contribution cap is hit; overflow past
+      // that falls back to the (uncapped) preservation tier instead of vanishing - a real
+      // investor keeps saving through a different vehicle once PEA is maxed, not stops saving.
+      var peaOverflow = wealthDepositInto(state.pea, yr.tier4, C.pea.cap);
+      wealthDepositInto(state.avFondsEuro, peaOverflow / 3, Infinity);
+      wealthDepositInto(state.scpiInAv, peaOverflow / 3, Infinity);
+      wealthDepositInto(state.cat, peaOverflow / 3, Infinity);
 
       rows.push(wealthSnapshot(year, state, realEstate));
     }
@@ -1989,11 +2001,11 @@
     "<h3>The waterfall</h3>" +
     "<p>Every euro - starting capital and monthly savings alike - fills Livret A first (up to &euro;22,950), then LDDS (up to &euro;12,000), before anything else. Only the overflow beyond those caps splits between a preservation tier (Assurance Vie fonds euro, SCPI held as unit&eacute;s de compte inside an AV wrapper, CAT) and a growth tier (PEA, leveraged real estate), by your risk tolerance slider. This is a safety-first model, not a real financial plan for your specific situation.</p>" +
     "<h3>Real estate is modeled as a one-time purchase</h3>" +
-    "<p>Monthly savings are too small to realistically drip into lumpy real-estate purchases, so leveraged real estate is sized once, from the risk-tolerance-driven growth-tier split of your STARTING capital only - a single mortgage amortization schedule, appreciating at the national median DVF price CAGR from year zero. Ongoing monthly savings allocated to the growth tier go entirely to PEA instead. Appreciation-only: no rental income is assumed, since DVF has sale prices, not rent data.</p>" +
+    "<p>Monthly savings are too small to realistically drip into lumpy real-estate purchases, so leveraged real estate is sized once, from the risk-tolerance-driven growth-tier split of your STARTING capital only - a single mortgage amortization schedule, appreciating at the national median DVF price CAGR from year zero (see \"Growth assumption guard rails\" below for what happens when that figure isn't reliable yet). Ongoing monthly savings allocated to the growth tier go entirely to PEA instead. Appreciation-only: no rental income is assumed, since DVF has sale prices, not rent data.</p>" +
     "<h3>Tax</h3>" +
     "<p>Tax is applied once, at the end of your horizon, to each vehicle's realized gain - not annually - since French capital-gains tax is due on withdrawal, not on paper gains (a simplification for CAT interest too, which is technically taxable as received). Livret A and LDDS are always tax-free. AV/SCPI-in-AV and CAT use whichever is cheaper: the 30% flat tax (PFU) or your marginal bracket (TMI) plus 17.2% social charges; AV additionally gets an 8-year holding abatement (&euro;4,600 single / &euro;9,200 couple) and a reduced 24.7% rate on gains above it, assuming your cumulative AV premiums stay under &euro;150k. PEA is 0% income tax + 17.2% social charges after 5 years. Real estate is shown pre-tax (French real-estate capital-gains taper relief is its own complex schedule - a v2 item).</p>" +
     "<h3>Growth assumption guard rails</h3>" +
-    "<p>PEA growth uses the average annualized return across PEA-eligible tickers with enough trading-day history to be trustworthy (this pipeline ingests daily, so early on that can mean few or no tickers qualify yet - a dated illustrative fallback (~7%/year) is used until real history accumulates, same treatment real estate CAGR gets if no d&eacute;partement has a reliable multi-year window yet). Both figures are also hard-capped (&plusmn;50%/year equities, &plusmn;15%/year real estate) before being compounded over your horizon, so a data hiccup can't produce an absurd 20-year projection.</p>" +
+    "<p><strong>PEA</strong>: the average annualized return across PEA-eligible tickers with enough trading-day history to be trustworthy (this pipeline ingests daily, so early on that can mean few or no tickers qualify yet) - a dated illustrative fallback (~7%/year) is used until real history accumulates. <strong>Real estate</strong>: the national median DVF price CAGR across d&eacute;partements with a reliable multi-year window - a dated illustrative fallback (~3%/year) is used if none do yet. Both figures are also hard-capped (&plusmn;50%/year equities, &plusmn;15%/year real estate) before being compounded over your horizon, so neither a data hiccup nor a genuinely extreme historical figure can produce an absurd multi-decade projection. Which one applied for your current numbers is visible in the underlying <code>wealth_assumptions.json</code> export (<code>equities.blended_default.method</code>, <code>real_estate.national_median_price_cagr_is_fallback</code>).</p>" +
     "<h3>What's not modeled</h3>" +
     "<p>Monte Carlo bands (p10/p50/p90) are out of scope - this is a single deterministic path using published mean return/CAGR figures, not a distribution. Illustrative starting heuristic, not investment advice.</p>";
 
