@@ -21,9 +21,9 @@ applyTheme(currentTheme());
 
 /* ---------- tabs ---------- */
 var TABS = [
+  { id: "ws", btn: document.getElementById("tab-btn-ws"), panel: document.getElementById("tab-wealth-sim") },
   { id: "re", btn: document.getElementById("tab-btn-re"), panel: document.getElementById("tab-real-estate") },
   { id: "pf", btn: document.getElementById("tab-btn-pf"), panel: document.getElementById("tab-portfolio") },
-  { id: "ws", btn: document.getElementById("tab-btn-ws"), panel: document.getElementById("tab-wealth-sim") },
   { id: "how", btn: document.getElementById("tab-btn-how"), panel: document.getElementById("tab-how-it-works") }
 ];
 function selectTab(which) {

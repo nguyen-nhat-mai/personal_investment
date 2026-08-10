@@ -56,8 +56,14 @@ Several pipelines feed one warehouse:
   non-French EU blue chips + PEA ETFs, see [`dbt/seeds/pea_watchlist.csv`](dbt/seeds/pea_watchlist.csv))
   with period return (a median of the first/last 5 trading days' price, not a single
   point-to-point comparison — the latter let one glitchy data point swing the figure
-  arbitrarily; GLE.PA briefly showed +327% from exactly that), annualized volatility, max
-  drawdown, Sharpe ratio (against a dated
+  arbitrarily; GLE.PA briefly showed +327% from exactly that), annualized return (a proper
+  geometric annualization of that same robust period return — `power(last/first, 252/
+  trading_days) - 1` — not `power(1 + avg_daily_return, 252) - 1`, an earlier version of the
+  formula that raised the arithmetic mean of daily returns to the 252nd power; arithmetic mean
+  is always ≥ geometric mean, more so for volatile stocks, so that formula produced real,
+  seriously distorted figures — GLE.PA briefly showed 121%/year against a true
+  geometrically-annualized figure around 25–30%/year for the same prices), annualized
+  volatility, max drawdown, Sharpe ratio (against a dated
   illustrative risk-free rate, `risk_free_rate_pct`), simple excess return vs. a benchmark
   (`benchmark_ticker`, CW8.PA by default — not a Beta-adjusted CAPM alpha, and computed over a
   date-aligned common window with the benchmark rather than each ticker's own independently-

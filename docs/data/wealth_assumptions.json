@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-08-10T10:19:05.207142+00:00",
+  "exported_at": "2026-08-10T10:49:35.938581+00:00",
   "project": "personal-investment-505011",
   "dataset": "analytics",
   "equities": {
@@ -9,7 +9,7 @@
         "name": "Accor",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.25455563394127,
+        "annualized_return": 0.20792380734237859,
         "annualized_volatility": 0.2843203483769967
       },
       {
@@ -17,7 +17,7 @@
         "name": "Credit Agricole",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.33313024707852334,
+        "annualized_return": 0.2879548787380608,
         "annualized_volatility": 0.20488061003079214
       },
       {
@@ -25,7 +25,7 @@
         "name": "Air Liquide",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.11924183907904462,
+        "annualized_return": 0.09654487194862349,
         "annualized_volatility": 0.17696911408645752
       },
       {
@@ -33,7 +33,7 @@
         "name": "Airbus",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.3008126935058639,
+        "annualized_return": 0.2808294674860954,
         "annualized_volatility": 0.2841612803283851
       },
       {
@@ -41,7 +41,7 @@
         "name": "ASML Holding",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.5243740297471413,
+        "annualized_return": 0.37262108488203727,
         "annualized_volatility": 0.4168112488038079
       },
       {
@@ -49,7 +49,7 @@
         "name": "Danone",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.1049071826619512,
+        "annualized_return": 0.09360714273169668,
         "annualized_volatility": 0.2016732018529811
       },
       {
@@ -57,7 +57,7 @@
         "name": "BNP Paribas",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.5070640498369636,
+        "annualized_return": 0.45070311111950345,
         "annualized_volatility": 0.27014674840598657
       },
       {
@@ -65,7 +65,7 @@
         "name": "Bureau Veritas",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.06030048402807964,
+        "annualized_return": 0.035700509149312776,
         "annualized_volatility": 0.2132336069827982
       },
       {
@@ -73,7 +73,7 @@
         "name": "Carrefour",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.18705569278979617,
+        "annualized_return": 0.14918639972145042,
         "annualized_volatility": 0.22317003662249685
       },
       {
@@ -81,7 +81,7 @@
         "name": "Capgemini",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": -0.16405781547359766,
+        "annualized_return": -0.1918985209011156,
         "annualized_volatility": 0.34448429313110207
       },
       {
@@ -89,7 +89,7 @@
         "name": "Axa",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.26747359380129954,
+        "annualized_return": 0.23221221961248584,
         "annualized_volatility": 0.19332306798115828
       },
       {
@@ -97,7 +97,7 @@
         "name": "Amundi MSCI World UCITS ETF",
         "asset_type": "etf",
         "trading_days": 511,
-        "annualized_return": 0.17944030836420377,
+        "annualized_return": 0.17206676947703392,
         "annualized_volatility": 0.1419966331238117
       },
       {
@@ -105,7 +105,7 @@
         "name": "Vinci",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.1723677028669841,
+        "annualized_return": 0.144996896130402,
         "annualized_volatility": 0.21965472423305848
       },
       {
@@ -113,7 +113,7 @@
         "name": "Dassault Systemes",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": -0.13804859845238204,
+        "annualized_return": -0.187687260836083,
         "annualized_volatility": 0.34239310644633797
       },
       {
@@ -121,7 +121,7 @@
         "name": "Edenred",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.036200054098267875,
+        "annualized_return": -0.06782821561859265,
         "annualized_volatility": 0.42505060081258966
       },
       {
@@ -129,7 +129,7 @@
         "name": "EssilorLuxottica",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": -0.030989796211407072,
+        "annualized_return": -0.07811419449137624,
         "annualized_volatility": 0.27509458924595753
       },
       {
@@ -137,7 +137,7 @@
         "name": "Bouygues",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.34015937466686963,
+        "annualized_return": 0.3041234142527831,
         "annualized_volatility": 0.21199904400478534
       },
       {
@@ -145,7 +145,7 @@
         "name": "Engie",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.4389177046432087,
+        "annualized_return": 0.39570047708486955,
         "annualized_volatility": 0.19442378531938287
       },
       {
@@ -153,7 +153,7 @@
         "name": "Eurofins Scientific",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.21129572757772053,
+        "annualized_return": 0.16074751622974337,
         "annualized_volatility": 0.29094415291241493
       },
       {
@@ -161,7 +161,7 @@
         "name": "BNP Paribas Easy STOXX Europe 600 UCITS ETF",
         "asset_type": "etf",
         "trading_days": 511,
-        "annualized_return": 0.1882018791020108,
+        "annualized_return": 0.1691582549212547,
         "annualized_volatility": 0.14207652367009047
       },
       {
@@ -169,7 +169,7 @@
         "name": "Societe Generale",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 1.2111340977973808,
+        "annualized_return": 1.0477802106057728,
         "annualized_volatility": 0.34689250188804555
       },
       {
@@ -177,7 +177,7 @@
         "name": "Thales",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.4148066704123712,
+        "annualized_return": 0.35129453261650867,
         "annualized_volatility": 0.3234721411263786
       },
       {
@@ -185,7 +185,7 @@
         "name": "Inditex",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.22941324529847518,
+        "annualized_return": 0.17714516977752726,
         "annualized_volatility": 0.246389895229018
       },
       {
@@ -193,7 +193,7 @@
         "name": "Kering",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.19330790529582287,
+        "annualized_return": 0.08968293010500905,
         "annualized_volatility": 0.4304837524081255
       },
       {
@@ -201,7 +201,7 @@
         "name": "Legrand",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.2841529737952959,
+        "annualized_return": 0.23088271419944006,
         "annualized_volatility": 0.2866687552775568
       },
       {
@@ -209,7 +209,7 @@
         "name": "LVMH",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": -0.06114710335184359,
+        "annualized_return": -0.11249934134435569,
         "annualized_volatility": 0.31744748947382523
       },
       {
@@ -217,7 +217,7 @@
         "name": "Michelin",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.06473813719706567,
+        "annualized_return": 0.04233014492189269,
         "annualized_volatility": 0.2263000351313467
       },
       {
@@ -225,7 +225,7 @@
         "name": "Amundi MSCI EMU Small Cap UCITS ETF",
         "asset_type": "etf",
         "trading_days": 511,
-        "annualized_return": 0.17505227121940958,
+        "annualized_return": 0.15645263484248306,
         "annualized_volatility": 0.14425544566901818
       },
       {
@@ -233,7 +233,7 @@
         "name": "ArcelorMittal",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.9352779619841831,
+        "annualized_return": 0.7997732892169256,
         "annualized_volatility": 0.39696334576574394
       },
       {
@@ -241,7 +241,7 @@
         "name": "Novo Nordisk",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": -0.3335206395015996,
+        "annualized_return": -0.4007273937358946,
         "annualized_volatility": 0.49247952430608843
       },
       {
@@ -249,7 +249,7 @@
         "name": "L'Oreal",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.06565068366752036,
+        "annualized_return": 0.027753692646523165,
         "annualized_volatility": 0.255023030011569
       },
       {
@@ -257,7 +257,7 @@
         "name": "Orange",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.37615831493215635,
+        "annualized_return": 0.33169749198807663,
         "annualized_volatility": 0.19778514380469164
       },
       {
@@ -265,7 +265,7 @@
         "name": "Amundi PEA Emergent (MSCI Emerging) UCITS ETF",
         "asset_type": "etf",
         "trading_days": 511,
-        "annualized_return": 0.26604739804031374,
+        "annualized_return": 0.264895267100014,
         "annualized_volatility": 0.19255182279138203
       },
       {
@@ -273,7 +273,7 @@
         "name": "Amundi PEA S&P 500 UCITS ETF",
         "asset_type": "etf",
         "trading_days": 511,
-        "annualized_return": 0.17289377487294466,
+        "annualized_return": 0.1685729278156709,
         "annualized_volatility": 0.15349083743169903
       },
       {
@@ -281,7 +281,7 @@
         "name": "Publicis",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.10607986024235472,
+        "annualized_return": 0.07815030404028023,
         "annualized_volatility": 0.27232299130179666
       },
       {
@@ -289,7 +289,7 @@
         "name": "Amundi PEA Nasdaq-100 UCITS ETF",
         "asset_type": "etf",
         "trading_days": 511,
-        "annualized_return": 0.22669426319802222,
+        "annualized_return": 0.21731153770418787,
         "annualized_volatility": 0.19767472200206335
       },
       {
@@ -297,7 +297,7 @@
         "name": "Pernod Ricard",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": -0.17146214230176793,
+        "annualized_return": -0.20230058926770456,
         "annualized_volatility": 0.2866428716161343
       },
       {
@@ -305,7 +305,7 @@
         "name": "Hermes",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": -0.04260311442349318,
+        "annualized_return": -0.10472571058325242,
         "annualized_volatility": 0.3033756581633016
       },
       {
@@ -313,7 +313,7 @@
         "name": "Renault",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": -0.056663443746853726,
+        "annualized_return": -0.10724879311030544,
         "annualized_volatility": 0.32555741767420154
       },
       {
@@ -321,7 +321,7 @@
         "name": "Safran",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.4280578257772343,
+        "annualized_return": 0.366610513870574,
         "annualized_volatility": 0.2962967905290961
       },
       {
@@ -329,7 +329,7 @@
         "name": "Sanofi",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": -0.040028330249603394,
+        "annualized_return": -0.08153720774785156,
         "annualized_volatility": 0.2354402300653772
       },
       {
@@ -337,7 +337,7 @@
         "name": "SAP",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.012730777140132155,
+        "annualized_return": -0.04366669718266403,
         "annualized_volatility": 0.34764877279624234
       },
       {
@@ -345,7 +345,7 @@
         "name": "Saint-Gobain",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.153677960091251,
+        "annualized_return": 0.09799258620584683,
         "annualized_volatility": 0.30969310671028943
       },
       {
@@ -353,7 +353,7 @@
         "name": "Stellantis",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": -0.32139739771178055,
+        "annualized_return": -0.38216806051759367,
         "annualized_volatility": 0.4630728898933041
       },
       {
@@ -361,7 +361,7 @@
         "name": "STMicroelectronics",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.5024335518695158,
+        "annualized_return": 0.33247709335568887,
         "annualized_volatility": 0.49399558189965775
       },
       {
@@ -369,7 +369,7 @@
         "name": "Schneider Electric",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.27089669296379415,
+        "annualized_return": 0.1909658335107256,
         "annualized_volatility": 0.33025936851156423
       },
       {
@@ -377,7 +377,7 @@
         "name": "Teleperformance",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": -0.012825869487949837,
+        "annualized_return": -0.13693366406665386,
         "annualized_volatility": 0.457753395496033
       },
       {
@@ -385,7 +385,7 @@
         "name": "TotalEnergies",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.197043051086909,
+        "annualized_return": 0.15728556699340857,
         "annualized_volatility": 0.2221747374271263
       },
       {
@@ -393,7 +393,7 @@
         "name": "Unibail-Rodamco-Westfield",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.32636758863231896,
+        "annualized_return": 0.2972080928356482,
         "annualized_volatility": 0.20569420820887596
       },
       {
@@ -401,12 +401,12 @@
         "name": "Veolia",
         "asset_type": "stock",
         "trading_days": 511,
-        "annualized_return": 0.2033704704546484,
+        "annualized_return": 0.1649621931784946,
         "annualized_volatility": 0.19384630031318079
       }
     ],
     "blended_default": {
-      "annualized_return": 0.1933747884569209,
+      "annualized_return": 0.14095931797909972,
       "annualized_volatility": 0.2801691895858825,
       "method": "equal-weighted mean across 50 pea_eligible tickers with enough trading-day history (see equity_performance_summary.trading_days)"
     }
@@ -433,7 +433,7 @@
       {
         "code_departement": "04",
         "nom_departement": "Alpes-de-Haute-Provence",
-        "median_price_cagr": 0.0344424928088356
+        "median_price_cagr": 0.03652993214178979
       },
       {
         "code_departement": "05",
@@ -443,7 +443,7 @@
       {
         "code_departement": "06",
         "nom_departement": "Alpes-Maritimes",
-        "median_price_cagr": 0.024103868123179772
+        "median_price_cagr": 0.025302115902350097
       },
       {
         "code_departement": "07",
@@ -453,7 +453,7 @@
       {
         "code_departement": "08",
         "nom_departement": "Ardennes",
-        "median_price_cagr": 0.0424168720554674
+        "median_price_cagr": 0.04970297915113098
       },
       {
         "code_departement": "09",
@@ -468,7 +468,7 @@
       {
         "code_departement": "11",
         "nom_departement": "Aude",
-        "median_price_cagr": 0.019566012541403888
+        "median_price_cagr": 0.02339826896820929
       },
       {
         "code_departement": "12",
@@ -483,7 +483,7 @@
       {
         "code_departement": "14",
         "nom_departement": "Calvados",
-        "median_price_cagr": 0.03356452221116779
+        "median_price_cagr": 0.033398140282631106
       },
       {
         "code_departement": "15",
@@ -498,7 +498,7 @@
       {
         "code_departement": "17",
         "nom_departement": "Charente-Maritime",
-        "median_price_cagr": 0.025020463407427584
+        "median_price_cagr": 0.024399807259133155
       },
       {
         "code_departement": "18",
@@ -538,7 +538,7 @@
       {
         "code_departement": "26",
         "nom_departement": "Drome",
-        "median_price_cagr": 0.02459996353762639
+        "median_price_cagr": 0.025106714725310342
       },
       {
         "code_departement": "27",
@@ -588,7 +588,7 @@
       {
         "code_departement": "34",
         "nom_departement": "Herault",
-        "median_price_cagr": 0.020678464456907575
+        "median_price_cagr": 0.02082083383409694
       },
       {
         "code_departement": "35",
@@ -613,7 +613,7 @@
       {
         "code_departement": "39",
         "nom_departement": "Jura",
-        "median_price_cagr": 0.05507246994265502
+        "median_price_cagr": 0.055192300995772436
       },
       {
         "code_departement": "40",
@@ -623,7 +623,7 @@
       {
         "code_departement": "41",
         "nom_departement": "Loir-et-Cher",
-        "median_price_cagr": 0.020110261548440755
+        "median_price_cagr": 0.021165185011166265
       },
       {
         "code_departement": "42",
@@ -663,7 +663,7 @@
       {
         "code_departement": "49",
         "nom_departement": "Maine-et-Loire",
-        "median_price_cagr": 0.018695903921873702
+        "median_price_cagr": 0.018185790714934313
       },
       {
         "code_departement": "50",
@@ -698,7 +698,7 @@
       {
         "code_departement": "56",
         "nom_departement": "Morbihan",
-        "median_price_cagr": 0.04689142242491218
+        "median_price_cagr": 0.04629788450131511
       },
       {
         "code_departement": "58",
@@ -733,7 +733,7 @@
       {
         "code_departement": "64",
         "nom_departement": "Pyrenees-Atlantiques",
-        "median_price_cagr": 0.0241056085619491
+        "median_price_cagr": 0.02417981267865188
       },
       {
         "code_departement": "65",
@@ -758,7 +758,7 @@
       {
         "code_departement": "71",
         "nom_departement": "Saone-et-Loire",
-        "median_price_cagr": 0.027956516509488605
+        "median_price_cagr": 0.02746459682062774
       },
       {
         "code_departement": "72",
@@ -768,7 +768,7 @@
       {
         "code_departement": "73",
         "nom_departement": "Savoie",
-        "median_price_cagr": 0.028122674066143993
+        "median_price_cagr": 0.027622856173838084
       },
       {
         "code_departement": "74",
@@ -783,12 +783,12 @@
       {
         "code_departement": "77",
         "nom_departement": "Seine-et-Marne",
-        "median_price_cagr": -0.0064662340444503474
+        "median_price_cagr": -0.005893473637724633
       },
       {
         "code_departement": "78",
         "nom_departement": "Yvelines",
-        "median_price_cagr": -0.012791055037208565
+        "median_price_cagr": -0.012870829895365477
       },
       {
         "code_departement": "79",
@@ -808,12 +808,12 @@
       {
         "code_departement": "82",
         "nom_departement": "Tarn-et-Garonne",
-        "median_price_cagr": 0.02957097985506385
+        "median_price_cagr": 0.02930469585283002
       },
       {
         "code_departement": "83",
         "nom_departement": "Var",
-        "median_price_cagr": 0.02779188435502311
+        "median_price_cagr": 0.029262220171086817
       },
       {
         "code_departement": "84",
@@ -833,7 +833,7 @@
       {
         "code_departement": "87",
         "nom_departement": "Haute-Vienne",
-        "median_price_cagr": -0.0016571829486388134
+        "median_price_cagr": -0.0028123463217217815
       },
       {
         "code_departement": "88",
@@ -858,17 +858,17 @@
       {
         "code_departement": "92",
         "nom_departement": "Hauts-de-Seine",
-        "median_price_cagr": -0.03201405112459654
+        "median_price_cagr": -0.03331910459734544
       },
       {
         "code_departement": "93",
         "nom_departement": "Seine-Saint-Denis",
-        "median_price_cagr": -0.022360044406738
+        "median_price_cagr": -0.022974916481672936
       },
       {
         "code_departement": "94",
         "nom_departement": "Val-de-Marne",
-        "median_price_cagr": -0.022746776204336516
+        "median_price_cagr": -0.023024217262430313
       },
       {
         "code_departement": "95",

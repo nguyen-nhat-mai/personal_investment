@@ -21,7 +21,7 @@ models:
       - name: trading_days
         description: "Number of daily rows this ticker's stats are computed over. Gates annualized_return/annualized_volatility/max_drawdown_pct - below min_trading_days_for_return (60) all three are null rather than an unreliable extrapolation."
       - name: annualized_return
-        description: "(1 + avg_daily_return)^252 - 1: geometric annualization of the average daily return. Null below min_trading_days_for_return days of history (see trading_days) - a short noisy average gets amplified 252-fold into an absurd number otherwise. Feeds the wealth simulator's default PEA-equity assumption."
+        description: "power(last_price / first_price, 252 / trading_days) - 1: proper geometric annualization of the actual realized return, using the robust median-based first_price/last_price. NOT power(1 + avg_daily_return, 252) - that formula raises the ARITHMETIC MEAN of daily returns to the 252nd power, and arithmetic mean is always >= geometric mean (more so for volatile stocks) - a real bug traced to a volatile bank stock showing 121%/year when the true figure was ~25-30%/year for the same prices. Null below min_trading_days_for_return days of history (see trading_days)."
       - name: max_drawdown_pct
         description: "Worst peak-to-trough decline (see int_equities__daily_returns.drawdown_pct) over whatever history is ingested. Null below min_trading_days_for_return days - too little history makes this falsely small (a good few days looks like 0% drawdown), the opposite failure mode from annualized_return but the same underlying problem."
       - name: sharpe_ratio

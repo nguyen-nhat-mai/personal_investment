@@ -1,11 +1,26 @@
 -- One row per ticker: cumulative return, annualized volatility, risk-adjusted metrics, and
 -- total dividends over whatever history has been ingested so far.
 --
+-- annualized_return is a proper GEOMETRIC annualization of the actual realized return
+-- (last_price/first_price, from the robust median-of-5 prices below), raised to (252/
+-- trading_days) - NOT power(1 + avg(daily_return), 252), which this model used until a real
+-- bug was traced to it: that formula raises the ARITHMETIC MEAN of daily returns to the 252nd
+-- power, and arithmetic mean is always >= geometric mean (more so the more volatile the
+-- stock) - a small daily bias raised to the 252nd power becomes an enormous one. Real example
+-- that surfaced it: GLE.PA (a volatile bank stock with a genuine 2023-2025 rally) showed
+-- 121%/year, then investigation showed the true geometrically-annualized figure was a much
+-- more plausible ~25-30%/year for the same underlying prices - the bug wasn't a data problem
+-- (no stock split, adj_close was already correct - see int_equities__daily_returns.sql), it
+-- was this formula. annualized_volatility keeps stddev(daily_return) * sqrt(252): that IS the
+-- textbook-correct way to annualize volatility (time-scaling a standard deviation), the flaw
+-- was specific to annualizing a RETURN via an arithmetic-mean proxy instead of the real
+-- compounded one.
+--
 -- annualized_return/annualized_volatility/max_drawdown_pct are all null below
 -- min_trading_days_for_return days of history. Two different failure modes, one policy: return
--- and volatility get blown UP into an absurd number over too little history ((1 +
--- avg_daily_return)^252 amplifies noise 252-fold - seen for real: 8,102%/year on day-one data),
--- while drawdown gets pushed FALSELY DOWN (a ticker with 4 good days looks like a 0%-drawdown,
+-- gets blown UP into an absurd number over too little history (a noisy few-day average, now
+-- doubly true given the arithmetic-mean bug above compounds any noise 252-fold), while
+-- drawdown gets pushed FALSELY DOWN (a ticker with 4 good days looks like a 0%-drawdown,
 -- zero-risk asset) - both are "not enough reliable data yet", same policy
 -- int_dvf__commune_price_cagr already uses for thin real-estate history: null, not a fabricated
 -- number either direction. sharpe_ratio is computed from the already-gated columns above, so it
@@ -16,24 +31,54 @@ with returns as (
     select * from {{ ref('int_equities__daily_returns') }}
 ),
 
-per_ticker as (
+ranked_dates as (
     select
         ticker,
-        min(date) as first_date,
-        max(date) as last_date,
+        date,
+        adj_close,
+        row_number() over (partition by ticker order by date asc) as rn_asc,
+        row_number() over (partition by ticker order by date desc) as rn_desc
+    from returns
+),
+
+-- Median of the first/last 5 trading days, not a single point-to-point comparison - the same
+-- fix int_dvf__commune_period_stats.sql already applies to real-estate prices, for exactly the
+-- same reason ("a single outlier transaction can swing the median wildly"). A single glitchy
+-- adj_close value (a bad split/dividend-adjustment artifact, a data-provider hiccup) landing on
+-- the literal first or last ingested day used to be able to swing period_return_pct arbitrarily
+-- with zero robustness. Falls back gracefully for a ticker with fewer than 5 total days (the
+-- two 5-day windows just overlap - median of an overlapping/small set is still well-defined,
+-- just noisier, which is unavoidable with that little history, not a bug). Also now the basis
+-- for annualized_return (see header comment) and vs_benchmark's aligned figure below, instead
+-- of each recomputing their own separately-biased version.
+first_last_price as (
+    select
+        ticker,
+        approx_quantiles(case when rn_asc <= 5 then adj_close end, 2)[offset(1)] as first_price,
+        approx_quantiles(case when rn_desc <= 5 then adj_close end, 2)[offset(1)] as last_price
+    from ranked_dates
+    group by ticker
+),
+
+per_ticker as (
+    select
+        r.ticker,
+        min(r.date) as first_date,
+        max(r.date) as last_date,
         count(*) as trading_days,
-        avg(daily_return) as avg_daily_return,
+        avg(r.daily_return) as avg_daily_return,
         case when count(*) >= {{ var('min_trading_days_for_return') }}
-            then stddev(daily_return) * sqrt(252)
+            then stddev(r.daily_return) * sqrt(252)
         end as annualized_volatility,
         case when count(*) >= {{ var('min_trading_days_for_return') }}
-            then power(1 + avg(daily_return), 252) - 1
+            then power(safe_divide(any_value(fl.last_price), any_value(fl.first_price)), 252.0 / count(*)) - 1
         end as annualized_return,
         case when count(*) >= {{ var('min_trading_days_for_return') }}
-            then min(drawdown_pct)
+            then min(r.drawdown_pct)
         end as max_drawdown_pct
-    from returns
-    group by ticker
+    from returns r
+    join first_last_price fl on r.ticker = fl.ticker
+    group by r.ticker
 ),
 
 -- relative_performance_vs_benchmark needs date-ALIGNED annualized returns on both sides, not
@@ -53,15 +98,37 @@ benchmark_window as (
     where ticker = '{{ var("benchmark_ticker") }}'
 ),
 
-vs_benchmark as (
+-- Same median-of-5-day robustness and geometric annualization as first_last_price/
+-- annualized_return above (see the model header comment for why arithmetic-mean annualization
+-- is wrong), just scoped to the benchmark-aligned window instead of each ticker's own full
+-- history - a ticker's benchmark-relative figure needs its own start/end prices from that
+-- specific window, not its full-history ones.
+vs_benchmark_ranked as (
     select
         r.ticker,
-        power(1 + avg(r.daily_return), 252) - 1 as aligned_annualized_return
+        r.date,
+        r.adj_close,
+        row_number() over (partition by r.ticker order by r.date asc) as rn_asc,
+        row_number() over (partition by r.ticker order by r.date desc) as rn_desc,
+        count(*) over (partition by r.ticker) as n_days_in_window
     from returns r
     cross join benchmark_window bw  -- always exactly 1 row (a bare aggregate), safe to cross join
     where r.date between bw.bench_first_date and bw.bench_last_date
-    group by r.ticker
-    having count(*) >= {{ var('min_trading_days_for_return') }}
+),
+
+vs_benchmark as (
+    select
+        ticker,
+        power(
+            safe_divide(
+                approx_quantiles(case when rn_desc <= 5 then adj_close end, 2)[offset(1)],
+                approx_quantiles(case when rn_asc <= 5 then adj_close end, 2)[offset(1)]
+            ),
+            252.0 / max(n_days_in_window)
+        ) - 1 as aligned_annualized_return
+    from vs_benchmark_ranked
+    group by ticker
+    having max(n_days_in_window) >= {{ var('min_trading_days_for_return') }}
 ),
 
 -- Benchmark's own aligned_annualized_return, joined into every row so relative_performance_vs_
@@ -74,34 +141,6 @@ benchmark as (
     select aligned_annualized_return as benchmark_annualized_return
     from vs_benchmark
     where ticker = '{{ var("benchmark_ticker") }}'
-),
-
-ranked_dates as (
-    select
-        ticker,
-        date,
-        adj_close,
-        row_number() over (partition by ticker order by date asc) as rn_asc,
-        row_number() over (partition by ticker order by date desc) as rn_desc
-    from returns
-),
-
--- Median of the first/last 5 trading days, not a single point-to-point comparison - the same
--- fix int_dvf__commune_period_stats.sql already applies to real-estate prices, for exactly the
--- same reason ("a single outlier transaction can swing the median wildly"). A single glitchy
--- adj_close value (a bad split/dividend-adjustment artifact, a data-provider hiccup) landing on
--- the literal first or last ingested day used to be able to swing period_return_pct arbitrarily
--- with zero robustness - seen for real: GLE.PA briefly showed +327% from exactly this failure
--- mode. Falls back gracefully for a ticker with fewer than 5 total days (the two 5-day windows
--- just overlap - median of an overlapping/small set is still well-defined, just noisier, which
--- is unavoidable with that little history, not a bug).
-first_last_price as (
-    select
-        ticker,
-        approx_quantiles(case when rn_asc <= 5 then adj_close end, 2)[offset(1)] as first_price,
-        approx_quantiles(case when rn_desc <= 5 then adj_close end, 2)[offset(1)] as last_price
-    from ranked_dates
-    group by ticker
 ),
 
 dividends as (

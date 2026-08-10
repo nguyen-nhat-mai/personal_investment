@@ -29,11 +29,9 @@ function initRealEstate(data, departmentsGeo) {
     "<p>For each commune and property type, using the most recent DVF year in the data, communes need at least 2,000 population and at least 15 qualifying sales that year to be scored at all &mdash; both are hard cutoffs dropping micro-markets entirely, on top of (not instead of) the separate 5-sale bar that just governs whether a given year's median price is statistically trustworthy. Communes with no population figure on file are dropped too, since a hard cutoff can't verify what it can't measure.</p>" +
     "<p>The score (0&ndash;100) blends five factors, proportionally rescaled from a suggested six-factor weighting so they still sum to 100: up to ~22 points for being cheaper than the national median price/m&sup2; (capped at 2&times; the national median); up to ~22 points for multi-year price CAGR (capped at &plusmn;15%/year); up to ~22 points for transaction liquidity (this year's sales per capita, capped at 2%); up to ~17 points for population growth, 2017&ndash;2021 CAGR (capped at &plusmn;5%/year); up to ~17 points for local median disposable income, capped at &euro;30,000. See <code>dbt/models/marts/real_estate/commune_opportunity_score.sql</code> for the exact formula &mdash; it's simple and transparent on purpose, tune the weights to what you actually care about.</p>" +
     "<h3>Property tax penalty</h3>" +
-    "<p>Property tax rate isn't a full sixth weighted factor (reweighting all five above is still a pending decision), but egregious outliers now cost points as a guard rail: communes with a property tax rate (taux_foncier_bati) above 35% lose points, ramping linearly up to a maximum 15-point deduction at 2&times; that threshold (70%) &mdash; e.g. a commune at 73.1% would take the full 15-point penalty. Below 35%, or where no tax data is on file, there's no penalty. The exact points lost are shown in the table's \"Tax penalty\" column, so it's visible why a commune's score dropped, not just that it did.</p>" +
+    "<p>Property tax rate isn't a full sixth weighted factor (reweighting all five above is still a pending decision), but egregious outliers now cost points as a guard rail: communes with a property tax rate (taux_foncier_bati) above 35% lose points, ramping linearly up to a maximum 15-point deduction at 2&times; that threshold (70%) &mdash; e.g. a commune at 73.1% would take the full 15-point penalty. Below 35%, or where no tax data is on file, there's no penalty.</p>" +
     "<h3>Price &amp; population CAGR</h3>" +
     "<p><strong>Price CAGR</strong>: compound annual growth rate between the earliest and latest years with at least 5 qualifying sales for that commune/type &mdash; not a fixed window, just whatever span of reliable DVF years is ingested (currently up to 2021&ndash;2024). Communes without at least a 2-year reliable window score as neutral (0%) rather than being excluded. <strong>Population CAGR</strong>: growth rate across 2017&ndash;2021 (the fullest reliable series available - see &ldquo;How it works&rdquo; for why it's not more current), from official INSEE census figures, not DVF.</p>" +
-    "<h3>Year-over-year change</h3>" +
-    "<p>Shown for reference (it no longer drives the score directly, CAGR does): compares the current year's median price/m&sup2; to the prior year's, but only when the prior year also had at least 5 qualifying sales &mdash; otherwise shown as “–” rather than a number a single outlier sale could swing wildly.</p>" +
     "<h3>Data-quality filters</h3>" +
     "<p>Excludes forced auctions, property exchanges, and expropriations (none reflect a market price), and excludes transactions priced below &euro;100/m&sup2; or above &euro;30,000/m&sup2; (data-entry errors, not real outliers &mdash; found via a real anomaly that showed a +2,933,233% year-over-year change before these filters existed).</p>";
   var methodologyBtn = document.getElementById("re-methodology-toggle");
@@ -90,19 +88,18 @@ function initRealEstate(data, departmentsGeo) {
     { key: "nom_commune", label: "Commune" },
     { key: "code_departement", label: "Dept" },
     { key: "type_local", label: "Type" },
+    { key: "opportunity_score", label: "Score", format: function (v) { return fmtScore.format(v); } },
     { key: "median_price_per_sqm", label: "Price/m²", format: function (v) { return v == null ? "–" : fmtEUR0.format(v); } },
     { key: "price_cagr", label: "Price CAGR", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
-    { key: "yoy_price_change_pct", label: "YoY", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
     { key: "transactions_per_capita", label: "Sales/capita", format: function (v) { return v == null ? "–" : fmtPct1Plain.format(v); } },
-    { key: "population_cagr", label: "Pop. CAGR", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
     { key: "median_disposable_income", label: "Median income", format: function (v) { return v == null ? "–" : fmtEUR0.format(v); } },
     // taux_foncier_bati is already a percentage value (e.g. 43.9 meaning 43.9%), not a 0-1
     // fraction like the other percent fields here - divide by 100 before reusing the
     // percent formatter rather than adding a whole separate formatter for one field.
     { key: "taux_foncier_bati", label: "Property tax", format: function (v) { return v == null ? "–" : fmtPct1Plain.format(v / 100); } },
-    { key: "property_tax_penalty_pts", label: "Tax penalty", format: function (v) { return v == null || v === 0 ? "–" : "−" + fmtScore.format(v) + " pts"; } },
-    { key: "population_share_of_department", label: "% of dept. pop.", format: function (v) { return v == null ? "–" : fmtPct1Plain.format(v); } },
-    { key: "opportunity_score", label: "Score", format: function (v) { return fmtScore.format(v); } }
+    { key: "population", label: "Population", format: function (v) { return v == null ? "–" : fmtInt.format(v); } },
+    { key: "population_cagr", label: "Pop. CAGR", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
+    { key: "population_share_of_department", label: "% of dept. pop.", format: function (v) { return v == null ? "–" : fmtPct1Plain.format(v); } }
   ];
 
   var invalidateTable = wireTableToggle("re-table-toggle", "re-table-wrap", function () {

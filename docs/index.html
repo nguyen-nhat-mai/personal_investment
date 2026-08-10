@@ -24,13 +24,80 @@
 
 <main>
   <nav class="tabs" role="tablist">
-    <button role="tab" id="tab-btn-re" aria-selected="true" aria-controls="tab-real-estate" type="button">Real estate</button>
+    <button role="tab" id="tab-btn-ws" aria-selected="true" aria-controls="tab-wealth-sim" type="button">Wealth simulator</button>
+    <button role="tab" id="tab-btn-re" aria-selected="false" aria-controls="tab-real-estate" type="button">Real estate</button>
     <button role="tab" id="tab-btn-pf" aria-selected="false" aria-controls="tab-portfolio" type="button">PEA</button>
-    <button role="tab" id="tab-btn-ws" aria-selected="false" aria-controls="tab-wealth-sim" type="button">Wealth simulator</button>
     <button role="tab" id="tab-btn-how" aria-selected="false" aria-controls="tab-how-it-works" type="button">How it works</button>
   </nav>
 
-  <section class="panel" id="tab-real-estate" role="tabpanel" aria-labelledby="tab-btn-re">
+  <section class="panel" id="tab-wealth-sim" role="tabpanel" aria-labelledby="tab-btn-ws">
+    <div class="sim-controls" id="ws-controls">
+      <label>Starting capital
+        <input type="range" id="ws-capital" min="0" max="500000" step="1000" value="20000">
+        <output id="ws-capital-out"></output>
+      </label>
+      <label>Monthly savings
+        <input type="range" id="ws-monthly" min="0" max="5000" step="50" value="500">
+        <output id="ws-monthly-out"></output>
+      </label>
+      <label>Horizon
+        <input type="range" id="ws-horizon" min="1" max="40" step="1" value="20">
+        <output id="ws-horizon-out"></output>
+      </label>
+      <label>Risk tolerance
+        <select id="ws-risk">
+          <option value="conservative">Conservative (70% preservation / 30% growth)</option>
+          <option value="balanced" selected>Balanced (50% / 50%)</option>
+          <option value="aggressive">Aggressive (25% / 75%)</option>
+        </select>
+      </label>
+      <label>Marginal tax bracket (TMI)
+        <select id="ws-tmi">
+          <option value="0">0%</option>
+          <option value="0.11">11%</option>
+          <option value="0.30" selected>30%</option>
+          <option value="0.41">41%</option>
+          <option value="0.45">45%</option>
+        </select>
+      </label>
+      <label>Household
+        <select id="ws-household">
+          <option value="single" selected>Single</option>
+          <option value="couple">Couple</option>
+        </select>
+      </label>
+    </div>
+
+    <div id="ws-content">
+      <button class="methodology-toggle" id="ws-methodology-toggle" type="button" aria-expanded="false">How is this calculated?</button>
+      <div class="methodology-panel" id="ws-methodology-panel" hidden></div>
+
+      <div class="stat-row" id="ws-stats"></div>
+
+      <figure class="chart-card">
+        <figcaption>
+          <span class="title">Risk tolerance comparison</span>
+          <span class="caption-note">Same capital, savings, horizon &amp; tax settings &mdash; only risk tolerance changes</span>
+        </figcaption>
+        <div class="stat-row" id="ws-risk-compare"></div>
+      </figure>
+
+      <figure class="chart-card">
+        <figcaption>
+          <span class="title">Net worth by vehicle, year by year</span>
+          <span class="caption-note">CAT is net of tax paid annually as accrued; other vehicles are pre-tax, taxed at the final-year liquidation figure above</span>
+        </figcaption>
+        <div class="legend" id="ws-legend"></div>
+        <div class="chart-wrap" id="ws-chart"></div>
+      </figure>
+
+      <button class="table-toggle" id="ws-table-toggle" type="button" aria-expanded="false">Show table view</button>
+      <div class="table-scroll" id="ws-table-wrap" hidden></div>
+    </div>
+    <div class="empty-state" id="ws-empty" hidden></div>
+  </section>
+
+  <section class="panel" id="tab-real-estate" role="tabpanel" aria-labelledby="tab-btn-re" hidden>
     <div class="filters-row">
       <label>Département
         <select id="re-filter-dept"><option value="">All</option></select>
@@ -122,73 +189,6 @@
     <div class="empty-state" id="pf-empty" hidden></div>
   </section>
 
-  <section class="panel" id="tab-wealth-sim" role="tabpanel" aria-labelledby="tab-btn-ws" hidden>
-    <div class="sim-controls" id="ws-controls">
-      <label>Starting capital
-        <input type="range" id="ws-capital" min="0" max="500000" step="1000" value="20000">
-        <output id="ws-capital-out"></output>
-      </label>
-      <label>Monthly savings
-        <input type="range" id="ws-monthly" min="0" max="5000" step="50" value="500">
-        <output id="ws-monthly-out"></output>
-      </label>
-      <label>Horizon
-        <input type="range" id="ws-horizon" min="1" max="40" step="1" value="20">
-        <output id="ws-horizon-out"></output>
-      </label>
-      <label>Risk tolerance
-        <select id="ws-risk">
-          <option value="conservative">Conservative (70% preservation / 30% growth)</option>
-          <option value="balanced" selected>Balanced (50% / 50%)</option>
-          <option value="aggressive">Aggressive (25% / 75%)</option>
-        </select>
-      </label>
-      <label>Marginal tax bracket (TMI)
-        <select id="ws-tmi">
-          <option value="0">0%</option>
-          <option value="0.11">11%</option>
-          <option value="0.30" selected>30%</option>
-          <option value="0.41">41%</option>
-          <option value="0.45">45%</option>
-        </select>
-      </label>
-      <label>Household
-        <select id="ws-household">
-          <option value="single" selected>Single</option>
-          <option value="couple">Couple</option>
-        </select>
-      </label>
-    </div>
-
-    <div id="ws-content">
-      <button class="methodology-toggle" id="ws-methodology-toggle" type="button" aria-expanded="false">How is this calculated?</button>
-      <div class="methodology-panel" id="ws-methodology-panel" hidden></div>
-
-      <div class="stat-row" id="ws-stats"></div>
-
-      <figure class="chart-card">
-        <figcaption>
-          <span class="title">Risk tolerance comparison</span>
-          <span class="caption-note">Same capital, savings, horizon &amp; tax settings &mdash; only risk tolerance changes</span>
-        </figcaption>
-        <div class="stat-row" id="ws-risk-compare"></div>
-      </figure>
-
-      <figure class="chart-card">
-        <figcaption>
-          <span class="title">Net worth by vehicle, year by year</span>
-          <span class="caption-note">CAT is net of tax paid annually as accrued; other vehicles are pre-tax, taxed at the final-year liquidation figure above</span>
-        </figcaption>
-        <div class="legend" id="ws-legend"></div>
-        <div class="chart-wrap" id="ws-chart"></div>
-      </figure>
-
-      <button class="table-toggle" id="ws-table-toggle" type="button" aria-expanded="false">Show table view</button>
-      <div class="table-scroll" id="ws-table-wrap" hidden></div>
-    </div>
-    <div class="empty-state" id="ws-empty" hidden></div>
-  </section>
-
   <section class="panel" id="tab-how-it-works" role="tabpanel" aria-labelledby="tab-btn-how" hidden>
     <div class="about-section">
       <h2>Where the data comes from</h2>
@@ -271,12 +271,10 @@
           Real estate tab's own "How is this calculated?" panel.</p>
         </div>
         <div class="about-card">
-          <h3>Price CAGR &amp; year-over-year change</h3>
-          <p><strong>CAGR</strong> (what drives the score) compounds growth between the
-          earliest and latest years with at least 5 qualifying sales for that commune/type
-          &mdash; currently up to a 2021&ndash;2024 span, capped at &plusmn;15%/year.
-          <strong>Year-over-year</strong> (shown for reference only) compares just the latest
-          two reliable years. Both are "&ndash;"/neutral rather than a number when there isn't
+          <h3>Price CAGR</h3>
+          <p>Compounds growth between the earliest and latest years with at least 5 qualifying
+          sales for that commune/type &mdash; currently up to a 2021&ndash;2024 span, capped at
+          &plusmn;15%/year. Shown as "&ndash;"/neutral rather than a number when there isn't
           enough reliable history.</p>
         </div>
         <div class="about-card">
@@ -358,7 +356,8 @@
       genuinely new factor changes the weighting of everything else, so that's still a pending
       decision, not an oversight &mdash; but it's no longer purely informational either:
       egregious outliers (above 35%, ramping to a max 15-point deduction at 70%) now cost points
-      as a guard rail, shown in the table's "Tax penalty" column. <strong>% of department
+      as a guard rail (see the Real estate tab's own methodology panel for the exact formula).
+      <strong>% of department
       population</strong> is also
       shown as a separate informational column: a size/concentration snapshot, distinct from
       the population growth rate that now scores. <strong>DPE (energy rating)
