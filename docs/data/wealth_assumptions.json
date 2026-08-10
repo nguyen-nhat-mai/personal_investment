@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-08-10T08:19:54.471274+00:00",
+  "exported_at": "2026-08-10T08:39:52.039038+00:00",
   "project": "personal-investment-505011",
   "dataset": "analytics",
   "equities": {
@@ -8,407 +8,407 @@
         "ticker": "AC.PA",
         "name": "Accor",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.25455563394127,
+        "annualized_volatility": 0.2843203483769967
       },
       {
         "ticker": "ACA.PA",
         "name": "Credit Agricole",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.33313024707852334,
+        "annualized_volatility": 0.20488061003079214
       },
       {
         "ticker": "AI.PA",
         "name": "Air Liquide",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.11924183907904462,
+        "annualized_volatility": 0.17696911408645752
       },
       {
         "ticker": "AIR.PA",
         "name": "Airbus",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.3008126935058639,
+        "annualized_volatility": 0.2841612803283851
       },
       {
         "ticker": "ASML.AS",
         "name": "ASML Holding",
         "asset_type": "stock",
-        "trading_days": 5,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.5243740297471413,
+        "annualized_volatility": 0.4168112488038079
       },
       {
         "ticker": "BN.PA",
         "name": "Danone",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.1049071826619512,
+        "annualized_volatility": 0.2016732018529811
       },
       {
         "ticker": "BNP.PA",
         "name": "BNP Paribas",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.5070640498369636,
+        "annualized_volatility": 0.27014674840598657
       },
       {
         "ticker": "BVI.PA",
         "name": "Bureau Veritas",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.06030048402807964,
+        "annualized_volatility": 0.2132336069827982
       },
       {
         "ticker": "CA.PA",
         "name": "Carrefour",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.18705569278979617,
+        "annualized_volatility": 0.22317003662249685
       },
       {
         "ticker": "CAP.PA",
         "name": "Capgemini",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": -0.16405781547359766,
+        "annualized_volatility": 0.34448429313110207
       },
       {
         "ticker": "CS.PA",
         "name": "Axa",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.26747359380129954,
+        "annualized_volatility": 0.19332306798115828
       },
       {
         "ticker": "CW8.PA",
         "name": "Amundi MSCI World UCITS ETF",
         "asset_type": "etf",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.17944030836420377,
+        "annualized_volatility": 0.1419966331238117
       },
       {
         "ticker": "DG.PA",
         "name": "Vinci",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.1723677028669841,
+        "annualized_volatility": 0.21965472423305848
       },
       {
         "ticker": "DSY.PA",
         "name": "Dassault Systemes",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": -0.13804859845238204,
+        "annualized_volatility": 0.34239310644633797
       },
       {
         "ticker": "EDEN.PA",
         "name": "Edenred",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.036200054098267875,
+        "annualized_volatility": 0.42505060081258966
       },
       {
         "ticker": "EL.PA",
         "name": "EssilorLuxottica",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": -0.030989796211407072,
+        "annualized_volatility": 0.27509458924595753
       },
       {
         "ticker": "EN.PA",
         "name": "Bouygues",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.34015937466686963,
+        "annualized_volatility": 0.21199904400478534
       },
       {
         "ticker": "ENGI.PA",
         "name": "Engie",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.4389177046432087,
+        "annualized_volatility": 0.19442378531938287
       },
       {
         "ticker": "ERF.PA",
         "name": "Eurofins Scientific",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.21129572757772053,
+        "annualized_volatility": 0.29094415291241493
       },
       {
         "ticker": "ETZ.PA",
         "name": "BNP Paribas Easy STOXX Europe 600 UCITS ETF",
         "asset_type": "etf",
-        "trading_days": 5,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.1882018791020108,
+        "annualized_volatility": 0.14207652367009047
       },
       {
         "ticker": "GLE.PA",
         "name": "Societe Generale",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 1.2111340977973808,
+        "annualized_volatility": 0.34689250188804555
       },
       {
         "ticker": "HO.PA",
         "name": "Thales",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.4148066704123712,
+        "annualized_volatility": 0.3234721411263786
       },
       {
         "ticker": "ITX.MC",
         "name": "Inditex",
         "asset_type": "stock",
-        "trading_days": 5,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.22941324529847518,
+        "annualized_volatility": 0.246389895229018
       },
       {
         "ticker": "KER.PA",
         "name": "Kering",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.19330790529582287,
+        "annualized_volatility": 0.4304837524081255
       },
       {
         "ticker": "LR.PA",
         "name": "Legrand",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.2841529737952959,
+        "annualized_volatility": 0.2866687552775568
       },
       {
         "ticker": "MC.PA",
         "name": "LVMH",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": -0.06114710335184359,
+        "annualized_volatility": 0.31744748947382523
       },
       {
         "ticker": "ML.PA",
         "name": "Michelin",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.06473813719706567,
+        "annualized_volatility": 0.2263000351313467
       },
       {
         "ticker": "MMS.PA",
         "name": "Amundi MSCI EMU Small Cap UCITS ETF",
         "asset_type": "etf",
-        "trading_days": 5,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.17505227121940958,
+        "annualized_volatility": 0.14425544566901818
       },
       {
         "ticker": "MT.AS",
         "name": "ArcelorMittal",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.9352779619841831,
+        "annualized_volatility": 0.39696334576574394
       },
       {
         "ticker": "NOVO-B.CO",
         "name": "Novo Nordisk",
         "asset_type": "stock",
-        "trading_days": 5,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": -0.3335206395015996,
+        "annualized_volatility": 0.49247952430608843
       },
       {
         "ticker": "OR.PA",
         "name": "L'Oreal",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.06565068366752036,
+        "annualized_volatility": 0.255023030011569
       },
       {
         "ticker": "ORA.PA",
         "name": "Orange",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.37615831493215635,
+        "annualized_volatility": 0.19778514380469164
       },
       {
         "ticker": "PAEEM.PA",
         "name": "Amundi PEA Emergent (MSCI Emerging) UCITS ETF",
         "asset_type": "etf",
-        "trading_days": 5,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.26604739804031374,
+        "annualized_volatility": 0.19255182279138203
       },
       {
         "ticker": "PE500.PA",
         "name": "Amundi PEA S&P 500 UCITS ETF",
         "asset_type": "etf",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.17289377487294466,
+        "annualized_volatility": 0.15349083743169903
       },
       {
         "ticker": "PUB.PA",
         "name": "Publicis",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.10607986024235472,
+        "annualized_volatility": 0.27232299130179666
       },
       {
         "ticker": "PUST.PA",
         "name": "Amundi PEA Nasdaq-100 UCITS ETF",
         "asset_type": "etf",
-        "trading_days": 5,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.22669426319802222,
+        "annualized_volatility": 0.19767472200206335
       },
       {
         "ticker": "RI.PA",
         "name": "Pernod Ricard",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": -0.17146214230176793,
+        "annualized_volatility": 0.2866428716161343
       },
       {
         "ticker": "RMS.PA",
         "name": "Hermes",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": -0.04260311442349318,
+        "annualized_volatility": 0.3033756581633016
       },
       {
         "ticker": "RNO.PA",
         "name": "Renault",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": -0.056663443746853726,
+        "annualized_volatility": 0.32555741767420154
       },
       {
         "ticker": "SAF.PA",
         "name": "Safran",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.4280578257772343,
+        "annualized_volatility": 0.2962967905290961
       },
       {
         "ticker": "SAN.PA",
         "name": "Sanofi",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": -0.040028330249603394,
+        "annualized_volatility": 0.2354402300653772
       },
       {
         "ticker": "SAP.DE",
         "name": "SAP",
         "asset_type": "stock",
-        "trading_days": 5,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.012730777140132155,
+        "annualized_volatility": 0.34764877279624234
       },
       {
         "ticker": "SGO.PA",
         "name": "Saint-Gobain",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.153677960091251,
+        "annualized_volatility": 0.30969310671028943
       },
       {
         "ticker": "STLAP.PA",
         "name": "Stellantis",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": -0.32139739771178055,
+        "annualized_volatility": 0.4630728898933041
       },
       {
         "ticker": "STMPA.PA",
         "name": "STMicroelectronics",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.5024335518695158,
+        "annualized_volatility": 0.49399558189965775
       },
       {
         "ticker": "SU.PA",
         "name": "Schneider Electric",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.27089669296379415,
+        "annualized_volatility": 0.33025936851156423
       },
       {
         "ticker": "TEP.PA",
         "name": "Teleperformance",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": -0.012825869487949837,
+        "annualized_volatility": 0.457753395496033
       },
       {
         "ticker": "TTE.PA",
         "name": "TotalEnergies",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.197043051086909,
+        "annualized_volatility": 0.2221747374271263
       },
       {
         "ticker": "URW.PA",
         "name": "Unibail-Rodamco-Westfield",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.32636758863231896,
+        "annualized_volatility": 0.20569420820887596
       },
       {
         "ticker": "VIE.PA",
         "name": "Veolia",
         "asset_type": "stock",
-        "trading_days": 6,
-        "annualized_return": null,
-        "annualized_volatility": null
+        "trading_days": 511,
+        "annualized_return": 0.2033704704546484,
+        "annualized_volatility": 0.19384630031318079
       }
     ],
     "blended_default": {
-      "annualized_return": 0.07,
-      "annualized_volatility": 0.15,
-      "method": "fallback illustrative assumption - no pea_eligible ticker yet has enough trading-day history (see constants.equities_fallback and equity_performance_summary.trading_days)"
+      "annualized_return": 0.1933747884569209,
+      "annualized_volatility": 0.2801691895858825,
+      "method": "equal-weighted mean across 50 pea_eligible tickers with enough trading-day history (see equity_performance_summary.trading_days)"
     }
   },
   "real_estate": {
@@ -433,7 +433,7 @@
       {
         "code_departement": "04",
         "nom_departement": "Alpes-de-Haute-Provence",
-        "median_price_cagr": 0.0344424928088356
+        "median_price_cagr": 0.03652993214178979
       },
       {
         "code_departement": "05",
@@ -443,7 +443,7 @@
       {
         "code_departement": "06",
         "nom_departement": "Alpes-Maritimes",
-        "median_price_cagr": 0.024757494668657287
+        "median_price_cagr": 0.025830214078471192
       },
       {
         "code_departement": "07",
@@ -453,7 +453,7 @@
       {
         "code_departement": "08",
         "nom_departement": "Ardennes",
-        "median_price_cagr": 0.04779788788750161
+        "median_price_cagr": 0.049555668510939954
       },
       {
         "code_departement": "09",
@@ -468,7 +468,7 @@
       {
         "code_departement": "11",
         "nom_departement": "Aude",
-        "median_price_cagr": 0.021704972884996954
+        "median_price_cagr": 0.02198502662548485
       },
       {
         "code_departement": "12",
@@ -478,12 +478,12 @@
       {
         "code_departement": "13",
         "nom_departement": "Bouches-du-Rhone",
-        "median_price_cagr": 0.015678069109723136
+        "median_price_cagr": 0.015513301325271511
       },
       {
         "code_departement": "14",
         "nom_departement": "Calvados",
-        "median_price_cagr": 0.03447952249902264
+        "median_price_cagr": 0.03352344106477623
       },
       {
         "code_departement": "15",
@@ -498,12 +498,12 @@
       {
         "code_departement": "17",
         "nom_departement": "Charente-Maritime",
-        "median_price_cagr": 0.02441754505231364
+        "median_price_cagr": 0.02548125580044802
       },
       {
         "code_departement": "18",
         "nom_departement": "Cher",
-        "median_price_cagr": 0.020181968616413526
+        "median_price_cagr": 0.020307283239236362
       },
       {
         "code_departement": "19",
@@ -538,7 +538,7 @@
       {
         "code_departement": "26",
         "nom_departement": "Drome",
-        "median_price_cagr": 0.025106714725310342
+        "median_price_cagr": 0.02459996353762639
       },
       {
         "code_departement": "27",
@@ -583,12 +583,12 @@
       {
         "code_departement": "33",
         "nom_departement": "Gironde",
-        "median_price_cagr": -0.003375628405857256
+        "median_price_cagr": -0.0035737435286987695
       },
       {
         "code_departement": "34",
         "nom_departement": "Herault",
-        "median_price_cagr": 0.02082083383409694
+        "median_price_cagr": 0.02112557747334698
       },
       {
         "code_departement": "35",
@@ -608,7 +608,7 @@
       {
         "code_departement": "38",
         "nom_departement": "Isere",
-        "median_price_cagr": 0.003887574782310166
+        "median_price_cagr": 0.0038010252061368988
       },
       {
         "code_departement": "39",
@@ -618,7 +618,7 @@
       {
         "code_departement": "40",
         "nom_departement": "Landes",
-        "median_price_cagr": 0.03019232640290226
+        "median_price_cagr": 0.03104690358980089
       },
       {
         "code_departement": "41",
@@ -708,7 +708,7 @@
       {
         "code_departement": "59",
         "nom_departement": "Nord",
-        "median_price_cagr": 0.0036239924482899255
+        "median_price_cagr": 0.0022261872223170442
       },
       {
         "code_departement": "60",
@@ -733,7 +733,7 @@
       {
         "code_departement": "64",
         "nom_departement": "Pyrenees-Atlantiques",
-        "median_price_cagr": 0.023890704526352113
+        "median_price_cagr": 0.024374200544801328
       },
       {
         "code_departement": "65",
@@ -778,12 +778,12 @@
       {
         "code_departement": "76",
         "nom_departement": "Seine-Maritime",
-        "median_price_cagr": 0.012027611119978188
+        "median_price_cagr": 0.011946055351474527
       },
       {
         "code_departement": "77",
         "nom_departement": "Seine-et-Marne",
-        "median_price_cagr": -0.005893473637724633
+        "median_price_cagr": -0.0064662340444503474
       },
       {
         "code_departement": "78",
@@ -808,12 +808,12 @@
       {
         "code_departement": "82",
         "nom_departement": "Tarn-et-Garonne",
-        "median_price_cagr": 0.03187712054728964
+        "median_price_cagr": 0.030730130333235683
       },
       {
         "code_departement": "83",
         "nom_departement": "Var",
-        "median_price_cagr": 0.02930429839091131
+        "median_price_cagr": 0.028930844929951904
       },
       {
         "code_departement": "84",
@@ -823,7 +823,7 @@
       {
         "code_departement": "85",
         "nom_departement": "Vendee",
-        "median_price_cagr": 0.03329357664539989
+        "median_price_cagr": 0.033018513501754665
       },
       {
         "code_departement": "86",
@@ -833,7 +833,7 @@
       {
         "code_departement": "87",
         "nom_departement": "Haute-Vienne",
-        "median_price_cagr": -0.0033560782472801254
+        "median_price_cagr": -0.0018450226411449444
       },
       {
         "code_departement": "88",
@@ -853,27 +853,27 @@
       {
         "code_departement": "91",
         "nom_departement": "Essonne",
-        "median_price_cagr": -0.015472175237749908
+        "median_price_cagr": -0.015356237463196254
       },
       {
         "code_departement": "92",
         "nom_departement": "Hauts-de-Seine",
-        "median_price_cagr": -0.033193438611603066
+        "median_price_cagr": -0.03354738686251024
       },
       {
         "code_departement": "93",
         "nom_departement": "Seine-Saint-Denis",
-        "median_price_cagr": -0.02281599315603
+        "median_price_cagr": -0.022360044406738
       },
       {
         "code_departement": "94",
         "nom_departement": "Val-de-Marne",
-        "median_price_cagr": -0.022724129324049436
+        "median_price_cagr": -0.023024217262430313
       },
       {
         "code_departement": "95",
         "nom_departement": "Val-d'Oise",
-        "median_price_cagr": -0.01698369634568464
+        "median_price_cagr": -0.017067089638442168
       }
     ]
   },

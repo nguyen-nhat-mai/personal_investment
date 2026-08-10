@@ -14,7 +14,7 @@
     "commune_count": 99,
     "median_opportunity_score": 52.0,
     "median_price_per_sqm": 2280.7017543859647,
-    "median_price_cagr": 0.03329357664539989,
+    "median_price_cagr": 0.033018513501754665,
     "total_transactions": 6459
   },
   {
@@ -39,10 +39,19 @@
     "code_departement": "29",
     "nom_departement": "Finistere",
     "commune_count": 116,
-    "median_opportunity_score": 51.6,
+    "median_opportunity_score": 51.5,
     "median_price_per_sqm": 2218.9349112426034,
     "median_price_cagr": 0.050933194774384516,
     "total_transactions": 7685
+  },
+  {
+    "code_departement": "18",
+    "nom_departement": "Cher",
+    "commune_count": 17,
+    "median_opportunity_score": 51.5,
+    "median_price_per_sqm": 1295.774647887324,
+    "median_price_cagr": 0.020307283239236362,
+    "total_transactions": 1653
   },
   {
     "code_departement": "03",
@@ -52,15 +61,6 @@
     "median_price_per_sqm": 1223.5294117647059,
     "median_price_cagr": 0.019378257595758397,
     "total_transactions": 1806
-  },
-  {
-    "code_departement": "18",
-    "nom_departement": "Cher",
-    "commune_count": 17,
-    "median_opportunity_score": 51.1,
-    "median_price_per_sqm": 1295.774647887324,
-    "median_price_cagr": 0.020181968616413526,
-    "total_transactions": 1653
   },
   {
     "code_departement": "86",
@@ -75,7 +75,7 @@
     "code_departement": "22",
     "nom_departement": "Cotes-d'Armor",
     "commune_count": 79,
-    "median_opportunity_score": 50.9,
+    "median_opportunity_score": 51.0,
     "median_price_per_sqm": 2120.0,
     "median_price_cagr": 0.05042154269995325,
     "total_transactions": 4185
@@ -84,7 +84,7 @@
     "code_departement": "50",
     "nom_departement": "Manche",
     "commune_count": 48,
-    "median_opportunity_score": 50.7,
+    "median_opportunity_score": 50.6,
     "median_price_per_sqm": 1875.0,
     "median_price_cagr": 0.05020439204773264,
     "total_transactions": 3015
@@ -121,7 +121,7 @@
     "nom_departement": "Morbihan",
     "commune_count": 106,
     "median_opportunity_score": 49.5,
-    "median_price_per_sqm": 2619.0476190476193,
+    "median_price_per_sqm": 2608.695652173913,
     "median_price_cagr": 0.04689142242491218,
     "total_transactions": 5932
   },
@@ -129,7 +129,7 @@
     "code_departement": "16",
     "nom_departement": "Charente",
     "commune_count": 34,
-    "median_opportunity_score": 49.4,
+    "median_opportunity_score": 49.3,
     "median_price_per_sqm": 1629.8701298701299,
     "median_price_cagr": 0.023669407582431523,
     "total_transactions": 1888
@@ -147,7 +147,7 @@
     "code_departement": "61",
     "nom_departement": "Orne",
     "commune_count": 25,
-    "median_opportunity_score": 49.1,
+    "median_opportunity_score": 49.0,
     "median_price_per_sqm": 1423.076923076923,
     "median_price_cagr": 0.03672965370691306,
     "total_transactions": 1234
@@ -158,7 +158,7 @@
     "commune_count": 29,
     "median_opportunity_score": 49.0,
     "median_price_per_sqm": 1578.9473684210527,
-    "median_price_cagr": -0.0033560782472801254,
+    "median_price_cagr": -0.0018450226411449444,
     "total_transactions": 2200
   },
   {
@@ -174,9 +174,9 @@
     "code_departement": "08",
     "nom_departement": "Ardennes",
     "commune_count": 18,
-    "median_opportunity_score": 48.8,
+    "median_opportunity_score": 48.7,
     "median_price_per_sqm": 1330.5084745762713,
-    "median_price_cagr": 0.04779788788750161,
+    "median_price_cagr": 0.049555668510939954,
     "total_transactions": 982
   },
   {
@@ -219,7 +219,7 @@
     "code_departement": "88",
     "nom_departement": "Vosges",
     "commune_count": 32,
-    "median_opportunity_score": 47.8,
+    "median_opportunity_score": 47.7,
     "median_price_per_sqm": 1465.8536585365853,
     "median_price_cagr": 0.040034828412289336,
     "total_transactions": 1495
@@ -252,15 +252,6 @@
     "total_transactions": 1147
   },
   {
-    "code_departement": "44",
-    "nom_departement": "Loire-Atlantique",
-    "commune_count": 149,
-    "median_opportunity_score": 47.0,
-    "median_price_per_sqm": 2683.823529411765,
-    "median_price_cagr": 0.011272365139302076,
-    "total_transactions": 16998
-  },
-  {
     "code_departement": "01",
     "nom_departement": "Ain",
     "commune_count": 62,
@@ -270,22 +261,22 @@
     "total_transactions": 2674
   },
   {
+    "code_departement": "44",
+    "nom_departement": "Loire-Atlantique",
+    "commune_count": 149,
+    "median_opportunity_score": 46.9,
+    "median_price_per_sqm": 2683.823529411765,
+    "median_price_cagr": 0.011272365139302076,
+    "total_transactions": 16998
+  },
+  {
     "code_departement": "63",
     "nom_departement": "Puy-de-Dome",
     "commune_count": 50,
     "median_opportunity_score": 46.9,
-    "median_price_per_sqm": 2172.7272727272725,
+    "median_price_per_sqm": 2173.913043478261,
     "median_price_cagr": 0.017912519952603567,
     "total_transactions": 3489
-  },
-  {
-    "code_departement": "54",
-    "nom_departement": "Meurthe-et-Moselle",
-    "commune_count": 67,
-    "median_opportunity_score": 46.8,
-    "median_price_per_sqm": 1904.109589041096,
-    "median_price_cagr": 0.00884307466532852,
-    "total_transactions": 4164
   },
   {
     "code_departement": "48",
@@ -297,12 +288,21 @@
     "total_transactions": 183
   },
   {
+    "code_departement": "54",
+    "nom_departement": "Meurthe-et-Moselle",
+    "commune_count": 67,
+    "median_opportunity_score": 46.7,
+    "median_price_per_sqm": 1904.109589041096,
+    "median_price_cagr": 0.00884307466532852,
+    "total_transactions": 4164
+  },
+  {
     "code_departement": "26",
     "nom_departement": "Drome",
     "commune_count": 41,
-    "median_opportunity_score": 46.7,
+    "median_opportunity_score": 46.6,
     "median_price_per_sqm": 2397.1428571428573,
-    "median_price_cagr": 0.025106714725310342,
+    "median_price_cagr": 0.02459996353762639,
     "total_transactions": 2858
   },
   {
@@ -356,7 +356,7 @@
     "commune_count": 34,
     "median_opportunity_score": 46.0,
     "median_price_per_sqm": 3393.2258064516127,
-    "median_price_cagr": 0.03019232640290226,
+    "median_price_cagr": 0.03104690358980089,
     "total_transactions": 2581
   },
   {
@@ -381,25 +381,25 @@
     "code_departement": "64",
     "nom_departement": "Pyrenees-Atlantiques",
     "commune_count": 44,
-    "median_opportunity_score": 45.6,
+    "median_opportunity_score": 45.5,
     "median_price_per_sqm": 3553.846153846154,
-    "median_price_cagr": 0.023890704526352113,
+    "median_price_cagr": 0.024374200544801328,
     "total_transactions": 4173
   },
   {
     "code_departement": "17",
     "nom_departement": "Charente-Maritime",
     "commune_count": 75,
-    "median_opportunity_score": 45.4,
+    "median_opportunity_score": 45.3,
     "median_price_per_sqm": 2926.0754716981132,
-    "median_price_cagr": 0.02441754505231364,
+    "median_price_cagr": 0.02548125580044802,
     "total_transactions": 5398
   },
   {
     "code_departement": "37",
     "nom_departement": "Indre-et-Loire",
     "commune_count": 50,
-    "median_opportunity_score": 45.2,
+    "median_opportunity_score": 45.3,
     "median_price_per_sqm": 2382.0224719101125,
     "median_price_cagr": 0.014358668196151614,
     "total_transactions": 3785
@@ -427,7 +427,7 @@
     "nom_departement": "Marne",
     "commune_count": 24,
     "median_opportunity_score": 45.0,
-    "median_price_per_sqm": 1735.7142857142858,
+    "median_price_per_sqm": 1736.842105263158,
     "median_price_cagr": -0.003344506587403595,
     "total_transactions": 2778
   },
@@ -444,19 +444,10 @@
     "code_departement": "47",
     "nom_departement": "Lot-et-Garonne",
     "commune_count": 31,
-    "median_opportunity_score": 44.6,
+    "median_opportunity_score": 44.5,
     "median_price_per_sqm": 1444.4444444444443,
     "median_price_cagr": 0.027040024624839676,
     "total_transactions": 1940
-  },
-  {
-    "code_departement": "89",
-    "nom_departement": "Yonne",
-    "commune_count": 24,
-    "median_opportunity_score": 44.5,
-    "median_price_per_sqm": 1382.608695652174,
-    "median_price_cagr": -0.0049505761352113264,
-    "total_transactions": 1281
   },
   {
     "code_departement": "10",
@@ -466,6 +457,15 @@
     "median_price_per_sqm": 1882.3529411764705,
     "median_price_cagr": 0.005196524672933744,
     "total_transactions": 1380
+  },
+  {
+    "code_departement": "89",
+    "nom_departement": "Yonne",
+    "commune_count": 24,
+    "median_opportunity_score": 44.4,
+    "median_price_per_sqm": 1382.608695652174,
+    "median_price_cagr": -0.0049505761352113264,
+    "total_transactions": 1281
   },
   {
     "code_departement": "24",
@@ -516,7 +516,7 @@
     "code_departement": "28",
     "nom_departement": "Eure-et-Loir",
     "commune_count": 36,
-    "median_opportunity_score": 42.9,
+    "median_opportunity_score": 42.8,
     "median_price_per_sqm": 1976.7441860465117,
     "median_price_cagr": 0.015937420341671782,
     "total_transactions": 1773
@@ -525,19 +525,10 @@
     "code_departement": "84",
     "nom_departement": "Vaucluse",
     "commune_count": 50,
-    "median_opportunity_score": 42.9,
+    "median_opportunity_score": 42.8,
     "median_price_per_sqm": 2673.267326732673,
     "median_price_cagr": 0.017184214302738976,
     "total_transactions": 3948
-  },
-  {
-    "code_departement": "33",
-    "nom_departement": "Gironde",
-    "commune_count": 136,
-    "median_opportunity_score": 42.7,
-    "median_price_per_sqm": 3131.4285714285716,
-    "median_price_cagr": -0.003375628405857256,
-    "total_transactions": 16506
   },
   {
     "code_departement": "80",
@@ -549,13 +540,13 @@
     "total_transactions": 2302
   },
   {
-    "code_departement": "83",
-    "nom_departement": "Var",
-    "commune_count": 91,
-    "median_opportunity_score": 42.4,
-    "median_price_per_sqm": 3753.041237113402,
-    "median_price_cagr": 0.02930429839091131,
-    "total_transactions": 11350
+    "code_departement": "33",
+    "nom_departement": "Gironde",
+    "commune_count": 136,
+    "median_opportunity_score": 42.6,
+    "median_price_per_sqm": 3131.4285714285716,
+    "median_price_cagr": -0.0035737435286987695,
+    "total_transactions": 16506
   },
   {
     "code_departement": "02",
@@ -572,8 +563,17 @@
     "commune_count": 51,
     "median_opportunity_score": 42.4,
     "median_price_per_sqm": 4922.190476190476,
-    "median_price_cagr": 0.024757494668657287,
+    "median_price_cagr": 0.025830214078471192,
     "total_transactions": 11904
+  },
+  {
+    "code_departement": "83",
+    "nom_departement": "Var",
+    "commune_count": 91,
+    "median_opportunity_score": 42.3,
+    "median_price_per_sqm": 3760.8695652173915,
+    "median_price_cagr": 0.028930844929951904,
+    "total_transactions": 11350
   },
   {
     "code_departement": "62",
@@ -594,22 +594,22 @@
     "total_transactions": 519
   },
   {
-    "code_departement": "27",
-    "nom_departement": "Eure",
-    "commune_count": 45,
-    "median_opportunity_score": 41.6,
-    "median_price_per_sqm": 1998.888888888889,
-    "median_price_cagr": 0.006250162261261627,
-    "total_transactions": 2332
-  },
-  {
     "code_departement": "82",
     "nom_departement": "Tarn-et-Garonne",
     "commune_count": 18,
     "median_opportunity_score": 41.6,
     "median_price_per_sqm": 1857.7319587628865,
-    "median_price_cagr": 0.03187712054728964,
+    "median_price_cagr": 0.030730130333235683,
     "total_transactions": 1303
+  },
+  {
+    "code_departement": "27",
+    "nom_departement": "Eure",
+    "commune_count": 45,
+    "median_opportunity_score": 41.5,
+    "median_price_per_sqm": 1998.888888888889,
+    "median_price_cagr": 0.006250162261261627,
+    "total_transactions": 2332
   },
   {
     "code_departement": "14",
@@ -617,17 +617,8 @@
     "commune_count": 63,
     "median_opportunity_score": 41.4,
     "median_price_per_sqm": 2661.2903225806454,
-    "median_price_cagr": 0.03447952249902264,
+    "median_price_cagr": 0.03352344106477623,
     "total_transactions": 6136
-  },
-  {
-    "code_departement": "11",
-    "nom_departement": "Aude",
-    "commune_count": 28,
-    "median_opportunity_score": 41.4,
-    "median_price_per_sqm": 2007.3103448275863,
-    "median_price_cagr": 0.021704972884996954,
-    "total_transactions": 3363
   },
   {
     "code_departement": "81",
@@ -639,13 +630,13 @@
     "total_transactions": 2256
   },
   {
-    "code_departement": "59",
-    "nom_departement": "Nord",
-    "commune_count": 187,
-    "median_opportunity_score": 41.1,
-    "median_price_per_sqm": 2053.5714285714284,
-    "median_price_cagr": 0.0036239924482899255,
-    "total_transactions": 18260
+    "code_departement": "11",
+    "nom_departement": "Aude",
+    "commune_count": 28,
+    "median_opportunity_score": 41.3,
+    "median_price_per_sqm": 2007.3103448275863,
+    "median_price_cagr": 0.02198502662548485,
+    "total_transactions": 3363
   },
   {
     "code_departement": "21",
@@ -664,6 +655,15 @@
     "median_price_per_sqm": 1562.5,
     "median_price_cagr": 0.027475118947009047,
     "total_transactions": 692
+  },
+  {
+    "code_departement": "59",
+    "nom_departement": "Nord",
+    "commune_count": 187,
+    "median_opportunity_score": 40.9,
+    "median_price_per_sqm": 2024.6913580246915,
+    "median_price_cagr": 0.0022261872223170442,
+    "total_transactions": 18260
   },
   {
     "code_departement": "52",
@@ -689,7 +689,7 @@
     "commune_count": 100,
     "median_opportunity_score": 40.1,
     "median_price_per_sqm": 3249.4845360824743,
-    "median_price_cagr": 0.02082083383409694,
+    "median_price_cagr": 0.02112557747334698,
     "total_transactions": 11010
   },
   {
@@ -698,7 +698,7 @@
     "commune_count": 112,
     "median_opportunity_score": 40.1,
     "median_price_per_sqm": 2768.5,
-    "median_price_cagr": 0.003887574782310166,
+    "median_price_cagr": 0.0038010252061368988,
     "total_transactions": 6543
   },
   {
@@ -716,7 +716,7 @@
     "commune_count": 83,
     "median_opportunity_score": 39.6,
     "median_price_per_sqm": 2057.377049180328,
-    "median_price_cagr": 0.012027611119978188,
+    "median_price_cagr": 0.011946055351474527,
     "total_transactions": 7869
   },
   {
@@ -734,7 +734,7 @@
     "commune_count": 15,
     "median_opportunity_score": 39.0,
     "median_price_per_sqm": 2500.0,
-    "median_price_cagr": 0.0344424928088356,
+    "median_price_cagr": 0.03652993214178979,
     "total_transactions": 958
   },
   {
@@ -742,8 +742,8 @@
     "nom_departement": "Bouches-du-Rhone",
     "commune_count": 92,
     "median_opportunity_score": 38.3,
-    "median_price_per_sqm": 3762.5,
-    "median_price_cagr": 0.015678069109723136,
+    "median_price_per_sqm": 3800.0,
+    "median_price_cagr": 0.015513301325271511,
     "total_transactions": 8338
   },
   {
@@ -751,7 +751,7 @@
     "nom_departement": "Yvelines",
     "commune_count": 92,
     "median_opportunity_score": 38.0,
-    "median_price_per_sqm": 3765.432098765432,
+    "median_price_per_sqm": 3758.777777777778,
     "median_price_cagr": -0.01320991723693643,
     "total_transactions": 7109
   },
@@ -770,14 +770,14 @@
     "commune_count": 94,
     "median_opportunity_score": 37.5,
     "median_price_per_sqm": 3212.3893805309735,
-    "median_price_cagr": -0.015472175237749908,
+    "median_price_cagr": -0.015356237463196254,
     "total_transactions": 7038
   },
   {
     "code_departement": "05",
     "nom_departement": "Hautes-Alpes",
     "commune_count": 7,
-    "median_opportunity_score": 37.1,
+    "median_opportunity_score": 37.2,
     "median_price_per_sqm": 2735.294117647059,
     "median_price_cagr": 0.05274232180240945,
     "total_transactions": 642
@@ -786,9 +786,9 @@
     "code_departement": "92",
     "nom_departement": "Hauts-de-Seine",
     "commune_count": 35,
-    "median_opportunity_score": 36.7,
+    "median_opportunity_score": 36.6,
     "median_price_per_sqm": 6686.31914893617,
-    "median_price_cagr": -0.033193438611603066,
+    "median_price_cagr": -0.03354738686251024,
     "total_transactions": 9139
   },
   {
@@ -797,7 +797,7 @@
     "commune_count": 123,
     "median_opportunity_score": 35.7,
     "median_price_per_sqm": 3104.8387096774195,
-    "median_price_cagr": -0.005893473637724633,
+    "median_price_cagr": -0.0064662340444503474,
     "total_transactions": 7434
   },
   {
@@ -806,7 +806,7 @@
     "commune_count": 46,
     "median_opportunity_score": 34.9,
     "median_price_per_sqm": 4348.214285714285,
-    "median_price_cagr": -0.022724129324049436,
+    "median_price_cagr": -0.023024217262430313,
     "total_transactions": 7005
   },
   {
@@ -815,7 +815,7 @@
     "commune_count": 71,
     "median_opportunity_score": 34.8,
     "median_price_per_sqm": 3422.680412371134,
-    "median_price_cagr": -0.01698369634568464,
+    "median_price_cagr": -0.017067089638442168,
     "total_transactions": 6361
   },
   {
@@ -824,7 +824,7 @@
     "commune_count": 38,
     "median_opportunity_score": 31.4,
     "median_price_per_sqm": 3840.0,
-    "median_price_cagr": -0.02281599315603,
+    "median_price_cagr": -0.022360044406738,
     "total_transactions": 7368
   }
 ]

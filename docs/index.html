@@ -1174,6 +1174,16 @@
   function renderScatterChart(container, points, opts) {
     // points: [{x, y, label, color, group, extra}]
     container.innerHTML = "";
+    if (!points.length) {
+      // Math.min/max.apply(null, []) is +/-Infinity, and (-Infinity) is truthy in JS - so the
+      // `|| 1` padding fallback further down never kicks in, and every axis label renders as
+      // NaN instead of a friendly empty state. Bail out before any of that math runs.
+      var msg = document.createElement("p");
+      msg.className = "caption-note";
+      msg.textContent = opts.emptyMessage || "Not enough data yet.";
+      container.appendChild(msg);
+      return null;
+    }
     var W = opts.width || 640, H = opts.height || 320;
     var margin = { top: 12, right: 16, bottom: 34, left: 56 };
     var innerW = W - margin.left - margin.right;
@@ -1702,7 +1712,13 @@
       var statsEl = document.getElementById("pf-stats");
       statsEl.innerHTML = "";
       var best = filtered.slice().sort(function (a, b) { return retVal(b) - retVal(a); })[0];
-      var avgVol = filtered.length ? filtered.reduce(function (s, d) { return s + (d.annualized_volatility || 0); }, 0) / filtered.length : null;
+      // Only average tickers that actually have a value - null means "not enough trading-day
+      // history yet" (see min_trading_days_for_return), not zero volatility. Coalescing null
+      // to 0 here would silently average in every not-yet-reliable ticker as if it were a real
+      // 0%, understating the true figure (in the extreme - no ticker qualifying yet - showing
+      // a misleading "0%" instead of "not enough data").
+      var volValues = filtered.map(function (d) { return d.annualized_volatility; }).filter(function (v) { return v != null; });
+      var avgVol = volValues.length ? volValues.reduce(function (s, v) { return s + v; }, 0) / volValues.length : null;
       var bestSharpe = filtered.filter(function (d) { return d.sharpe_ratio != null; }).sort(function (a, b) { return b.sharpe_ratio - a.sharpe_ratio; })[0];
       addStatTile(statsEl, "Tickers tracked", fmtInt.format(filtered.length), null);
       addStatTile(statsEl, "Best performer", best ? best.ticker : "–", best ? fmtPct1.format(best.period_return_pct) : null);
@@ -1730,7 +1746,8 @@
         width: 900, height: 340,
         xTickFormatter: function (v) { return fmtPct1Plain.format(v); },
         yTickFormatter: function (v) { return fmtPct1.format(v); },
-        ariaLabel: "Annualized volatility versus period return, one dot per ticker"
+        ariaLabel: "Annualized volatility versus period return, one dot per ticker",
+        emptyMessage: "No ticker has 60+ trading days of history yet - annualized volatility isn't reliable below that (see \"How it works\")."
       });
     }
 

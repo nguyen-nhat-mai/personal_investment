@@ -8,7 +8,11 @@ here rather than depending on dbt having already run, to keep the two tools deco
 Idempotency: pulls a rolling window (`period`, default 5 trading days) on every run rather than
 just "today", so a missed/failed run gets naturally backfilled on the next one. The raw table
 is append-only; `stg_equities__prices` dedupes to the latest ingested version of each
-(ticker, date).
+(ticker, date). The small default window is purely a steady-state efficiency choice, not a
+limit - yfinance happily returns years of history in one call, so a larger `period` (e.g. "2y")
+is the right way to backfill real history in one shot rather than waiting for the daily rolling
+window to slowly accumulate it - see equities_ingest_dag.py's module docstring for how to
+trigger that as a one-off.
 """
 from __future__ import annotations
 
