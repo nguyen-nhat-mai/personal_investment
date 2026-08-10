@@ -17,7 +17,7 @@ models:
       - name: period_return_pct
         description: "last_price / first_price - 1, over whatever history is ingested so far - NOT annualized, so it isn't comparable across tickers with different amounts of history. See annualized_return for a comparable figure."
       - name: trading_days
-        description: "Number of daily rows this ticker's stats are computed over. Gates annualized_return/annualized_volatility/max_drawdown_pct - below min_trading_days_for_return (60) all three are null rather than an unreliable extrapolation."
+        description: "Number of daily rows this ticker's stats are computed over - real trading history, not calendar days (stg_alternatives__prices filters out null-price placeholder rows; see that model's header comment for a real bug this used to let through, confirmed to deflate GLD's annualized_return from a true ~18.9%/year to a reported 12.7%/year). Gates annualized_return/annualized_volatility/max_drawdown_pct - below min_trading_days_for_return (60) all three are null rather than an unreliable extrapolation."
       - name: annualized_return
         description: "power(last_price / first_price, 252 / trading_days) - 1: proper geometric annualization of the actual realized return, using the robust median-based first_price/last_price - see equity_performance_summary.annualized_return for why this must be geometric, not arithmetic-mean-based. Null below min_trading_days_for_return days of history."
       - name: max_drawdown_pct

@@ -59,7 +59,17 @@ def ingest(project: str, period: str = "5d") -> int:
         except KeyError:
             logger.warning("No data returned for %s - skipping", ticker)
             continue
-        if sub.dropna(how="all").empty:
+        # Multi-ticker yf.download builds its combined frame off the UNION of every requested
+        # ticker's trading dates - a ticker closed on a date another watchlist member traded
+        # (a national holiday one exchange observes and another doesn't, e.g.) gets an all-NaN
+        # placeholder row inserted for it. dropna(how="all") below only caught a ticker with
+        # ZERO real data; it didn't drop these per-row placeholders, so they used to flow
+        # through into BigQuery and get counted as real trading days downstream (see
+        # include/alternatives.py's ingest() for the full writeup and a confirmed real-world
+        # example - this watchlist's 5-exchange spread makes the effect smaller here than the
+        # gold/crypto calendar mismatch there, but the same bug, worth the same fix).
+        sub = sub.dropna(how="all")
+        if sub.empty:
             logger.warning("Empty data for %s - skipping", ticker)
             continue
         sub = sub.reset_index()

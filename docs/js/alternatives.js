@@ -14,7 +14,12 @@ function altSortVal(d, metricCfg) {
 
 var ALT_INSTRUMENT_LABELS = { physical_gold: "Physical gold", paper_gold: "Paper gold", crypto: "Crypto" };
 var ALT_INSTRUMENT_COLORS = { physical_gold: "var(--series-1)", paper_gold: "var(--series-2)", crypto: "var(--series-3)" };
-var ALT_LIQUIDITY_LABELS = { illiquid: "Illiquid", medium: "Medium", liquid: "Liquid" };
+// "Illiquid to hold", not bare "Illiquid" - this describes how easily YOU could convert the
+// underlying holding to cash (a gold bar takes a dealer visit), not the trading liquidity of
+// the yfinance ticker used as its price proxy. GC=F (COMEX gold futures) is itself one of the
+// most liquid futures contracts in the world - labeling the row bare "Illiquid" was a real
+// mislabel, easy to misread as "this ticker is hard to trade".
+var ALT_LIQUIDITY_LABELS = { illiquid: "Illiquid to hold", medium: "Medium", liquid: "Liquid" };
 
 function initAlternatives(data) {
   var emptyEl = document.getElementById("alt-empty");
@@ -36,8 +41,14 @@ function initAlternatives(data) {
     "<p>(annualized return &minus; risk_free_rate_pct) / annualized volatility, same dated hand-set risk-free constant (~2.5%, illustrative French OAT baseline) the PEA tab uses - see <code>dbt_project.yml</code>.</p>" +
     "<h3>No benchmark comparison</h3>" +
     "<p>Unlike the PEA tab's \"Vs. CW8.PA\" column, this tab doesn't compute a relative-performance figure - there's no single coherent benchmark across a physical-gold proxy, a paper-gold ETF, and two cryptocurrencies the way a world-equity tracker is for a stock/ETF watchlist.</p>" +
-    "<h3>Liquidity</h3>" +
-    "<p>A hand-set label per instrument (<code>dbt/seeds/alternatives_watchlist.csv</code>), not derived from trading volume - physical gold is <strong>illiquid</strong> (selling a bar takes time/dealer access), the paper-gold ETF and both cryptocurrencies are <strong>liquid</strong> (tradable on an exchange in seconds). It's a metadata label, not something that changes how the price itself is fetched: GC=F (gold futures) is the closest available yfinance proxy for physical gold's price, since there's no direct \"gold bar in a safe\" price feed.</p>";
+    "<h3>Liquidity means \"to hold,\" not \"to trade\"</h3>" +
+    "<p>A hand-set label per instrument (<code>dbt/seeds/alternatives_watchlist.csv</code>), not derived from trading volume, and describing how easily <em>you</em> could convert the position this row represents into cash - not the trading liquidity of the yfinance ticker itself. Physical gold is <strong>illiquid to hold</strong> (selling a bar takes time/dealer access); the paper-gold ETF and both cryptocurrencies are <strong>liquid</strong> (tradable on an exchange in seconds). This matters because the physical-gold row's own price ticker, GC=F (COMEX gold futures), is emphatically NOT illiquid as an instrument - it's one of the most liquid futures contracts that exists. GC=F is used here purely as the closest available yfinance price proxy for physical gold, since there's no direct \"gold bar in a safe\" price feed; the illiquid label is about what owning bullion is like, not about this ticker's own order-book depth.</p>" +
+    "<h3>GC=F is a continuous futures series (roll yield, not spot)</h3>" +
+    "<p>yfinance serves GC=F as a front-month continuous contract, spliced across expirations - not roll-yield-adjusted. Multi-year return figures for this specific row can drift from spot/ETF-based gold exposure by a few points purely from contract-roll effects, independent of gold's actual price move. <strong>GLD</strong> (a spot-tracking ETF, no roll yield) is the more standard reference if you want \"gold's realized return\" rather than \"this specific futures contract's realized return.\"</p>" +
+    "<h3>Trading-days data-quality fix</h3>" +
+    "<p>A real bug, found on 5 years of live-ingested data and since fixed: batching GC=F/GLD (weekday-only) alongside BTC-USD/ETH-USD (7-day/week) in one data-fetch call used to leave an all-NaN placeholder row for GC=F/GLD on every weekend/holiday only the crypto side trades - those placeholder rows were getting counted as trading days, which directly deflated the annualized-return exponent. Concretely: GLD showed a reported 12.7%/year against a true ~18.9%/year for the identical prices, purely from the wrong denominator. Now fixed both at ingestion and defensively at the data-warehouse layer - <code>trading_days</code> shown here reflects real per-ticker history.</p>" +
+    "<h3>Short-window annualization is sensitive to the start date</h3>" +
+    "<p>Annualizing over a couple of years (not the decades a long-run assumption would want) means the specific start/end dates chosen matter more than they would over a longer window - if the ingested history happens to start right after a sharp market dislocation (or right before one), the annualized figure can look unusually strong or weak in a way that says more about that one date than about the asset's typical behavior. The median-of-5-day robustness above only guards against a single glitchy data point, not this - it's an inherent property of measuring a still-relatively-short window on a volatile price path, and it shrinks as more history accumulates. Treat early figures here as illustrative, not stable, especially for crypto's higher volatility.</p>";
   var methodologyBtn = document.getElementById("alt-methodology-toggle");
   methodologyBtn.addEventListener("click", function () {
     var expanded = methodologyBtn.getAttribute("aria-expanded") === "true";

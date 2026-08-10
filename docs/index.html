@@ -214,6 +214,12 @@
         </select>
       </label>
     </div>
+    <p class="caption-note">"Liquidity" means how easily <em>you</em> could convert the
+    position into cash if you held it this way &mdash; not the trading liquidity of the price
+    ticker itself. GC=F (the physical-gold proxy) is COMEX gold futures, one of the most liquid
+    futures contracts that exists; it's labeled illiquid here because owning a physical bar is,
+    not because the futures contract is hard to trade. See "How is this calculated?" below for
+    more, including a roll-yield caveat on that same ticker.</p>
 
     <div id="alt-content">
       <button class="methodology-toggle" id="alt-methodology-toggle" type="button" aria-expanded="false">How is this calculated?</button>
@@ -289,9 +295,14 @@
           cryptocurrencies (<code>BTC-USD</code>, <code>ETH-USD</code>), pulled via
           <code>yfinance</code> on the same weekday-evening schedule as the PEA watchlist. Crypto
           trades every day, but the 5-day rolling ingestion window means a weekend move is picked
-          up by Monday's run rather than missed &mdash; see the Alternatives tab's own "How is
-          this calculated?" panel for the liquidity classification (illiquid/medium/liquid) each
-          instrument carries.</p>
+          up by Monday's run rather than missed. <code>GC=F</code> is served by yfinance as a
+          continuous front-month futures contract, not roll-yield-adjusted &mdash; its multi-year
+          return can drift a few points from spot/<code>GLD</code> purely from contract-roll
+          effects, independent of gold's actual price move. See the Alternatives tab's own "How
+          is this calculated?" panel for that caveat and the liquidity classification (illiquid/
+          medium/liquid) each instrument carries &mdash; which describes how easily <em>you</em>
+          could convert the holding to cash, not the trading liquidity of the ticker itself
+          (<code>GC=F</code> is, in fact, one of the most liquid futures contracts that exists).</p>
         </div>
         <div class="about-card">
           <h3>Property tax rates &mdash; DGFiP</h3>
@@ -406,10 +417,15 @@
           things the PEA tab has that this one deliberately doesn't: a benchmark comparison
           (there's no single coherent benchmark across a physical-gold proxy, a paper-gold ETF,
           and two cryptocurrencies) and dividends (none of the four instruments pays one).
-          <strong>Liquidity</strong> (illiquid/medium/liquid) is a hand-set label, not derived
-          from trading volume &mdash; physical gold is illiquid, the paper-gold ETF and both
-          cryptocurrencies are liquid. Full breakdown on the Alternatives tab's own "How is this
-          calculated?" panel.</p>
+          <strong>Liquidity</strong> (illiquid/medium/liquid) is a hand-set label describing how
+          easily <em>you</em> could convert the holding to cash if you held it this way &mdash;
+          not the trading liquidity of the price ticker itself. Physical gold is illiquid to
+          <em>hold</em>; the paper-gold ETF and both cryptocurrencies are liquid. This matters
+          because <code>GC=F</code> (the physical-gold row's own ticker) is itself one of the
+          most liquid futures contracts that exists &mdash; it's used only as the closest
+          available price proxy for physical gold, and its own high trading liquidity isn't what
+          the label describes. Full breakdown, plus a roll-yield caveat specific to
+          <code>GC=F</code>, on the Alternatives tab's own "How is this calculated?" panel.</p>
         </div>
         <div class="about-card">
           <h3>Wealth simulator</h3>

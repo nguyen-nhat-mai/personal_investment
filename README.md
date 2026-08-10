@@ -97,7 +97,21 @@ Several pipelines feed one warehouse:
   cryptocurrencies are liquid; this label also decides which rows
   `scripts/export_wealth_assumptions.py`'s `liquid_blended_default` is allowed to average, same
   "don't compound an illiquid proxy" reasoning that already keeps individual stocks out of the
-  Wealth simulator's PEA growth assumption.
+  Wealth simulator's PEA growth assumption. `trading_days` is real per-ticker trading history,
+  not calendar days — a real bug, found on 5 years of live-ingested data, used to inflate it:
+  batching GC=F/GLD (weekday-only) alongside BTC-USD/ETH-USD (7-day/week) in one `yf.download`
+  call unions every ticker's date index, leaving an all-NaN placeholder row for GC=F/GLD on
+  every weekend/holiday only the crypto side trades. Those placeholder rows got counted as
+  trading days, which directly deflated `annualized_return`'s `252/trading_days` exponent —
+  confirmed concretely: GLD showed a reported 12.7%/year against a true ~18.9%/year for the
+  same prices, purely from the wrong denominator. Fixed both at the source
+  ([`dags/include/alternatives.py`](dags/include/alternatives.py) now drops all-NaN rows before
+  upload) and defensively in
+  [`stg_alternatives__prices.sql`](dbt/models/staging/alternatives/stg_alternatives__prices.sql)
+  (filters `adj_close is not null`, so already-ingested raw data self-heals without a
+  re-ingest) — the same latent bug existed in `equities_ingest`/`stg_equities__prices` too,
+  just with much smaller impact there since that watchlist's tickers all share a similar
+  weekday-only calendar.
 
 All are starting points for your own research, not investment advice — the opportunity score
 in particular uses simple, transparent, hand-picked weights (see the comments in

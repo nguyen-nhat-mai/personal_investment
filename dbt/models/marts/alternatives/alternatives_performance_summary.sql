@@ -1,6 +1,16 @@
 -- One row per ticker in the gold/crypto watchlist: cumulative return, annualized volatility,
 -- risk-adjusted metrics, and max drawdown over whatever history has been ingested so far.
 --
+-- trading_days here is real per-ticker history, not calendar days - stg_alternatives__prices
+-- filters out null-price placeholder rows (see that model's header comment: batching GC=F/GLD,
+-- weekday-only, alongside BTC-USD/ETH-USD, 7-day/week, in one yf.download call used to leave
+-- an all-NaN row for every weekend/holiday only the crypto side trades). Before that filter
+-- existed, trading_days for GC=F/GLD was inflated toward crypto's ~365/yr calendar instead of
+-- gold's real ~252/yr one, which directly deflates annualized_return's `252/trading_days`
+-- exponent - confirmed for real on 5 years of ingested data: GLD showed a reported 12.7%/year
+-- against a true ~18.9%/year for the identical first/last prices, purely from the wrong
+-- denominator. Not a rounding difference - a ~6 point/year miss.
+--
 -- Trimmed sibling of equity_performance_summary.sql - same first_last_price/per_ticker/
 -- sharpe_ratio logic (median-of-5-day robust prices, geometric annualization, the
 -- min_trading_days_for_return gate - see that model's header comment for the full "why", it

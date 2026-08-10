@@ -28,3 +28,13 @@ seeds:
       the Wealth simulator's growth-tier blend is allowed to use (liquid-only, same reasoning
       that already keeps individual volatile stocks out of PEA's growth assumption in favor of
       an ETF-only blend).
+
+      IMPORTANT re: GC=F's liquidity value - it's set to "illiquid" because that row represents
+      the real-world experience of owning PHYSICAL bullion (selling a bar takes time/dealer
+      access), NOT because the GC=F futures contract itself is hard to trade - COMEX gold
+      futures are in fact one of the most liquid futures contracts that exists. Don't "fix" this
+      value to "liquid" by reasoning about the ticker's own trading volume; the column describes
+      the holding, not the instrument. GC=F also has a second, separate caveat worth knowing:
+      yfinance serves it as a continuous front-month contract, not roll-yield-adjusted, so its
+      multi-year return can drift a few points from spot/GLD purely from contract-roll effects -
+      GLD is the cleaner reference for "gold's realized return" if that's what's needed.
