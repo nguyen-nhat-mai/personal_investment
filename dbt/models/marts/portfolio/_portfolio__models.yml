@@ -8,6 +8,16 @@ models:
         tests:
           - not_null
           - unique
+      - name: first_price
+        description: "Median of the first 5 trading days' adj_close - not a single point-to-point value, so one glitchy data point on the literal first ingested day can't swing period_return_pct on its own."
+      - name: last_price
+        description: "Median of the last 5 trading days' adj_close - same robustness reasoning as first_price."
+      - name: period_return_pct
+        description: "last_price / first_price - 1, over whatever history is ingested so far (first_date to last_date, shown alongside it) - NOT annualized, so it isn't comparable across tickers with different amounts of history. See annualized_return for a comparable figure."
+      - name: isin
+        description: "From pea_watchlist.csv - see dbt/seeds/_seeds.yml for verification-tier caveats (10 of 50 live-verified, ~40 best-effort)."
+      - name: country
+        description: "substr(isin, 1, 2) - the ISIN's national numbering agency prefix, i.e. legal domicile, NOT Euronext's own HQ/operations-based country classification (they disagree for at least 5 tickers - see this model's header comment)."
       - name: trading_days
         description: "Number of daily rows this ticker's stats are computed over. Gates annualized_return/annualized_volatility/max_drawdown_pct - below min_trading_days_for_return (60) all three are null rather than an unreliable extrapolation."
       - name: annualized_return
@@ -17,4 +27,6 @@ models:
       - name: sharpe_ratio
         description: "(annualized_return - risk_free_rate_pct) / annualized_volatility. risk_free_rate_pct is a dated hand-set constant (illustrative French OAT baseline, not a BigQuery-sourced yield curve) - see dbt_project.yml. Null whenever annualized_return/annualized_volatility are (see trading_days)."
       - name: relative_performance_vs_benchmark
-        description: "This ticker's annualized_return minus benchmark_ticker's (CW8.PA by default, a world-equity tracker - see dbt_project.yml). Simple excess return, not a Beta-adjusted CAPM alpha. Null if either side lacks enough trading-day history."
+        description: "This ticker's annualized return minus benchmark_ticker's (CW8.PA by default, a world-equity tracker - see dbt_project.yml), BOTH recomputed over their date-aligned common window (not each ticker's own independently-ingested first/last date, which can differ across this watchlist's 5 exchanges/holiday calendars). Simple excess return, not a Beta-adjusted CAPM alpha. Null if either side lacks enough overlapping trading-day history."
+      - name: dividend_yield_pct
+        description: "total_dividends / last_price - a trailing yield over whatever period is ingested so far, not annualized."

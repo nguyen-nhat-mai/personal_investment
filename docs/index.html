@@ -681,12 +681,15 @@
     </div>
 
     <div id="pf-content">
+      <button class="methodology-toggle" id="pf-methodology-toggle" type="button" aria-expanded="false">How is this calculated?</button>
+      <div class="methodology-panel" id="pf-methodology-panel" hidden></div>
+
       <div class="stat-row" id="pf-stats"></div>
 
       <figure class="chart-card">
         <figcaption>
-          <span class="title">Period return by ticker</span>
-          <span class="caption-note">Over whatever history has been ingested so far</span>
+          <span class="title">Annualized return by ticker</span>
+          <span class="caption-note">Needs 60+ trading days of history - see "How is this calculated?"</span>
         </figcaption>
         <div class="bar-chart" id="pf-bar"></div>
       </figure>
@@ -694,7 +697,7 @@
       <figure class="chart-card">
         <figcaption>
           <span class="title">Risk vs. return</span>
-          <span class="caption-note">Annualized volatility vs. period return</span>
+          <span class="caption-note">Annualized volatility vs. annualized return</span>
         </figcaption>
         <div class="legend" id="pf-legend"></div>
         <div class="scatter-wrap" id="pf-scatter"></div>
@@ -877,20 +880,29 @@
         </div>
         <div class="about-card">
           <h3>PEA return, risk &amp; drawdown</h3>
-          <p><strong>Period return</strong> is simply last price over first price ingested so
-          far, minus one. <strong>Annualized volatility</strong> is the standard deviation of
-          daily returns scaled by &radic;252 (trading days/year) &mdash; a standard, if rough,
-          way to compare risk across tickers with different price levels. <strong>Max
-          drawdown</strong> is the worst peak-to-trough decline seen so far. <strong>Sharpe
-          ratio</strong> is (annualized return &minus; a ~2.5% illustrative risk-free rate) /
-          annualized volatility. <strong>Vs. CW8.PA</strong> is simple excess annualized return
-          against the Amundi MSCI World ETF as benchmark &mdash; not a Beta-adjusted CAPM alpha.
-          Annualized return/volatility/drawdown/Sharpe/vs.-benchmark are all null until a ticker
-          has 60+ trading days of ingested history &mdash; short-history extrapolation goes wrong
-          in both directions (an absurdly large annualized return from a noisy few-day average,
-          or a falsely-flattering near-zero drawdown from not having lived through a bad week
-          yet), so "not enough history" shows as &ldquo;&ndash;&rdquo;, never a fabricated
-          number. <strong>Dividends</strong> are just summed over the ingested history.</p>
+          <p>Charts and stats rank by <strong>annualized return</strong>, not raw period return
+          &mdash; period return isn't comparable across tickers with different amounts of
+          ingested history, and pairing it against already-annualized volatility would mismatch
+          units. Period return itself is a median of the first/last 5 trading days' price, not a
+          single point-to-point comparison, so one glitchy data point can't swing it alone (a
+          real fix: GLE.PA briefly showed +327% from that exact failure mode before it). Every
+          figure uses adjusted close throughout (dividends and splits already priced in), and
+          return/volatility/drawdown/Sharpe/vs.-benchmark are null until a ticker has 60+
+          trading days of history &mdash; short-history extrapolation goes wrong in both
+          directions (an absurdly large annualized return from a noisy few-day average, or a
+          falsely-flattering near-zero drawdown from not having lived through a bad week yet),
+          so &ldquo;not enough history&rdquo; shows as &ldquo;&ndash;&rdquo;, never a fabricated
+          number. A &ldquo;Data window&rdquo; stat and per-ticker Since/Until columns make the
+          actual ingested period visible everywhere these numbers appear. <strong>Vs.
+          CW8.PA</strong> (simple excess return, not Beta-adjusted alpha) is computed over a
+          date-aligned common window with the benchmark, since this watchlist now spans 5
+          exchanges with different holiday calendars. <strong>Country</strong> is derived from
+          each ticker's ISIN prefix (legal domicile) rather than hand-typed &mdash; that caught 5
+          real mistakes (ArcelorMittal/Eurofins are Luxembourg, Airbus/Stellantis/
+          STMicroelectronics are Netherlands, despite all five being reputationally "French" CAC
+          40 names). <strong>Dividends</strong> are summed over the ingested history; <strong>
+          dividend yield</strong> divides that by the last observed price. Full breakdown on the
+          PEA tab's own "How is this calculated?" panel.</p>
         </div>
         <div class="about-card">
           <h3>Wealth simulator</h3>
@@ -985,6 +997,9 @@
   /* ---------- formatting ---------- */
   var fmtInt = new Intl.NumberFormat("fr-FR");
   var fmtEUR0 = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+  // For small per-share values (dividends) where rounding to 0 decimals would hide the number
+  // entirely - fmtEUR0.format(0.85) is "0 EUR", fmtEUR2.format(0.85) is "0,85 EUR".
+  var fmtEUR2 = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 2 });
   // Signed: for deltas (YoY change, period return) where +/- is the point.
   var fmtPct1 = new Intl.NumberFormat("fr-FR", { style: "percent", maximumFractionDigits: 1, signDisplay: "exceptZero" });
   // Unsigned: for magnitudes that are never negative (volatility) - a "+" there would
@@ -1637,9 +1652,13 @@
 
   /* ---------- Portfolio tab ---------- */
   // Sort helper: treats a real 0% return correctly (unlike `value || fallback`, which
-  // would coerce 0 to the fallback since 0 is falsy) and sorts missing values last.
+  // would coerce 0 to the fallback since 0 is falsy) and sorts missing values last. Sorts by
+  // annualized_return, not period_return_pct - the latter isn't comparable across tickers with
+  // different amounts of ingested history (a ticker with 2 years of data and one with 5 days
+  // aren't on the same footing), and it's exactly what let GLE.PA briefly show +327% (see
+  // equity_performance_summary.sql's first_last_price CTE for the underlying fix too).
   function retVal(d) {
-    return typeof d.period_return_pct === "number" ? d.period_return_pct : -Infinity;
+    return typeof d.annualized_return === "number" ? d.annualized_return : -Infinity;
   }
 
   function initPortfolio(data) {
@@ -1651,6 +1670,30 @@
       emptyEl.innerHTML = "No PEA data published yet. Run <code>python scripts/export_marts.py</code> after equities_ingest and dbt_transform have run at least once.";
       return;
     }
+
+    var methodologyPanel = document.getElementById("pf-methodology-panel");
+    methodologyPanel.innerHTML =
+      "<h3>Why the charts use annualized return, not period return</h3>" +
+      "<p>The bar chart, scatter chart, and \"Best performer\" stat all rank and plot by <strong>annualized return</strong>, not raw period return - period return isn't comparable across tickers with different amounts of ingested history (a ticker with 2 years of data and one with 5 days aren't on the same footing), and pairing a non-annualized figure against already-annualized volatility on the scatter chart would be comparing different units on the same axis. Period return is still shown in the table, alongside \"Since\"/\"Until\" so it's clear exactly what window it covers - the \"Data window\" stat tile above shows the same thing at a glance for whatever's currently filtered.</p>" +
+      "<h3>Return, volatility &amp; drawdown</h3>" +
+      "<p><strong>Period return</strong> is the median of the last 5 trading days' adjusted-close price over the median of the first 5, minus one, over whatever history has been ingested so far for that ticker - a median of 5, not a single point-to-point comparison, so one glitchy data point on the literal first or last ingested day can't swing the whole figure on its own (this is a real fix, not a hypothetical one: GLE.PA briefly showed +327% from exactly that failure mode before it). <strong>Annualized volatility</strong> is the standard deviation of daily returns scaled by &radic;252. <strong>Max drawdown</strong> is the worst peak-to-trough decline seen so far. All of these, plus Sharpe below, use adjusted close (<code>adj_close</code>) throughout, not raw close - dividends and splits are already priced in, not double-counted separately.</p>" +
+      "<h3>The 60-trading-day gate</h3>" +
+      "<p>Annualized return/volatility/drawdown/Sharpe/vs.-benchmark are all null until a ticker has 60+ trading days of ingested history. Short-history extrapolation fails in <em>both</em> directions: (1 + avg_daily_return)^252 can amplify a noisy few-day average into an absurd annualized return, while max drawdown does the opposite - a ticker that's only lived through a few good days looks like a falsely-flattering 0%-risk asset. Both get \"&ndash;\" instead of a number, not a fabricated one.</p>" +
+      "<h3>Sharpe ratio</h3>" +
+      "<p>(annualized return &minus; risk_free_rate_pct) / annualized volatility. risk_free_rate_pct is a single dated hand-set constant (an illustrative French OAT baseline, ~2.5%) - not a real yield curve or a BigQuery-sourced figure, see <code>dbt_project.yml</code>.</p>" +
+      "<h3>Vs. CW8.PA</h3>" +
+      "<p>This ticker's annualized return minus the benchmark's (Amundi MSCI World ETF), both recomputed over their shared date-aligned window - not each ticker's own independently-ingested first/last date. That distinction matters here specifically: this watchlist spans 5 exchanges (Paris/Amsterdam/Frankfurt/Copenhagen/Madrid) with different public holidays, so two tickers' \"own\" date ranges can genuinely differ by a day or more, and subtracting two annualized returns computed over two different periods isn't a real excess return. Simple excess return, not a Beta-adjusted CAPM alpha.</p>" +
+      "<h3>Country</h3>" +
+      "<p>Derived from each ticker's ISIN prefix (the national numbering agency, i.e. legal domicile) - not hand-typed. That distinction caught 5 real mistakes in this watchlist: ArcelorMittal and Eurofins Scientific are Luxembourg-domiciled, Airbus/Stellantis/STMicroelectronics are Netherlands-domiciled, despite all five being long-standing CAC 40 \"French\" constituents by reputation - Euronext's own CAC 40 factsheet lists all five as \"Country: France\" on what's likely a headquarters/operations basis, not a legal-domicile one. Both are legitimate; this column picks the one that actually matters for real PEA eligibility rules. ISINs for 10 of 50 tickers were live-verified; the rest are best-effort - see <code>dbt/seeds/_seeds.yml</code>.</p>" +
+      "<h3>Dividends</h3>" +
+      "<p>Summed over the ingested history (not annualized). <strong>Dividend yield</strong> is that sum divided by the last observed price - a trailing yield, not a forward-looking one.</p>";
+    var methodologyBtn = document.getElementById("pf-methodology-toggle");
+    methodologyBtn.addEventListener("click", function () {
+      var expanded = methodologyBtn.getAttribute("aria-expanded") === "true";
+      methodologyBtn.setAttribute("aria-expanded", String(!expanded));
+      methodologyPanel.hidden = expanded;
+      methodologyBtn.textContent = expanded ? "How is this calculated?" : "Hide methodology";
+    });
 
     var typeSelect = document.getElementById("pf-filter-type");
     var legendState = { stock: true, etf: true };
@@ -1680,12 +1723,16 @@
       { key: "name", label: "Name" },
       { key: "asset_type", label: "Type" },
       { key: "country", label: "Country", format: function (v) { return v || "–"; } },
-      { key: "period_return_pct", label: "Return", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
+      { key: "first_date", label: "Since", format: function (v) { return v || "–"; } },
+      { key: "last_date", label: "Until", format: function (v) { return v || "–"; } },
+      { key: "period_return_pct", label: "Period return", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
+      { key: "annualized_return", label: "Annualized return", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
       { key: "annualized_volatility", label: "Volatility", format: function (v) { return v == null ? "–" : fmtPct1Plain.format(v); } },
       { key: "max_drawdown_pct", label: "Max drawdown", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
       { key: "sharpe_ratio", label: "Sharpe", format: function (v) { return v == null ? "–" : fmtScore.format(v); } },
       { key: "relative_performance_vs_benchmark", label: "Vs. CW8.PA", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
-      { key: "total_dividends", label: "Dividends", format: function (v) { return v == null ? "–" : fmtEUR0.format(v); } }
+      { key: "total_dividends", label: "Dividends", format: function (v) { return v == null ? "–" : fmtEUR2.format(v); } },
+      { key: "dividend_yield_pct", label: "Div. yield", format: function (v) { return v == null ? "–" : fmtPct1Plain.format(v); } }
     ];
 
     var currentFilteredData = data;
@@ -1711,7 +1758,7 @@
     function render(filtered) {
       var statsEl = document.getElementById("pf-stats");
       statsEl.innerHTML = "";
-      var best = filtered.slice().sort(function (a, b) { return retVal(b) - retVal(a); })[0];
+      var best = filtered.filter(function (d) { return d.annualized_return != null; }).sort(function (a, b) { return b.annualized_return - a.annualized_return; })[0];
       // Only average tickers that actually have a value - null means "not enough trading-day
       // history yet" (see min_trading_days_for_return), not zero volatility. Coalescing null
       // to 0 here would silently average in every not-yet-reliable ticker as if it were a real
@@ -1720,34 +1767,44 @@
       var volValues = filtered.map(function (d) { return d.annualized_volatility; }).filter(function (v) { return v != null; });
       var avgVol = volValues.length ? volValues.reduce(function (s, v) { return s + v; }, 0) / volValues.length : null;
       var bestSharpe = filtered.filter(function (d) { return d.sharpe_ratio != null; }).sort(function (a, b) { return b.sharpe_ratio - a.sharpe_ratio; })[0];
+      // "Since" - the earliest first_date and latest last_date across whatever's currently
+      // filtered, so it's always clear what window the numbers above actually cover, without
+      // having to open the table. Per-ticker first_date/last_date are also in the table itself
+      // for anyone who wants the exact per-ticker window, not just the filtered-set envelope.
+      var firstDates = filtered.map(function (d) { return d.first_date; }).filter(function (v) { return v != null; }).sort();
+      var lastDates = filtered.map(function (d) { return d.last_date; }).filter(function (v) { return v != null; }).sort();
+      var dataWindow = firstDates.length && lastDates.length
+        ? firstDates[0] + " to " + lastDates[lastDates.length - 1]
+        : "–";
       addStatTile(statsEl, "Tickers tracked", fmtInt.format(filtered.length), null);
-      addStatTile(statsEl, "Best performer", best ? best.ticker : "–", best ? fmtPct1.format(best.period_return_pct) : null);
+      addStatTile(statsEl, "Data window", dataWindow, "Earliest-to-latest ingested date across tickers shown");
+      addStatTile(statsEl, "Best performer (annualized)", best ? best.ticker : "–", best ? fmtPct1.format(best.annualized_return) : "Needs 60+ trading days of history");
       addStatTile(statsEl, "Avg. annualized volatility", avgVol != null ? fmtPct1Plain.format(avgVol) : "–", null);
       addStatTile(statsEl, "Best risk-adjusted (Sharpe)", bestSharpe ? bestSharpe.ticker : "–", bestSharpe ? "Sharpe " + fmtScore.format(bestSharpe.sharpe_ratio) : "Needs 60+ trading days of history");
 
-      renderDivergingBarChart(document.getElementById("pf-bar"), filtered.map(function (d) {
+      renderDivergingBarChart(document.getElementById("pf-bar"), filtered.filter(function (d) { return d.annualized_return != null; }).map(function (d) {
         return {
           label: d.ticker,
-          value: d.period_return_pct || 0,
-          extra: [["Name", d.name || d.ticker], ["Type", d.asset_type || "–"]]
+          value: d.annualized_return,
+          extra: [["Name", d.name || d.ticker], ["Type", d.asset_type || "–"], ["Trading days", fmtInt.format(d.trading_days)], ["Period return", d.period_return_pct == null ? "–" : fmtPct1.format(d.period_return_pct)]]
         };
       }), { valueFormatter: function (v) { return fmtPct1.format(v); } });
 
-      renderScatterChart(document.getElementById("pf-scatter"), filtered.filter(function (d) { return d.annualized_volatility != null && d.period_return_pct != null; }).map(function (d) {
+      renderScatterChart(document.getElementById("pf-scatter"), filtered.filter(function (d) { return d.annualized_volatility != null && d.annualized_return != null; }).map(function (d) {
         return {
           x: d.annualized_volatility,
-          y: d.period_return_pct,
+          y: d.annualized_return,
           label: d.ticker,
           color: d.asset_type === "etf" ? "var(--series-2)" : "var(--series-1)",
           group: d.asset_type,
-          extra: [["Name", d.name || d.ticker], ["Return", fmtPct1.format(d.period_return_pct)], ["Volatility", fmtPct1Plain.format(d.annualized_volatility)]]
+          extra: [["Name", d.name || d.ticker], ["Annualized return", fmtPct1.format(d.annualized_return)], ["Annualized volatility", fmtPct1Plain.format(d.annualized_volatility)]]
         };
       }), {
         width: 900, height: 340,
         xTickFormatter: function (v) { return fmtPct1Plain.format(v); },
         yTickFormatter: function (v) { return fmtPct1.format(v); },
-        ariaLabel: "Annualized volatility versus period return, one dot per ticker",
-        emptyMessage: "No ticker has 60+ trading days of history yet - annualized volatility isn't reliable below that (see \"How it works\")."
+        ariaLabel: "Annualized volatility versus annualized return, one dot per ticker",
+        emptyMessage: "No ticker has 60+ trading days of history yet - see \"How is this calculated?\"."
       });
     }
 

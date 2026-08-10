@@ -1,51 +1,51 @@
-ticker,name,asset_type,sector,pea_eligible,country
-AC.PA,Accor,stock,Hospitality,true,FR
-AI.PA,Air Liquide,stock,Industrial Gases,true,FR
-AIR.PA,Airbus,stock,Aerospace & Defense,true,FR
-MT.AS,ArcelorMittal,stock,Steel,true,FR
-CS.PA,Axa,stock,Insurance,true,FR
-BNP.PA,BNP Paribas,stock,Banking,true,FR
-EN.PA,Bouygues,stock,Construction & Media,true,FR
-BVI.PA,Bureau Veritas,stock,Testing & Certification,true,FR
-CAP.PA,Capgemini,stock,IT Services,true,FR
-CA.PA,Carrefour,stock,Retail,true,FR
-ACA.PA,Credit Agricole,stock,Banking,true,FR
-BN.PA,Danone,stock,Food & Beverage,true,FR
-DSY.PA,Dassault Systemes,stock,Software,true,FR
-EDEN.PA,Edenred,stock,Payments & Benefits,true,FR
-ENGI.PA,Engie,stock,Utilities,true,FR
-EL.PA,EssilorLuxottica,stock,Eyewear,true,FR
-ERF.PA,Eurofins Scientific,stock,Laboratory Testing,true,FR
-RMS.PA,Hermes,stock,Luxury Goods,true,FR
-KER.PA,Kering,stock,Luxury Goods,true,FR
-OR.PA,L'Oreal,stock,Cosmetics,true,FR
-LR.PA,Legrand,stock,Electrical Equipment,true,FR
-MC.PA,LVMH,stock,Luxury Goods,true,FR
-ML.PA,Michelin,stock,Tires,true,FR
-ORA.PA,Orange,stock,Telecom,true,FR
-RI.PA,Pernod Ricard,stock,Beverages,true,FR
-PUB.PA,Publicis,stock,Advertising,true,FR
-RNO.PA,Renault,stock,Automotive,true,FR
-SAF.PA,Safran,stock,Aerospace & Defense,true,FR
-SGO.PA,Saint-Gobain,stock,Building Materials,true,FR
-SAN.PA,Sanofi,stock,Pharmaceuticals,true,FR
-SU.PA,Schneider Electric,stock,Electrical Equipment,true,FR
-GLE.PA,Societe Generale,stock,Banking,true,FR
-STLAP.PA,Stellantis,stock,Automotive,true,FR
-STMPA.PA,STMicroelectronics,stock,Semiconductors,true,FR
-TEP.PA,Teleperformance,stock,Business Services,true,FR
-HO.PA,Thales,stock,Aerospace & Defense,true,FR
-TTE.PA,TotalEnergies,stock,Energy,true,FR
-URW.PA,Unibail-Rodamco-Westfield,stock,Real Estate,true,FR
-VIE.PA,Veolia,stock,Utilities,true,FR
-DG.PA,Vinci,stock,Construction,true,FR
-CW8.PA,Amundi MSCI World UCITS ETF,etf,World Equity ETF,true,
-PE500.PA,Amundi PEA S&P 500 UCITS ETF,etf,US Equity ETF,true,
-PAEEM.PA,Amundi PEA Emergent (MSCI Emerging) UCITS ETF,etf,Emerging Markets Equity ETF,true,
-PUST.PA,Amundi PEA Nasdaq-100 UCITS ETF,etf,US Equity ETF,true,
-ETZ.PA,BNP Paribas Easy STOXX Europe 600 UCITS ETF,etf,Europe Equity ETF,true,
-MMS.PA,Amundi MSCI EMU Small Cap UCITS ETF,etf,Europe Small Cap Equity ETF,true,
-ASML.AS,ASML Holding,stock,Semiconductor Equipment,true,NL
-SAP.DE,SAP,stock,Enterprise Software,true,DE
-NOVO-B.CO,Novo Nordisk,stock,Pharmaceuticals,true,DK
-ITX.MC,Inditex,stock,Apparel Retail,true,ES
+ticker,name,asset_type,sector,pea_eligible,isin
+AC.PA,Accor,stock,Hospitality,true,FR0000120404
+AI.PA,Air Liquide,stock,Industrial Gases,true,FR0000120073
+AIR.PA,Airbus,stock,Aerospace & Defense,true,NL0000235190
+MT.AS,ArcelorMittal,stock,Steel,true,LU1598757687
+CS.PA,Axa,stock,Insurance,true,FR0000120628
+BNP.PA,BNP Paribas,stock,Banking,true,FR0000131104
+EN.PA,Bouygues,stock,Construction & Media,true,FR0000120503
+BVI.PA,Bureau Veritas,stock,Testing & Certification,true,FR0006174348
+CAP.PA,Capgemini,stock,IT Services,true,FR0000125338
+CA.PA,Carrefour,stock,Retail,true,FR0000120172
+ACA.PA,Credit Agricole,stock,Banking,true,FR0000045072
+BN.PA,Danone,stock,Food & Beverage,true,FR0000120644
+DSY.PA,Dassault Systemes,stock,Software,true,FR0014003TT8
+EDEN.PA,Edenred,stock,Payments & Benefits,true,FR0010908533
+ENGI.PA,Engie,stock,Utilities,true,FR0010208488
+EL.PA,EssilorLuxottica,stock,Eyewear,true,FR0000121667
+ERF.PA,Eurofins Scientific,stock,Laboratory Testing,true,LU2528038835
+RMS.PA,Hermes,stock,Luxury Goods,true,FR0000052292
+KER.PA,Kering,stock,Luxury Goods,true,FR0000121485
+OR.PA,L'Oreal,stock,Cosmetics,true,FR0000120321
+LR.PA,Legrand,stock,Electrical Equipment,true,FR0010307819
+MC.PA,LVMH,stock,Luxury Goods,true,FR0000121014
+ML.PA,Michelin,stock,Tires,true,FR001400AJ45
+ORA.PA,Orange,stock,Telecom,true,FR0000133308
+RI.PA,Pernod Ricard,stock,Beverages,true,FR0000120693
+PUB.PA,Publicis,stock,Advertising,true,FR0000130577
+RNO.PA,Renault,stock,Automotive,true,FR0000131906
+SAF.PA,Safran,stock,Aerospace & Defense,true,FR0000073272
+SGO.PA,Saint-Gobain,stock,Building Materials,true,FR0000125007
+SAN.PA,Sanofi,stock,Pharmaceuticals,true,FR0000120578
+SU.PA,Schneider Electric,stock,Electrical Equipment,true,FR0000121972
+GLE.PA,Societe Generale,stock,Banking,true,FR0000130809
+STLAP.PA,Stellantis,stock,Automotive,true,NL00150001Q9
+STMPA.PA,STMicroelectronics,stock,Semiconductors,true,NL0000226223
+TEP.PA,Teleperformance,stock,Business Services,true,FR0000051807
+HO.PA,Thales,stock,Aerospace & Defense,true,FR0000121329
+TTE.PA,TotalEnergies,stock,Energy,true,FR0000120271
+URW.PA,Unibail-Rodamco-Westfield,stock,Real Estate,true,FR0013326246
+VIE.PA,Veolia,stock,Utilities,true,FR0000124141
+DG.PA,Vinci,stock,Construction,true,FR0000125486
+CW8.PA,Amundi MSCI World UCITS ETF,etf,World Equity ETF,true,LU1681043599
+PE500.PA,Amundi PEA S&P 500 UCITS ETF,etf,US Equity ETF,true,FR0013412285
+PAEEM.PA,Amundi PEA Emergent (MSCI Emerging) UCITS ETF,etf,Emerging Markets Equity ETF,true,FR0013412020
+PUST.PA,Amundi PEA Nasdaq-100 UCITS ETF,etf,US Equity ETF,true,FR0011871110
+ETZ.PA,BNP Paribas Easy STOXX Europe 600 UCITS ETF,etf,Europe Equity ETF,true,FR0011550193
+MMS.PA,Amundi MSCI EMU Small Cap UCITS ETF,etf,Europe Small Cap Equity ETF,true,LU1681042609
+ASML.AS,ASML Holding,stock,Semiconductor Equipment,true,NL0010273215
+SAP.DE,SAP,stock,Enterprise Software,true,DE0007164600
+NOVO-B.CO,Novo Nordisk,stock,Pharmaceuticals,true,DK0060534915
+ITX.MC,Inditex,stock,Apparel Retail,true,ES0148396007

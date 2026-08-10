@@ -1,0 +1,17 @@
+version: 2
+
+seeds:
+  - name: pea_watchlist
+    description: >
+      PEA watchlist: CAC40 constituents, non-French EU blue chips, and PEA-eligible ETFs.
+      `isin` drives equity_performance_summary.country (substr(isin, 1, 2) - the national
+      numbering agency prefix, i.e. legal domicile). Verification tiers, not uniform: 10 of 50
+      ISINs were verified live (2026-08-10) against real sources, surfacing 5 CAC40 "constituents"
+      that are NOT actually France-domiciled (ArcelorMittal/Eurofins Scientific -> Luxembourg,
+      Airbus/Stellantis/STMicroelectronics -> Netherlands - all real EU cross-border merger/
+      holding structures) despite Euronext's own CAC 40 factsheet listing all of them as
+      "Country: France" (a HQ/operations classification, not a legal-domicile one). The
+      remaining ~40 ISINs are unverified best-effort - same "snapshot, sanity-check
+      periodically" caveat this project already applies to the ticker list itself, but with a
+      demonstrated ~10% surprise rate in the verified sample, treat any single row's country
+      with appropriate skepticism until spot-checked.

@@ -54,14 +54,27 @@ Several pipelines feed one warehouse:
   above, for the dashboard's choropleth map.
 - **`marts/portfolio/equity_performance_summary`** — one row per PEA watchlist ticker (CAC40 +
   non-French EU blue chips + PEA ETFs, see [`dbt/seeds/pea_watchlist.csv`](dbt/seeds/pea_watchlist.csv))
-  with period return, annualized volatility, max drawdown, Sharpe ratio (against a dated
+  with period return (a median of the first/last 5 trading days' price, not a single
+  point-to-point comparison — the latter let one glitchy data point swing the figure
+  arbitrarily; GLE.PA briefly showed +327% from exactly that), annualized volatility, max
+  drawdown, Sharpe ratio (against a dated
   illustrative risk-free rate, `risk_free_rate_pct`), simple excess return vs. a benchmark
-  (`benchmark_ticker`, CW8.PA by default — not a Beta-adjusted CAPM alpha), and dividends.
-  Return/volatility/drawdown/Sharpe/vs.-benchmark are all null below `min_trading_days_for_return`
-  (60) days of ingested history for a ticker — short-history extrapolation fails in both
-  directions (an absurd return from a noisy few-day average, or a falsely-flattering near-zero
-  drawdown from not having lived through a bad week yet), so this project nulls rather than
-  fabricates either way, see the model's header comment.
+  (`benchmark_ticker`, CW8.PA by default — not a Beta-adjusted CAPM alpha, and computed over a
+  date-aligned common window with the benchmark rather than each ticker's own independently-
+  ingested first/last date, since this watchlist spans 5 exchanges with different holiday
+  calendars), dividends, and dividend yield. Everything is computed off adjusted close, never
+  raw close. `country` is derived from each ticker's ISIN prefix (legal domicile), not
+  hand-typed — that caught 5 real mistakes in the original ticker list (ArcelorMittal/Eurofins
+  are Luxembourg-domiciled, Airbus/Stellantis/STMicroelectronics are Netherlands-domiciled,
+  despite all five being reputationally "French" CAC 40 names — Euronext's own factsheet lists
+  all five as "Country: France" on a HQ/operations basis, not a legal-domicile one; both are
+  legitimate, this mart picks the one that matters for real PEA eligibility). ISIN verification
+  is tiered, not uniform — see [`dbt/seeds/_seeds.yml`](dbt/seeds/_seeds.yml). Return/
+  volatility/drawdown/Sharpe/vs.-benchmark are all null below `min_trading_days_for_return` (60)
+  days of ingested history for a ticker — short-history extrapolation fails in both directions
+  (an absurd return from a noisy few-day average, or a falsely-flattering near-zero drawdown
+  from not having lived through a bad week yet), so this project nulls rather than fabricates
+  either way, see the model's header comment.
 
 All are starting points for your own research, not investment advice — the opportunity score
 in particular uses simple, transparent, hand-picked weights (see the comments in

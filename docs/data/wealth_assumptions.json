@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-08-10T08:39:52.039038+00:00",
+  "exported_at": "2026-08-10T09:08:09.184133+00:00",
   "project": "personal-investment-505011",
   "dataset": "analytics",
   "equities": {
@@ -433,7 +433,7 @@
       {
         "code_departement": "04",
         "nom_departement": "Alpes-de-Haute-Provence",
-        "median_price_cagr": 0.03652993214178979
+        "median_price_cagr": 0.0344424928088356
       },
       {
         "code_departement": "05",
@@ -443,7 +443,7 @@
       {
         "code_departement": "06",
         "nom_departement": "Alpes-Maritimes",
-        "median_price_cagr": 0.025830214078471192
+        "median_price_cagr": 0.025537925964919994
       },
       {
         "code_departement": "07",
@@ -453,7 +453,7 @@
       {
         "code_departement": "08",
         "nom_departement": "Ardennes",
-        "median_price_cagr": 0.049555668510939954
+        "median_price_cagr": 0.04355488264482377
       },
       {
         "code_departement": "09",
@@ -468,7 +468,7 @@
       {
         "code_departement": "11",
         "nom_departement": "Aude",
-        "median_price_cagr": 0.02198502662548485
+        "median_price_cagr": 0.02322991919235262
       },
       {
         "code_departement": "12",
@@ -478,12 +478,12 @@
       {
         "code_departement": "13",
         "nom_departement": "Bouches-du-Rhone",
-        "median_price_cagr": 0.015513301325271511
+        "median_price_cagr": 0.015678069109723136
       },
       {
         "code_departement": "14",
         "nom_departement": "Calvados",
-        "median_price_cagr": 0.03352344106477623
+        "median_price_cagr": 0.03482183871278921
       },
       {
         "code_departement": "15",
@@ -498,12 +498,12 @@
       {
         "code_departement": "17",
         "nom_departement": "Charente-Maritime",
-        "median_price_cagr": 0.02548125580044802
+        "median_price_cagr": 0.024750228500986404
       },
       {
         "code_departement": "18",
         "nom_departement": "Cher",
-        "median_price_cagr": 0.020307283239236362
+        "median_price_cagr": 0.020005283131651064
       },
       {
         "code_departement": "19",
@@ -533,7 +533,7 @@
       {
         "code_departement": "25",
         "nom_departement": "Doubs",
-        "median_price_cagr": 0.01915514997920087
+        "median_price_cagr": 0.018672532790676044
       },
       {
         "code_departement": "26",
@@ -543,7 +543,7 @@
       {
         "code_departement": "27",
         "nom_departement": "Eure",
-        "median_price_cagr": 0.006250162261261627
+        "median_price_cagr": 0.005618095410112822
       },
       {
         "code_departement": "28",
@@ -583,7 +583,7 @@
       {
         "code_departement": "33",
         "nom_departement": "Gironde",
-        "median_price_cagr": -0.0035737435286987695
+        "median_price_cagr": -0.004895863408075685
       },
       {
         "code_departement": "34",
@@ -618,12 +618,12 @@
       {
         "code_departement": "40",
         "nom_departement": "Landes",
-        "median_price_cagr": 0.03104690358980089
+        "median_price_cagr": 0.03019232640290226
       },
       {
         "code_departement": "41",
         "nom_departement": "Loir-et-Cher",
-        "median_price_cagr": 0.021165185011166265
+        "median_price_cagr": 0.020110261548440755
       },
       {
         "code_departement": "42",
@@ -663,12 +663,12 @@
       {
         "code_departement": "49",
         "nom_departement": "Maine-et-Loire",
-        "median_price_cagr": 0.018185790714934313
+        "median_price_cagr": 0.018695903921873702
       },
       {
         "code_departement": "50",
         "nom_departement": "Manche",
-        "median_price_cagr": 0.05020439204773264
+        "median_price_cagr": 0.050443020638550884
       },
       {
         "code_departement": "51",
@@ -708,7 +708,7 @@
       {
         "code_departement": "59",
         "nom_departement": "Nord",
-        "median_price_cagr": 0.0022261872223170442
+        "median_price_cagr": 0.0023175053914448185
       },
       {
         "code_departement": "60",
@@ -768,7 +768,7 @@
       {
         "code_departement": "73",
         "nom_departement": "Savoie",
-        "median_price_cagr": 0.027622856173838084
+        "median_price_cagr": 0.027744305802767544
       },
       {
         "code_departement": "74",
@@ -778,17 +778,17 @@
       {
         "code_departement": "76",
         "nom_departement": "Seine-Maritime",
-        "median_price_cagr": 0.011946055351474527
+        "median_price_cagr": 0.011804548762022193
       },
       {
         "code_departement": "77",
         "nom_departement": "Seine-et-Marne",
-        "median_price_cagr": -0.0064662340444503474
+        "median_price_cagr": -0.005622453060538768
       },
       {
         "code_departement": "78",
         "nom_departement": "Yvelines",
-        "median_price_cagr": -0.01320991723693643
+        "median_price_cagr": -0.012534551044785847
       },
       {
         "code_departement": "79",
@@ -808,12 +808,12 @@
       {
         "code_departement": "82",
         "nom_departement": "Tarn-et-Garonne",
-        "median_price_cagr": 0.030730130333235683
+        "median_price_cagr": 0.03191625214971383
       },
       {
         "code_departement": "83",
         "nom_departement": "Var",
-        "median_price_cagr": 0.028930844929951904
+        "median_price_cagr": 0.029617309304984296
       },
       {
         "code_departement": "84",
@@ -823,7 +823,7 @@
       {
         "code_departement": "85",
         "nom_departement": "Vendee",
-        "median_price_cagr": 0.033018513501754665
+        "median_price_cagr": 0.03329357664539989
       },
       {
         "code_departement": "86",
@@ -833,7 +833,7 @@
       {
         "code_departement": "87",
         "nom_departement": "Haute-Vienne",
-        "median_price_cagr": -0.0018450226411449444
+        "median_price_cagr": -0.0027855297492901387
       },
       {
         "code_departement": "88",
@@ -853,12 +853,12 @@
       {
         "code_departement": "91",
         "nom_departement": "Essonne",
-        "median_price_cagr": -0.015356237463196254
+        "median_price_cagr": -0.015472175237749908
       },
       {
         "code_departement": "92",
         "nom_departement": "Hauts-de-Seine",
-        "median_price_cagr": -0.03354738686251024
+        "median_price_cagr": -0.0340894878902277
       },
       {
         "code_departement": "93",
@@ -868,7 +868,7 @@
       {
         "code_departement": "94",
         "nom_departement": "Val-de-Marne",
-        "median_price_cagr": -0.023024217262430313
+        "median_price_cagr": -0.023314853368538446
       },
       {
         "code_departement": "95",
