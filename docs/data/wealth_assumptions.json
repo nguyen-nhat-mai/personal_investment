@@ -1,55 +1,837 @@
 {
-  "exported_at": "2026-08-10T09:00:00+00:00",
-  "project": "local-dev-fixture",
+  "exported_at": "2026-08-10T07:28:00.364596+00:00",
+  "project": "personal-investment-505011",
   "dataset": "analytics",
-  "_fixture_note": "Hand-written for local UI development (python -m http.server) - not a real export. Run scripts/export_wealth_assumptions.py against real BigQuery credentials to replace this file. See that script's CONSTANTS dict for where every non-market-data figure below comes from.",
   "equities": {
     "pea_eligible": [
-      { "ticker": "CW8.PA", "name": "Amundi MSCI World UCITS ETF", "asset_type": "etf", "annualized_return": 0.0745, "annualized_volatility": 0.152 },
-      { "ticker": "PE500.PA", "name": "Amundi PEA S&P 500 UCITS ETF", "asset_type": "etf", "annualized_return": 0.0912, "annualized_volatility": 0.171 },
-      { "ticker": "AI.PA", "name": "Air Liquide", "asset_type": "stock", "annualized_return": 0.0611, "annualized_volatility": 0.198 },
-      { "ticker": "MC.PA", "name": "LVMH", "asset_type": "stock", "annualized_return": 0.0523, "annualized_volatility": 0.243 },
-      { "ticker": "AIR.PA", "name": "Airbus", "asset_type": "stock", "annualized_return": 0.0834, "annualized_volatility": 0.276 }
+      {
+        "ticker": "AC.PA",
+        "name": "Accor",
+        "asset_type": "stock",
+        "annualized_return": 2.1740760784551254,
+        "annualized_volatility": 0.1938803226825593
+      },
+      {
+        "ticker": "ACA.PA",
+        "name": "Credit Agricole",
+        "asset_type": "stock",
+        "annualized_return": 0.6800707031032489,
+        "annualized_volatility": 0.0829860418218427
+      },
+      {
+        "ticker": "AI.PA",
+        "name": "Air Liquide",
+        "asset_type": "stock",
+        "annualized_return": 1.1443525775336512,
+        "annualized_volatility": 0.12070919945957102
+      },
+      {
+        "ticker": "AIR.PA",
+        "name": "Airbus",
+        "asset_type": "stock",
+        "annualized_return": 4.47536455392149,
+        "annualized_volatility": 0.2683182383206412
+      },
+      {
+        "ticker": "BN.PA",
+        "name": "Danone",
+        "asset_type": "stock",
+        "annualized_return": 0.4759344112876329,
+        "annualized_volatility": 0.024874110811357424
+      },
+      {
+        "ticker": "BNP.PA",
+        "name": "BNP Paribas",
+        "asset_type": "stock",
+        "annualized_return": 0.44979808605022753,
+        "annualized_volatility": 0.037840588563822816
+      },
+      {
+        "ticker": "BVI.PA",
+        "name": "Bureau Veritas",
+        "asset_type": "stock",
+        "annualized_return": 0.2865970620940015,
+        "annualized_volatility": 0.1386597162024403
+      },
+      {
+        "ticker": "CA.PA",
+        "name": "Carrefour",
+        "asset_type": "stock",
+        "annualized_return": -0.29562464877422767,
+        "annualized_volatility": 0.14666699444055162
+      },
+      {
+        "ticker": "CAP.PA",
+        "name": "Capgemini",
+        "asset_type": "stock",
+        "annualized_return": 2.3125925604133313,
+        "annualized_volatility": 0.10840009886927186
+      },
+      {
+        "ticker": "CS.PA",
+        "name": "Axa",
+        "asset_type": "stock",
+        "annualized_return": 0.8070517576669844,
+        "annualized_volatility": 0.06549421284389463
+      },
+      {
+        "ticker": "CW8.PA",
+        "name": "Amundi MSCI World UCITS ETF",
+        "asset_type": "etf",
+        "annualized_return": 2.4356334770385932,
+        "annualized_volatility": 0.09364420359133208
+      },
+      {
+        "ticker": "DG.PA",
+        "name": "Vinci",
+        "asset_type": "stock",
+        "annualized_return": 0.14778042921651569,
+        "annualized_volatility": 0.17950425630943811
+      },
+      {
+        "ticker": "DSY.PA",
+        "name": "Dassault Systemes",
+        "asset_type": "stock",
+        "annualized_return": 81.02179310859886,
+        "annualized_volatility": 0.16466971457374735
+      },
+      {
+        "ticker": "EDEN.PA",
+        "name": "Edenred",
+        "asset_type": "stock",
+        "annualized_return": 2.6667365536831467,
+        "annualized_volatility": 0.24883240186896957
+      },
+      {
+        "ticker": "EL.PA",
+        "name": "EssilorLuxottica",
+        "asset_type": "stock",
+        "annualized_return": 1.7075061961934113,
+        "annualized_volatility": 0.051286259863264426
+      },
+      {
+        "ticker": "EN.PA",
+        "name": "Bouygues",
+        "asset_type": "stock",
+        "annualized_return": -0.557417095011201,
+        "annualized_volatility": 0.1493835949399301
+      },
+      {
+        "ticker": "ENGI.PA",
+        "name": "Engie",
+        "asset_type": "stock",
+        "annualized_return": -0.292130609193641,
+        "annualized_volatility": 0.13799560367284824
+      },
+      {
+        "ticker": "ERF.PA",
+        "name": "Eurofins Scientific",
+        "asset_type": "stock",
+        "annualized_return": 5.6411002415716505,
+        "annualized_volatility": 0.12713266924763278
+      },
+      {
+        "ticker": "GLE.PA",
+        "name": "Societe Generale",
+        "asset_type": "stock",
+        "annualized_return": 0.8768755921014992,
+        "annualized_volatility": 0.09565181398596799
+      },
+      {
+        "ticker": "HO.PA",
+        "name": "Thales",
+        "asset_type": "stock",
+        "annualized_return": 13.849063337480233,
+        "annualized_volatility": 0.26168871976371505
+      },
+      {
+        "ticker": "KER.PA",
+        "name": "Kering",
+        "asset_type": "stock",
+        "annualized_return": -0.27861489470102463,
+        "annualized_volatility": 0.38790790111370754
+      },
+      {
+        "ticker": "LR.PA",
+        "name": "Legrand",
+        "asset_type": "stock",
+        "annualized_return": 12.873689238232103,
+        "annualized_volatility": 0.20318560941544364
+      },
+      {
+        "ticker": "MC.PA",
+        "name": "LVMH",
+        "asset_type": "stock",
+        "annualized_return": -0.5917160210136232,
+        "annualized_volatility": 0.09465372775629222
+      },
+      {
+        "ticker": "ML.PA",
+        "name": "Michelin",
+        "asset_type": "stock",
+        "annualized_return": -0.29431906212786274,
+        "annualized_volatility": 0.1990002132946543
+      },
+      {
+        "ticker": "MT.AS",
+        "name": "ArcelorMittal",
+        "asset_type": "stock",
+        "annualized_return": 2.966102839155313,
+        "annualized_volatility": 0.4053229695147736
+      },
+      {
+        "ticker": "OR.PA",
+        "name": "L'Oreal",
+        "asset_type": "stock",
+        "annualized_return": -0.46204506965069536,
+        "annualized_volatility": 0.12004323396001285
+      },
+      {
+        "ticker": "ORA.PA",
+        "name": "Orange",
+        "asset_type": "stock",
+        "annualized_return": -0.4001156214018825,
+        "annualized_volatility": 0.4009946946245915
+      },
+      {
+        "ticker": "PE500.PA",
+        "name": "Amundi PEA S&P 500 UCITS ETF",
+        "asset_type": "etf",
+        "annualized_return": 2.82443379962586,
+        "annualized_volatility": 0.14096995875288426
+      },
+      {
+        "ticker": "PUB.PA",
+        "name": "Publicis",
+        "asset_type": "stock",
+        "annualized_return": 53.92173694983184,
+        "annualized_volatility": 0.19546645468021867
+      },
+      {
+        "ticker": "RI.PA",
+        "name": "Pernod Ricard",
+        "asset_type": "stock",
+        "annualized_return": 3.3631067490576294,
+        "annualized_volatility": 0.2490168798966091
+      },
+      {
+        "ticker": "RMS.PA",
+        "name": "Hermes",
+        "asset_type": "stock",
+        "annualized_return": 19.55987479223491,
+        "annualized_volatility": 0.42780185734254955
+      },
+      {
+        "ticker": "RNO.PA",
+        "name": "Renault",
+        "asset_type": "stock",
+        "annualized_return": 0.5368225126064587,
+        "annualized_volatility": 0.16686154219420646
+      },
+      {
+        "ticker": "SAF.PA",
+        "name": "Safran",
+        "asset_type": "stock",
+        "annualized_return": 1.9853756481232367,
+        "annualized_volatility": 0.1568536980676583
+      },
+      {
+        "ticker": "SAN.PA",
+        "name": "Sanofi",
+        "asset_type": "stock",
+        "annualized_return": 0.9864093530213012,
+        "annualized_volatility": 0.11673047244288724
+      },
+      {
+        "ticker": "SGO.PA",
+        "name": "Saint-Gobain",
+        "asset_type": "stock",
+        "annualized_return": 3.2348276851525215,
+        "annualized_volatility": 0.17544323339339585
+      },
+      {
+        "ticker": "STLAP.PA",
+        "name": "Stellantis",
+        "asset_type": "stock",
+        "annualized_return": -0.8422007177484847,
+        "annualized_volatility": 0.21265457070383562
+      },
+      {
+        "ticker": "STMPA.PA",
+        "name": "STMicroelectronics",
+        "asset_type": "stock",
+        "annualized_return": 58.50842031928213,
+        "annualized_volatility": 0.37023597681541726
+      },
+      {
+        "ticker": "SU.PA",
+        "name": "Schneider Electric",
+        "asset_type": "stock",
+        "annualized_return": 17.24748363819918,
+        "annualized_volatility": 0.22053987314009896
+      },
+      {
+        "ticker": "TEP.PA",
+        "name": "Teleperformance",
+        "asset_type": "stock",
+        "annualized_return": 111.9644293974784,
+        "annualized_volatility": 0.2315646029638005
+      },
+      {
+        "ticker": "TTE.PA",
+        "name": "TotalEnergies",
+        "asset_type": "stock",
+        "annualized_return": -0.8555459446763536,
+        "annualized_volatility": 0.2515465692380737
+      },
+      {
+        "ticker": "URW.PA",
+        "name": "Unibail-Rodamco-Westfield",
+        "asset_type": "stock",
+        "annualized_return": -0.39566267195343596,
+        "annualized_volatility": 0.1429783959378939
+      },
+      {
+        "ticker": "VIE.PA",
+        "name": "Veolia",
+        "asset_type": "stock",
+        "annualized_return": 4.077763335057249,
+        "annualized_volatility": 0.17262806228987246
+      }
     ],
     "blended_default": {
-      "annualized_return": 0.0725,
-      "annualized_volatility": 0.208,
+      "annualized_return": 9.760414538743223,
+      "annualized_volatility": 0.1842861728421828,
       "method": "equal-weighted mean of annualized_return/annualized_volatility across pea_eligible=true rows in equity_performance_summary"
     }
   },
   "real_estate": {
-    "national_median_price_cagr": 0.0298,
+    "national_median_price_cagr": 0.019378257595758397,
     "by_department": [
-      { "code_departement": "75", "nom_departement": "Paris", "median_price_cagr": 0.0451 },
-      { "code_departement": "69", "nom_departement": "Rhône", "median_price_cagr": 0.0387 },
-      { "code_departement": "33", "nom_departement": "Gironde", "median_price_cagr": 0.0312 },
-      { "code_departement": "44", "nom_departement": "Loire-Atlantique", "median_price_cagr": 0.0298 },
-      { "code_departement": "23", "nom_departement": "Creuse", "median_price_cagr": 0.0071 }
+      {
+        "code_departement": "01",
+        "nom_departement": "Ain",
+        "median_price_cagr": 0.01598947272140827
+      },
+      {
+        "code_departement": "02",
+        "nom_departement": "Aisne",
+        "median_price_cagr": -0.004048627326880716
+      },
+      {
+        "code_departement": "03",
+        "nom_departement": "Allier",
+        "median_price_cagr": 0.019378257595758397
+      },
+      {
+        "code_departement": "04",
+        "nom_departement": "Alpes-de-Haute-Provence",
+        "median_price_cagr": 0.0344424928088356
+      },
+      {
+        "code_departement": "05",
+        "nom_departement": "Hautes-Alpes",
+        "median_price_cagr": 0.05274232180240945
+      },
+      {
+        "code_departement": "06",
+        "nom_departement": "Alpes-Maritimes",
+        "median_price_cagr": 0.025537925964919994
+      },
+      {
+        "code_departement": "07",
+        "nom_departement": "Ardeche",
+        "median_price_cagr": 0.03222414931597406
+      },
+      {
+        "code_departement": "08",
+        "nom_departement": "Ardennes",
+        "median_price_cagr": 0.04416562551300518
+      },
+      {
+        "code_departement": "09",
+        "nom_departement": "Ariege",
+        "median_price_cagr": 0.03557815740166426
+      },
+      {
+        "code_departement": "10",
+        "nom_departement": "Aube",
+        "median_price_cagr": 0.005196524672933744
+      },
+      {
+        "code_departement": "11",
+        "nom_departement": "Aude",
+        "median_price_cagr": 0.023091788874125108
+      },
+      {
+        "code_departement": "12",
+        "nom_departement": "Aveyron",
+        "median_price_cagr": 0.024828875291402763
+      },
+      {
+        "code_departement": "13",
+        "nom_departement": "Bouches-du-Rhone",
+        "median_price_cagr": 0.015513301325271511
+      },
+      {
+        "code_departement": "14",
+        "nom_departement": "Calvados",
+        "median_price_cagr": 0.032661452807439595
+      },
+      {
+        "code_departement": "15",
+        "nom_departement": "Cantal",
+        "median_price_cagr": 0.008458431811397382
+      },
+      {
+        "code_departement": "16",
+        "nom_departement": "Charente",
+        "median_price_cagr": 0.023669407582431523
+      },
+      {
+        "code_departement": "17",
+        "nom_departement": "Charente-Maritime",
+        "median_price_cagr": 0.02523621845401114
+      },
+      {
+        "code_departement": "18",
+        "nom_departement": "Cher",
+        "median_price_cagr": 0.019032649463458506
+      },
+      {
+        "code_departement": "19",
+        "nom_departement": "Correze",
+        "median_price_cagr": 0.023958659631879264
+      },
+      {
+        "code_departement": "21",
+        "nom_departement": "Cote-d'Or",
+        "median_price_cagr": 0.0132184423031394
+      },
+      {
+        "code_departement": "22",
+        "nom_departement": "Cotes-d'Armor",
+        "median_price_cagr": 0.05042154269995325
+      },
+      {
+        "code_departement": "23",
+        "nom_departement": "Creuse",
+        "median_price_cagr": 0.042742652354259336
+      },
+      {
+        "code_departement": "24",
+        "nom_departement": "Dordogne",
+        "median_price_cagr": 0.018476300590088313
+      },
+      {
+        "code_departement": "25",
+        "nom_departement": "Doubs",
+        "median_price_cagr": 0.01915514997920087
+      },
+      {
+        "code_departement": "26",
+        "nom_departement": "Drome",
+        "median_price_cagr": 0.02459996353762639
+      },
+      {
+        "code_departement": "27",
+        "nom_departement": "Eure",
+        "median_price_cagr": 0.005618095410112822
+      },
+      {
+        "code_departement": "28",
+        "nom_departement": "Eure-et-Loir",
+        "median_price_cagr": 0.015937420341671782
+      },
+      {
+        "code_departement": "29",
+        "nom_departement": "Finistere",
+        "median_price_cagr": 0.050933194774384516
+      },
+      {
+        "code_departement": "2A",
+        "nom_departement": "Corse-du-Sud",
+        "median_price_cagr": 0.030128608010213442
+      },
+      {
+        "code_departement": "2B",
+        "nom_departement": "Haute-Corse",
+        "median_price_cagr": 0.04191320455544201
+      },
+      {
+        "code_departement": "30",
+        "nom_departement": "Gard",
+        "median_price_cagr": 0.028492359833610426
+      },
+      {
+        "code_departement": "31",
+        "nom_departement": "Haute-Garonne",
+        "median_price_cagr": 0.00089939660455296
+      },
+      {
+        "code_departement": "32",
+        "nom_departement": "Gers",
+        "median_price_cagr": 0.027475118947009047
+      },
+      {
+        "code_departement": "33",
+        "nom_departement": "Gironde",
+        "median_price_cagr": -0.004309420671718134
+      },
+      {
+        "code_departement": "34",
+        "nom_departement": "Herault",
+        "median_price_cagr": 0.02082083383409694
+      },
+      {
+        "code_departement": "35",
+        "nom_departement": "Ille-et-Vilaine",
+        "median_price_cagr": 0.02994086525763806
+      },
+      {
+        "code_departement": "36",
+        "nom_departement": "Indre",
+        "median_price_cagr": -0.00010785531051071828
+      },
+      {
+        "code_departement": "37",
+        "nom_departement": "Indre-et-Loire",
+        "median_price_cagr": 0.014358668196151614
+      },
+      {
+        "code_departement": "38",
+        "nom_departement": "Isere",
+        "median_price_cagr": 0.003887574782310166
+      },
+      {
+        "code_departement": "39",
+        "nom_departement": "Jura",
+        "median_price_cagr": 0.05507246994265502
+      },
+      {
+        "code_departement": "40",
+        "nom_departement": "Landes",
+        "median_price_cagr": 0.03019232640290226
+      },
+      {
+        "code_departement": "41",
+        "nom_departement": "Loir-et-Cher",
+        "median_price_cagr": 0.020413775479336982
+      },
+      {
+        "code_departement": "42",
+        "nom_departement": "Loire",
+        "median_price_cagr": 0.018128887797266957
+      },
+      {
+        "code_departement": "43",
+        "nom_departement": "Haute-Loire",
+        "median_price_cagr": 0.03804254490512715
+      },
+      {
+        "code_departement": "44",
+        "nom_departement": "Loire-Atlantique",
+        "median_price_cagr": 0.011272365139302076
+      },
+      {
+        "code_departement": "45",
+        "nom_departement": "Loiret",
+        "median_price_cagr": 0.009440963412625347
+      },
+      {
+        "code_departement": "46",
+        "nom_departement": "Lot",
+        "median_price_cagr": 0.01923591041266759
+      },
+      {
+        "code_departement": "47",
+        "nom_departement": "Lot-et-Garonne",
+        "median_price_cagr": 0.027040024624839676
+      },
+      {
+        "code_departement": "48",
+        "nom_departement": "Lozere",
+        "median_price_cagr": 0.11163178125793793
+      },
+      {
+        "code_departement": "49",
+        "nom_departement": "Maine-et-Loire",
+        "median_price_cagr": 0.018695903921873702
+      },
+      {
+        "code_departement": "50",
+        "nom_departement": "Manche",
+        "median_price_cagr": 0.050443020638550884
+      },
+      {
+        "code_departement": "51",
+        "nom_departement": "Marne",
+        "median_price_cagr": -0.003344506587403595
+      },
+      {
+        "code_departement": "52",
+        "nom_departement": "Haute-Marne",
+        "median_price_cagr": 0.0021520869820634836
+      },
+      {
+        "code_departement": "53",
+        "nom_departement": "Mayenne",
+        "median_price_cagr": 0.03923490721182654
+      },
+      {
+        "code_departement": "54",
+        "nom_departement": "Meurthe-et-Moselle",
+        "median_price_cagr": 0.00884307466532852
+      },
+      {
+        "code_departement": "55",
+        "nom_departement": "Meuse",
+        "median_price_cagr": -0.009734224432481065
+      },
+      {
+        "code_departement": "56",
+        "nom_departement": "Morbihan",
+        "median_price_cagr": 0.04689142242491218
+      },
+      {
+        "code_departement": "58",
+        "nom_departement": "Nievre",
+        "median_price_cagr": 0.009938965163096558
+      },
+      {
+        "code_departement": "59",
+        "nom_departement": "Nord",
+        "median_price_cagr": 0.0040128015051017485
+      },
+      {
+        "code_departement": "60",
+        "nom_departement": "Oise",
+        "median_price_cagr": -0.000763061633457851
+      },
+      {
+        "code_departement": "61",
+        "nom_departement": "Orne",
+        "median_price_cagr": 0.03672965370691306
+      },
+      {
+        "code_departement": "62",
+        "nom_departement": "Pas-de-Calais",
+        "median_price_cagr": 0.010766745726424665
+      },
+      {
+        "code_departement": "63",
+        "nom_departement": "Puy-de-Dome",
+        "median_price_cagr": 0.017912519952603567
+      },
+      {
+        "code_departement": "64",
+        "nom_departement": "Pyrenees-Atlantiques",
+        "median_price_cagr": 0.024374200544801328
+      },
+      {
+        "code_departement": "65",
+        "nom_departement": "Hautes-Pyrenees",
+        "median_price_cagr": 0.03250453834832645
+      },
+      {
+        "code_departement": "66",
+        "nom_departement": "Pyrenees-Orientales",
+        "median_price_cagr": 0.030992981807911546
+      },
+      {
+        "code_departement": "69",
+        "nom_departement": "Rhone",
+        "median_price_cagr": -0.007894878170307873
+      },
+      {
+        "code_departement": "70",
+        "nom_departement": "Haute-Saone",
+        "median_price_cagr": 0.005695392084061668
+      },
+      {
+        "code_departement": "71",
+        "nom_departement": "Saone-et-Loire",
+        "median_price_cagr": 0.02840959786795838
+      },
+      {
+        "code_departement": "72",
+        "nom_departement": "Sarthe",
+        "median_price_cagr": 0.019498748421983736
+      },
+      {
+        "code_departement": "73",
+        "nom_departement": "Savoie",
+        "median_price_cagr": 0.027622856173838084
+      },
+      {
+        "code_departement": "74",
+        "nom_departement": "Haute-Savoie",
+        "median_price_cagr": 0.03849882037022079
+      },
+      {
+        "code_departement": "76",
+        "nom_departement": "Seine-Maritime",
+        "median_price_cagr": 0.012017171280376049
+      },
+      {
+        "code_departement": "77",
+        "nom_departement": "Seine-et-Marne",
+        "median_price_cagr": -0.005893473637724633
+      },
+      {
+        "code_departement": "78",
+        "nom_departement": "Yvelines",
+        "median_price_cagr": -0.012534551044785847
+      },
+      {
+        "code_departement": "79",
+        "nom_departement": "Deux-Sevres",
+        "median_price_cagr": 0.036193598981712816
+      },
+      {
+        "code_departement": "80",
+        "nom_departement": "Somme",
+        "median_price_cagr": 0.012163267252980114
+      },
+      {
+        "code_departement": "81",
+        "nom_departement": "Tarn",
+        "median_price_cagr": 0.019439477838389285
+      },
+      {
+        "code_departement": "82",
+        "nom_departement": "Tarn-et-Garonne",
+        "median_price_cagr": 0.02930469585283002
+      },
+      {
+        "code_departement": "83",
+        "nom_departement": "Var",
+        "median_price_cagr": 0.02930429839091131
+      },
+      {
+        "code_departement": "84",
+        "nom_departement": "Vaucluse",
+        "median_price_cagr": 0.017783699682450305
+      },
+      {
+        "code_departement": "85",
+        "nom_departement": "Vendee",
+        "median_price_cagr": 0.033018513501754665
+      },
+      {
+        "code_departement": "86",
+        "nom_departement": "Vienne",
+        "median_price_cagr": 0.02567626390143163
+      },
+      {
+        "code_departement": "87",
+        "nom_departement": "Haute-Vienne",
+        "median_price_cagr": -0.00198367453588022
+      },
+      {
+        "code_departement": "88",
+        "nom_departement": "Vosges",
+        "median_price_cagr": 0.040034828412289336
+      },
+      {
+        "code_departement": "89",
+        "nom_departement": "Yonne",
+        "median_price_cagr": -0.0049505761352113264
+      },
+      {
+        "code_departement": "90",
+        "nom_departement": "Territoire de Belfort",
+        "median_price_cagr": -0.005380201848675048
+      },
+      {
+        "code_departement": "91",
+        "nom_departement": "Essonne",
+        "median_price_cagr": -0.015472175237749908
+      },
+      {
+        "code_departement": "92",
+        "nom_departement": "Hauts-de-Seine",
+        "median_price_cagr": -0.03393316945251712
+      },
+      {
+        "code_departement": "93",
+        "nom_departement": "Seine-Saint-Denis",
+        "median_price_cagr": -0.023002334067400043
+      },
+      {
+        "code_departement": "94",
+        "nom_departement": "Val-de-Marne",
+        "median_price_cagr": -0.023314853368538446
+      },
+      {
+        "code_departement": "95",
+        "nom_departement": "Val-d'Oise",
+        "median_price_cagr": -0.01698369634568464
+      }
     ]
   },
   "constants": {
     "as_of": "2026-08-10",
-    "livret_a": { "rate": 0.017, "cap": 22950 },
-    "ldds": { "rate": 0.017, "cap": 12000 },
-    "av_fonds_euro": { "rate": 0.025 },
-    "scpi_in_av": { "distribution_rate": 0.045 },
-    "cat": { "rate": 0.025 },
-    "pea": { "cap": 150000, "income_tax_rate_after_5y": 0.0, "social_charges_rate_after_5y": 0.172 },
-    "pfu": { "total_rate": 0.30, "ir_component": 0.128, "ps_component": 0.172 },
+    "livret_a": {
+      "rate": 0.017,
+      "cap": 22950
+    },
+    "ldds": {
+      "rate": 0.017,
+      "cap": 12000
+    },
+    "av_fonds_euro": {
+      "rate": 0.025
+    },
+    "scpi_in_av": {
+      "distribution_rate": 0.045
+    },
+    "cat": {
+      "rate": 0.025
+    },
+    "pea": {
+      "cap": 150000,
+      "income_tax_rate_after_5y": 0.0,
+      "social_charges_rate_after_5y": 0.172
+    },
+    "pfu": {
+      "total_rate": 0.3,
+      "ir_component": 0.128,
+      "ps_component": 0.172
+    },
     "av_abatement": {
       "holding_years_required": 8,
       "single": 4600,
       "couple": 9200,
       "reduced_rate_below_150k_cumulative_premiums": 0.247,
-      "rate_above_150k_cumulative_premiums": 0.30
+      "rate_above_150k_cumulative_premiums": 0.3
     },
     "tmi_brackets": [
-      { "up_to": 11497, "rate": 0.0 },
-      { "up_to": 29315, "rate": 0.11 },
-      { "up_to": 83823, "rate": 0.30 },
-      { "up_to": 180294, "rate": 0.41 },
-      { "up_to": null, "rate": 0.45 }
+      {
+        "up_to": 11497,
+        "rate": 0.0
+      },
+      {
+        "up_to": 29315,
+        "rate": 0.11
+      },
+      {
+        "up_to": 83823,
+        "rate": 0.3
+      },
+      {
+        "up_to": 180294,
+        "rate": 0.41
+      },
+      {
+        "up_to": null,
+        "rate": 0.45
+      }
     ],
-    "mortgage": { "default_rate": 0.035, "default_ltv": 0.80, "default_term_years": 20 }
+    "mortgage": {
+      "default_rate": 0.035,
+      "default_ltv": 0.8,
+      "default_term_years": 20
+    }
   }
 }

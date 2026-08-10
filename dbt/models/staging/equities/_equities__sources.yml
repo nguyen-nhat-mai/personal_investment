@@ -19,8 +19,9 @@ models:
         tests:
           - not_null
           - relationships:
-              to: ref('cac40_tickers')
-              field: ticker
+              arguments:
+                to: ref('cac40_tickers')
+                field: ticker
       - name: date
         tests:
           - not_null

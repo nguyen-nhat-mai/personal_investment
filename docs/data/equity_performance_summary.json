@@ -12,6 +12,7 @@
     "period_return_pct": 0.07758622208373848,
     "avg_daily_return": 0.018935266912748706,
     "annualized_volatility": 0.2315646029638005,
+    "annualized_return": 111.9644293974784,
     "total_dividends": 0.0
   },
   {
@@ -27,6 +28,7 @@
     "period_return_pct": 0.07228915662650602,
     "avg_daily_return": 0.017641846645696093,
     "annualized_volatility": 0.16466971457374735,
+    "annualized_return": 81.02179310859886,
     "total_dividends": 0.0
   },
   {
@@ -42,6 +44,7 @@
     "period_return_pct": 0.06615857966864969,
     "avg_daily_return": 0.01634692578286972,
     "annualized_volatility": 0.37023597681541726,
+    "annualized_return": 58.50842031928213,
     "total_dividends": 0.0
   },
   {
@@ -57,6 +60,7 @@
     "period_return_pct": 0.06541657095377511,
     "avg_daily_return": 0.016023486078760585,
     "annualized_volatility": 0.19546645468021867,
+    "annualized_return": 53.92173694983184,
     "total_dividends": 0.0
   },
   {
@@ -72,6 +76,7 @@
     "period_return_pct": 0.04806151874399231,
     "avg_daily_return": 0.012069643628629629,
     "annualized_volatility": 0.42780185734254955,
+    "annualized_return": 19.55987479223491,
     "total_dividends": 0.0
   },
   {
@@ -87,6 +92,7 @@
     "period_return_pct": 0.04688040612678502,
     "avg_daily_return": 0.01159057354822294,
     "annualized_volatility": 0.22053987314009896,
+    "annualized_return": 17.24748363819918,
     "total_dividends": 0.0
   },
   {
@@ -102,6 +108,7 @@
     "period_return_pct": 0.04334115291152181,
     "avg_daily_return": 0.01076361370927219,
     "annualized_volatility": 0.26168871976371505,
+    "annualized_return": 13.849063337480233,
     "total_dividends": 0.0
   },
   {
@@ -117,6 +124,7 @@
     "period_return_pct": 0.04237915946648466,
     "avg_daily_return": 0.01049113492537674,
     "annualized_volatility": 0.20318560941544364,
+    "annualized_return": 12.873689238232103,
     "total_dividends": 0.0
   },
   {
@@ -132,6 +140,7 @@
     "period_return_pct": 0.030410470223679573,
     "avg_daily_return": 0.007541299988384536,
     "annualized_volatility": 0.12713266924763278,
+    "annualized_return": 5.6411002415716505,
     "total_dividends": 0.0
   },
   {
@@ -147,6 +156,7 @@
     "period_return_pct": 0.026923106266902044,
     "avg_daily_return": 0.006769871642633969,
     "annualized_volatility": 0.2683182383206412,
+    "annualized_return": 4.47536455392149,
     "total_dividends": 0.0
   },
   {
@@ -162,6 +172,7 @@
     "period_return_pct": 0.025947504648536807,
     "avg_daily_return": 0.0064687327629169185,
     "annualized_volatility": 0.17262806228987246,
+    "annualized_return": 4.077763335057249,
     "total_dividends": 0.0
   },
   {
@@ -177,6 +188,7 @@
     "period_return_pct": 0.02328286446012265,
     "avg_daily_return": 0.005863090712984836,
     "annualized_volatility": 0.2490168798966091,
+    "annualized_return": 3.3631067490576294,
     "total_dividends": 0.0
   },
   {
@@ -192,6 +204,7 @@
     "period_return_pct": 0.02298857609567729,
     "avg_daily_return": 0.005743983930261878,
     "annualized_volatility": 0.17544323339339585,
+    "annualized_return": 3.2348276851525215,
     "total_dividends": 0.0
   },
   {
@@ -207,6 +220,7 @@
     "period_return_pct": 0.02140117107790914,
     "avg_daily_return": 0.005337249903102258,
     "annualized_volatility": 0.14096995875288426,
+    "annualized_return": 2.82443379962586,
     "total_dividends": 0.0
   },
   {
@@ -222,6 +236,7 @@
     "period_return_pct": 0.021135181328829158,
     "avg_daily_return": 0.005482370155881117,
     "annualized_volatility": 0.4053229695147736,
+    "annualized_return": 2.966102839155313,
     "total_dividends": 0.12973501
   },
   {
@@ -237,6 +252,7 @@
     "period_return_pct": 0.020465769957065137,
     "avg_daily_return": 0.005169275330294246,
     "annualized_volatility": 0.24883240186896957,
+    "annualized_return": 2.6667365536831467,
     "total_dividends": 0.0
   },
   {
@@ -252,6 +268,7 @@
     "period_return_pct": 0.01973105146652303,
     "avg_daily_return": 0.004909637279199823,
     "annualized_volatility": 0.09364420359133208,
+    "annualized_return": 2.4356334770385932,
     "total_dividends": 0.0
   },
   {
@@ -267,6 +284,7 @@
     "period_return_pct": 0.019123163340644362,
     "avg_daily_return": 0.004764214275671199,
     "annualized_volatility": 0.10840009886927186,
+    "annualized_return": 2.3125925604133313,
     "total_dividends": 0.0
   },
   {
@@ -282,6 +300,7 @@
     "period_return_pct": 0.018276766086178627,
     "avg_daily_return": 0.004593919011018482,
     "annualized_volatility": 0.1938803226825593,
+    "annualized_return": 2.1740760784551254,
     "total_dividends": 0.0
   },
   {
@@ -297,6 +316,7 @@
     "period_return_pct": 0.01736409426552709,
     "avg_daily_return": 0.004349613115655535,
     "annualized_volatility": 0.1568536980676583,
+    "annualized_return": 1.9853756481232367,
     "total_dividends": 0.0
   },
   {
@@ -312,6 +332,7 @@
     "period_return_pct": 0.015919792753982805,
     "avg_daily_return": 0.003960313415389189,
     "annualized_volatility": 0.051286259863264426,
+    "annualized_return": 1.7075061961934113,
     "total_dividends": 0.0
   },
   {
@@ -327,6 +348,7 @@
     "period_return_pct": 0.01209486537111502,
     "avg_daily_return": 0.003031720039269286,
     "annualized_volatility": 0.12070919945957102,
+    "annualized_return": 1.1443525775336512,
     "total_dividends": 0.0
   },
   {
@@ -342,6 +364,7 @@
     "period_return_pct": 0.010872450450922819,
     "avg_daily_return": 0.0027272386108114577,
     "annualized_volatility": 0.11673047244288724,
+    "annualized_return": 0.9864093530213012,
     "total_dividends": 0.0
   },
   {
@@ -357,6 +380,7 @@
     "period_return_pct": 0.00998919084891319,
     "avg_daily_return": 0.002501570048238814,
     "annualized_volatility": 0.09565181398596799,
+    "annualized_return": 0.8768755921014992,
     "total_dividends": 0.0
   },
   {
@@ -372,6 +396,7 @@
     "period_return_pct": 0.009410669031898578,
     "avg_daily_return": 0.00235076131234731,
     "annualized_volatility": 0.06549421284389463,
+    "annualized_return": 0.8070517576669844,
     "total_dividends": 0.0
   },
   {
@@ -387,6 +412,7 @@
     "period_return_pct": 0.008228328615232502,
     "avg_daily_return": 0.002060993463971787,
     "annualized_volatility": 0.0829860418218427,
+    "annualized_return": 0.6800707031032489,
     "total_dividends": 0.0
   },
   {
@@ -402,6 +428,7 @@
     "period_return_pct": 0.00667833467886887,
     "avg_daily_return": 0.0017066808414025066,
     "annualized_volatility": 0.16686154219420646,
+    "annualized_return": 0.5368225126064587,
     "total_dividends": 0.0
   },
   {
@@ -417,6 +444,7 @@
     "period_return_pct": 0.006194662979951348,
     "avg_daily_return": 0.0015460005285116351,
     "annualized_volatility": 0.024874110811357424,
+    "annualized_return": 0.4759344112876329,
     "total_dividends": 0.0
   },
   {
@@ -432,6 +460,7 @@
     "period_return_pct": 0.0059044880060565574,
     "avg_daily_return": 0.0014749926686633626,
     "annualized_volatility": 0.037840588563822816,
+    "annualized_return": 0.44979808605022753,
     "total_dividends": 0.0
   },
   {
@@ -447,6 +476,7 @@
     "period_return_pct": 0.0038938269150995577,
     "avg_daily_return": 0.0010005033306929563,
     "annualized_volatility": 0.1386597162024403,
+    "annualized_return": 0.2865970620940015,
     "total_dividends": 0.0
   },
   {
@@ -462,6 +492,7 @@
     "period_return_pct": 0.0019984013033518657,
     "avg_daily_return": 0.0005470941087832009,
     "annualized_volatility": 0.17950425630943811,
+    "annualized_return": 0.14778042921651569,
     "total_dividends": 0.0
   },
   {
@@ -477,6 +508,7 @@
     "period_return_pct": -0.005582490554294519,
     "avg_daily_return": -0.0013700751863451612,
     "annualized_volatility": 0.13799560367284824,
+    "annualized_return": -0.292130609193641,
     "total_dividends": 0.0
   },
   {
@@ -492,6 +524,7 @@
     "period_return_pct": -0.005674602828612515,
     "avg_daily_return": -0.0013896838730183114,
     "annualized_volatility": 0.14666699444055162,
+    "annualized_return": -0.29562464877422767,
     "total_dividends": 0.0
   },
   {
@@ -507,6 +540,7 @@
     "period_return_pct": -0.0057536524136795756,
     "avg_daily_return": -0.00138234555595109,
     "annualized_volatility": 0.1990002132946543,
+    "annualized_return": -0.29431906212786274,
     "total_dividends": 0.0
   },
   {
@@ -522,6 +556,7 @@
     "period_return_pct": -0.006067961293467048,
     "avg_daily_return": -0.001295121548374014,
     "annualized_volatility": 0.38790790111370754,
+    "annualized_return": -0.27861489470102463,
     "total_dividends": 0.0
   },
   {
@@ -537,6 +572,7 @@
     "period_return_pct": -0.008083675337958954,
     "avg_daily_return": -0.0019965072861278764,
     "annualized_volatility": 0.1429783959378939,
+    "annualized_return": -0.39566267195343596,
     "total_dividends": 0.0
   },
   {
@@ -552,6 +588,7 @@
     "period_return_pct": -0.009033400943416816,
     "avg_daily_return": -0.002025795874229005,
     "annualized_volatility": 0.4009946946245915,
+    "annualized_return": -0.4001156214018825,
     "total_dividends": 0.0
   },
   {
@@ -567,6 +604,7 @@
     "period_return_pct": -0.009878142664568634,
     "avg_daily_return": -0.0024572161489664836,
     "annualized_volatility": 0.12004323396001285,
+    "annualized_return": -0.46204506965069536,
     "total_dividends": 0.0
   },
   {
@@ -582,6 +620,7 @@
     "period_return_pct": -0.012987000923330156,
     "avg_daily_return": -0.0032294070531789674,
     "annualized_volatility": 0.1493835949399301,
+    "annualized_return": -0.557417095011201,
     "total_dividends": 0.0
   },
   {
@@ -597,6 +636,7 @@
     "period_return_pct": -0.014171275380938542,
     "avg_daily_return": -0.003548420849562069,
     "annualized_volatility": 0.09465372775629222,
+    "annualized_return": -0.5917160210136232,
     "total_dividends": 0.0
   },
   {
@@ -612,6 +652,7 @@
     "period_return_pct": -0.029146763061675927,
     "avg_daily_return": -0.0073003309852778375,
     "annualized_volatility": 0.21265457070383562,
+    "annualized_return": -0.8422007177484847,
     "total_dividends": 0.0
   },
   {
@@ -627,6 +668,7 @@
     "period_return_pct": -0.030616301948734822,
     "avg_daily_return": -0.007648354428621163,
     "annualized_volatility": 0.2515465692380737,
+    "annualized_return": -0.8555459446763536,
     "total_dividends": 0.0
   }
 ]

@@ -37,3 +37,17 @@ vars:
   max_price_cagr_pct: 0.15  # +/-15%/year - generous for real estate, still bounds small-sample noise
   high_liquidity_transactions_per_capita: 0.02  # per-type annual sales / population treated as "high" liquidity
   max_population_cagr_pct: 0.05  # +/-5%/year - generous for population growth (booming exurbs vs. rural decline)
+  # Minimum market size, used in commune_opportunity_score.sql - a hard cutoff applied on top of
+  # (not instead of) min_reliable_transaction_count above. A commune/year/type can clear the
+  # 5-sale statistical-reliability bar and still be a micro-market not worth ranking at all;
+  # these two are the "is this even a real market" gate.
+  min_commune_population: 2000
+  min_annual_transaction_count: 15
+  # Property tax penalty, used in commune_opportunity_score.sql. taux_foncier_bati is stored in
+  # percentage-point units (e.g. 21.4 means 21.4%, not 0.214) - both vars below are in that same
+  # unit. Penalty ramps linearly from 0 pts at the threshold to max_property_tax_penalty_pts at
+  # 2x the threshold (e.g. Caudebronde's 73.1% against a 35% threshold is already past that 70%
+  # ceiling, so it takes the full penalty) - not a new weighted factor (that's still a pending
+  # decision, see the model's header comment), just a guard rail against egregious outliers.
+  high_property_tax_threshold_pct: 35
+  max_property_tax_penalty_pts: 15

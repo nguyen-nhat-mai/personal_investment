@@ -5,7 +5,10 @@ models:
     description: >
       Ranks French communes on price/m2, multi-year price CAGR, transaction liquidity,
       population growth (2017-2021), and local income for the most recent DVF year available.
-      Illustrative starting heuristic, not investment advice.
+      Hard cutoffs on population (min_commune_population) and annual transaction count
+      (min_annual_transaction_count) drop micro-markets before scoring; a property tax penalty
+      (see property_tax_penalty_pts) guards against egregious outliers without being a full
+      weighted factor. Illustrative starting heuristic, not investment advice.
     columns:
       - name: code_commune
         tests:
@@ -13,6 +16,12 @@ models:
       - name: opportunity_score
         tests:
           - not_null
+      - name: property_tax_penalty_pts
+        description: >
+          Points deducted from opportunity_score for a high taux_foncier_bati (property tax
+          rate) - 0 below high_property_tax_threshold_pct, ramping linearly to
+          max_property_tax_penalty_pts at 2x the threshold. 0 (not penalized) when tax data is
+          missing for the commune.
     tests:
       - dbt_utils.unique_combination_of_columns:
           arguments:

@@ -34,18 +34,21 @@ Several pipelines feed one warehouse:
 ## What it builds
 
 - **`marts/real_estate/commune_opportunity_score`** — every French commune (DVF-covered
-  départements) with at least 5 qualifying sales in the latest year, ranked on five factors:
-  price/m² vs. the national median, multi-year price CAGR (see
+  départements) with at least 2,000 population and 15 qualifying sales in the latest year (hard
+  cutoffs dropping micro-markets, on top of the separate 5-sale bar that governs whether a given
+  year's median price is statistically trustworthy — see the model's header comment), ranked on
+  five factors: price/m² vs. the national median, multi-year price CAGR (see
   [`int_dvf__commune_price_cagr.sql`](dbt/models/intermediate/int_dvf__commune_price_cagr.sql)),
   transaction liquidity (sales per capita), population growth (2017–2021 CAGR, see
   [`int_insee__commune_population_cagr.sql`](dbt/models/intermediate/int_insee__commune_population_cagr.sql)),
-  and local median income. Also carries commune-level property tax rate (DGFiP,
-  `taux_foncier_bati`) and % of department population as informational columns — ingested but
-  not folded into the score itself. Weights are proportionally rescaled from a suggested
-  six-factor model (only DPE energy ratings aren't in the pipeline yet — see the dashboard's
-  "How it works" tab). Excludes non-market transactions (forced auctions, exchanges,
-  expropriations) and implausible prices (below €100/m² or above €30,000/m² — both found via a
-  real data anomaly, see
+  and local median income. Weights are proportionally rescaled from a suggested six-factor model
+  (only DPE energy ratings aren't in the pipeline yet — see the dashboard's "How it works" tab).
+  Property tax rate (DGFiP, `taux_foncier_bati`) and % of department population are also carried
+  as informational columns; property tax additionally applies a guard-rail penalty (up to 15
+  points, ramping in above a 35% rate) against egregious outliers like Caudebronde's real 73.1%
+  — not a full sixth weighted factor, see `property_tax_penalty_pts`. Excludes non-market
+  transactions (forced auctions, exchanges, expropriations) and implausible prices (below
+  €100/m² or above €30,000/m² — both found via a real data anomaly, see
   [`int_dvf__commune_period_stats.sql`](dbt/models/intermediate/int_dvf__commune_period_stats.sql)).
 - **`marts/real_estate/department_opportunity_score`** — department-level median rollup of the
   above, for the dashboard's choropleth map.
