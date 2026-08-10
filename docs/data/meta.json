@@ -1,10 +1,11 @@
 {
-  "exported_at": "2026-08-10T11:53:59.485612+00:00",
+  "exported_at": "2026-08-10T12:35:38.890092+00:00",
   "project": "personal-investment-505011",
   "dataset": "analytics",
   "row_counts": {
     "commune_opportunity_score": 5869,
     "department_opportunity_score": 92,
-    "equity_performance_summary": 50
+    "equity_performance_summary": 50,
+    "alternatives_performance_summary": 4
   }
 }

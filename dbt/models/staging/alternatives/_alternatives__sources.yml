@@ -1,0 +1,34 @@
+version: 2
+
+sources:
+  - name: raw_alternatives
+    description: >
+      Raw landing zone for daily OHLCV data pulled via yfinance by the alternatives_ingest DAG
+      (gold + crypto watchlist). Append-only; the same (ticker, date) can be re-loaded across
+      runs on purpose (a rolling 5-day window is pulled every run so a missed run gets
+      backfilled) - dedupe in staging, same pattern as raw_equities.
+    database: "{{ env_var('GCP_PROJECT') }}"
+    schema: raw_alternatives
+    tables:
+      - name: prices
+
+models:
+  - name: stg_alternatives__prices
+    description: Deduped, typed daily OHLCV per ticker (gold + crypto watchlist).
+    columns:
+      - name: ticker
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('alternatives_watchlist')
+                field: ticker
+      - name: date
+        tests:
+          - not_null
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - ticker
+              - date

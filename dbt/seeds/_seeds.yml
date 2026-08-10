@@ -15,3 +15,16 @@ seeds:
       periodically" caveat this project already applies to the ticker list itself, but with a
       demonstrated ~10% surprise rate in the verified sample, treat any single row's country
       with appropriate skepticism until spot-checked.
+
+  - name: alternatives_watchlist
+    description: >
+      Gold + crypto watchlist: a physical-gold proxy (GC=F, COMEX futures - there's no direct
+      "gold bar in a safe" price feed, futures/spot is the standard proxy), a paper-gold ETF
+      (GLD), and two major cryptocurrencies (BTC-USD, ETH-USD), all fetched via yfinance same as
+      pea_watchlist. `liquidity` (illiquid/medium/liquid) is the column this project's user
+      asked to foreground - a metadata label, same role `asset_type`/`pea_eligible` play in
+      pea_watchlist, not something that changes how the price itself is fetched. It drives both
+      the Alternatives tab's UI badge and, in scripts/export_wealth_assumptions.py, which rows
+      the Wealth simulator's growth-tier blend is allowed to use (liquid-only, same reasoning
+      that already keeps individual volatile stocks out of PEA's growth assumption in favor of
+      an ETF-only blend).

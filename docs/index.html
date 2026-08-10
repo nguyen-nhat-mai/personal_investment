@@ -14,8 +14,9 @@
     <h1>France Investment Insights</h1>
     <p class="subtitle">
       Real-estate opportunity by commune (DVF + INSEE), a PEA watchlist (CAC40 + non-French EU
-      blue chips + PEA ETFs), and a French wealth simulator (Livret A/LDDS, PEA, Assurance Vie,
-      leveraged real estate) &mdash; built with dbt + Airflow + BigQuery.
+      blue chips + PEA ETFs), a gold/crypto alternatives watchlist, and a French wealth
+      simulator (Livret A/LDDS, PEA, Assurance Vie, leveraged real estate, alternatives)
+      &mdash; built with dbt + Airflow + BigQuery.
     </p>
     <p class="meta-line" id="meta-line">Loading...</p>
   </div>
@@ -27,6 +28,7 @@
     <button role="tab" id="tab-btn-ws" aria-selected="true" aria-controls="tab-wealth-sim" type="button">Wealth simulator</button>
     <button role="tab" id="tab-btn-re" aria-selected="false" aria-controls="tab-real-estate" type="button">Real estate</button>
     <button role="tab" id="tab-btn-pf" aria-selected="false" aria-controls="tab-portfolio" type="button">PEA</button>
+    <button role="tab" id="tab-btn-alt" aria-selected="false" aria-controls="tab-alternatives" type="button">Alternatives</button>
     <button role="tab" id="tab-btn-how" aria-selected="false" aria-controls="tab-how-it-works" type="button">How it works</button>
   </nav>
 
@@ -201,6 +203,56 @@
     <div class="empty-state" id="pf-empty" hidden></div>
   </section>
 
+  <section class="panel" id="tab-alternatives" role="tabpanel" aria-labelledby="tab-btn-alt" hidden>
+    <div class="filters-row">
+      <label>Instrument
+        <select id="alt-filter-type">
+          <option value="">All</option>
+          <option value="physical_gold">Physical gold</option>
+          <option value="paper_gold">Paper gold</option>
+          <option value="crypto">Crypto</option>
+        </select>
+      </label>
+    </div>
+
+    <div id="alt-content">
+      <button class="methodology-toggle" id="alt-methodology-toggle" type="button" aria-expanded="false">How is this calculated?</button>
+      <div class="methodology-panel" id="alt-methodology-panel" hidden></div>
+
+      <div class="stat-row" id="alt-stats"></div>
+
+      <figure class="chart-card">
+        <figcaption>
+          <span class="title">Risk vs. return</span>
+          <span class="caption-note">Annualized volatility vs. annualized return</span>
+        </figcaption>
+        <div class="legend" id="alt-legend"></div>
+        <div class="scatter-wrap" id="alt-scatter"></div>
+      </figure>
+
+      <div class="view-by-row">
+        <span class="view-by-label">View by</span>
+        <div class="segmented-toggle" id="alt-bar-metric-toggle">
+          <button id="alt-bar-metric-return" type="button" aria-pressed="true">Annualized return</button>
+          <button id="alt-bar-metric-sharpe" type="button" aria-pressed="false">Best risk-adjusted (Sharpe)</button>
+        </div>
+      </div>
+
+      <figure class="chart-card">
+        <figcaption>
+          <span class="title" id="alt-bar-title">Annualized return by ticker</span>
+          <span class="caption-note">Needs 60+ trading days of history - see "How is this calculated?"</span>
+        </figcaption>
+        <div class="bar-chart" id="alt-bar"></div>
+      </figure>
+
+      <button class="table-toggle" id="alt-table-toggle" type="button" aria-expanded="false">Show table view</button>
+      <span class="caption-note" id="alt-table-sort-note"></span>
+      <div class="table-scroll" id="alt-table-wrap" hidden></div>
+    </div>
+    <div class="empty-state" id="alt-empty" hidden></div>
+  </section>
+
   <section class="panel" id="tab-how-it-works" role="tabpanel" aria-labelledby="tab-btn-how" hidden>
     <div class="about-section">
       <h2>Where the data comes from</h2>
@@ -228,6 +280,18 @@
           <code>yfinance</code> on weekday evenings. Legal PEA eligibility (this list) and
           whether your specific broker's PEA custody actually supports a given foreign-listed
           line aren't always the same thing &mdash; verify with your broker.</p>
+        </div>
+        <div class="about-card">
+          <h3>Alternatives (gold + crypto) &mdash; Yahoo Finance</h3>
+          <p>Daily prices for a small gold/crypto watchlist: a physical-gold proxy (<code>GC=F</code>,
+          COMEX gold futures &mdash; there's no direct "gold bar in a safe" price feed, futures/spot
+          is the standard proxy), a paper-gold ETF (<code>GLD</code>), and two major
+          cryptocurrencies (<code>BTC-USD</code>, <code>ETH-USD</code>), pulled via
+          <code>yfinance</code> on the same weekday-evening schedule as the PEA watchlist. Crypto
+          trades every day, but the 5-day rolling ingestion window means a weekend move is picked
+          up by Monday's run rather than missed &mdash; see the Alternatives tab's own "How is
+          this calculated?" panel for the liquidity classification (illiquid/medium/liquid) each
+          instrument carries.</p>
         </div>
         <div class="about-card">
           <h3>Property tax rates &mdash; DGFiP</h3>
@@ -335,20 +399,38 @@
           PEA tab's own "How is this calculated?" panel.</p>
         </div>
         <div class="about-card">
+          <h3>Alternatives return, risk &amp; drawdown</h3>
+          <p>Same return/volatility/drawdown/Sharpe treatment as the PEA tab (median-of-5-day
+          robust prices, geometric annualization, adjusted close throughout, null below 60
+          trading days of history), computed separately for the gold/crypto watchlist. Two
+          things the PEA tab has that this one deliberately doesn't: a benchmark comparison
+          (there's no single coherent benchmark across a physical-gold proxy, a paper-gold ETF,
+          and two cryptocurrencies) and dividends (none of the four instruments pays one).
+          <strong>Liquidity</strong> (illiquid/medium/liquid) is a hand-set label, not derived
+          from trading volume &mdash; physical gold is illiquid, the paper-gold ETF and both
+          cryptocurrencies are liquid. Full breakdown on the Alternatives tab's own "How is this
+          calculated?" panel.</p>
+        </div>
+        <div class="about-card">
           <h3>Wealth simulator</h3>
           <p>Client-side only &mdash; slider values never leave the browser, only aggregate
           market-assumption JSON is fetched. Every euro fills Livret A then LDDS first
           (safety-first), then splits between a preservation tier (Assurance Vie fonds euro,
-          SCPI-in-AV, CAT) and a growth tier (PEA, leveraged real estate) by risk tolerance;
-          PEA overflow past its real &euro;150,000 cap (cumulative contributions, tracked
-          separately from growth) falls back into the preservation tier. PEA growth uses a
-          fixed ~7%/year long-run assumption, not the PEA tab's own live-computed returns -
-          even the diversified benchmark ETF's 2-year figure was too high (17.9%/year) to
-          compound realistically over a 20-40 year horizon. Most French capital-gains tax
-          rules are applied once, to the final year's liquidation figure, not annually &mdash;
-          CAT is the exception, taxed annually as its interest accrues (flat 30% PFU).
-          Leveraged real estate needs a &euro;15,000 minimum down payment to trigger at all;
-          below that, the allocation goes to SCPI-in-AV instead.
+          SCPI-in-AV, CAT) and a growth tier (PEA, leveraged real estate, alternatives) by risk
+          tolerance; PEA overflow past its real &euro;150,000 cap (cumulative contributions,
+          tracked separately from growth) falls back into the preservation tier. PEA and
+          alternatives growth both use a live BigQuery-sourced assumption (ETF-only for PEA,
+          liquid-instruments-only &mdash; i.e. excluding the illiquid physical-gold proxy &mdash;
+          for alternatives), each clamped to &plusmn;20%/year and falling back to a fixed,
+          illustrative rate when there isn't enough history yet - even the diversified benchmark
+          ETF's 2-year figure was too high (17.9%/year) to compound realistically over a 20-40
+          year horizon, and gold/crypto's realized volatility makes that guard rail just as
+          necessary there. Most French capital-gains tax rules are applied once, to the final
+          year's liquidation figure, not annually &mdash; CAT is the exception, taxed annually as
+          its interest accrues (flat 30% PFU); alternatives use a flat 30% PFU at liquidation too
+          (a simplification &mdash; physical gold has its own optional flat-rate-per-sale regime
+          in reality, not modeled here). Leveraged real estate needs a &euro;15,000 minimum down
+          payment to trigger at all; below that, the allocation goes to SCPI-in-AV instead.
           Illustrative starting heuristic, not investment advice &mdash;
           see the tab's own "How is this calculated?" panel for every assumption and
           simplification.</p>
@@ -380,7 +462,9 @@
       <p>This is a research aid built for learning, not investment advice. The real-estate score
       weights are hand-picked and meant to be tuned, not authoritative; PEA watchlist
       constituents (CAC 40, non-French EU blue chips, ETFs) drift over time and the list is a
-      snapshot; and even after the data-quality filters,
+      snapshot; the alternatives watchlist is a snapshot too, and deliberately narrow (one gold
+      proxy, one gold ETF, two cryptocurrencies) rather than a broad basket; and even after the
+      data-quality filters,
       communes with only a handful of sales can still show noisier numbers than well-traded
       ones &mdash; the transaction count is shown everywhere precisely so you can judge that
       yourself.</p>
@@ -399,6 +483,7 @@
 <script src="js/charts.js"></script>
 <script src="js/real-estate.js"></script>
 <script src="js/portfolio.js"></script>
+<script src="js/alternatives.js"></script>
 <script src="js/wealth-sim.js"></script>
 <script src="js/main.js"></script>
 </body>

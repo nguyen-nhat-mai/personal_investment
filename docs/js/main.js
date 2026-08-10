@@ -24,6 +24,7 @@ var TABS = [
   { id: "ws", btn: document.getElementById("tab-btn-ws"), panel: document.getElementById("tab-wealth-sim") },
   { id: "re", btn: document.getElementById("tab-btn-re"), panel: document.getElementById("tab-real-estate") },
   { id: "pf", btn: document.getElementById("tab-btn-pf"), panel: document.getElementById("tab-portfolio") },
+  { id: "alt", btn: document.getElementById("tab-btn-alt"), panel: document.getElementById("tab-alternatives") },
   { id: "how", btn: document.getElementById("tab-btn-how"), panel: document.getElementById("tab-how-it-works") }
 ];
 function selectTab(which) {
@@ -54,14 +55,16 @@ Promise.all([
   fetchJson("data/commune_opportunity_score.json"),
   fetchJson("data/departements.geojson"),
   fetchJson("data/equity_performance_summary.json"),
+  fetchJson("data/alternatives_performance_summary.json"),
   fetchJson("data/wealth_assumptions.json"),
   fetchJson("data/meta.json")
 ]).then(function (res) {
   var realEstate = res[0] || [];
   var departmentsGeo = res[1];
   var portfolio = res[2] || [];
-  var wealthAssumptions = res[3];
-  var meta = res[4];
+  var alternatives = res[3] || [];
+  var wealthAssumptions = res[4];
+  var meta = res[5];
 
   var metaLine = document.getElementById("meta-line");
   if (meta && meta.exported_at) {
@@ -72,5 +75,6 @@ Promise.all([
 
   initRealEstate(realEstate, departmentsGeo);
   initPortfolio(portfolio);
+  initAlternatives(alternatives);
   initWealthSimulator(wealthAssumptions);
 });

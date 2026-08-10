@@ -11,10 +11,14 @@ var WEALTH_TIER_SPLIT = {
   balanced:     { preservation: 0.50, growth: 0.50 },
   aggressive:   { preservation: 0.25, growth: 0.75 }
 };
-// v1 simplification: within the growth tier, PEA vs. leveraged real estate is a fixed
-// 50/50 split regardless of risk tolerance - only the preservation/growth ratio itself is
-// risk-driven, to avoid an under-specified second "how aggressive is the leverage" axis.
-var WEALTH_TIER4_SUBSPLIT = { pea: 0.5, realEstate: 0.5 };
+// v1 simplification: within the growth tier, PEA/leveraged real estate/alternatives is a fixed
+// 3-way split regardless of risk tolerance - only the preservation/growth ratio itself is
+// risk-driven, to avoid an under-specified second "how aggressive is the mix" axis. Weights are
+// hand-picked and illustrative (same treatment the original 50/50 PEA/real-estate split got),
+// not derived from anything - alternatives gets the smallest slice, reflecting that it's the
+// newest, most speculative-in-practice leg of the three (gold+crypto's realized volatility is
+// materially higher than a diversified PEA ETF blend or national median real-estate CAGR).
+var WEALTH_TIER4_SUBSPLIT = { pea: 0.45, realEstate: 0.35, alternatives: 0.20 };
 
 var WEALTH_SERIES = [
   { key: "livretA", label: "Livret A", color: "var(--wealth-livret-a)" },
@@ -23,7 +27,8 @@ var WEALTH_SERIES = [
   { key: "scpiInAv", label: "SCPI-in-AV", color: "var(--wealth-scpi-av)" },
   { key: "cat", label: "CAT", color: "var(--wealth-cat)" },
   { key: "pea", label: "PEA", color: "var(--wealth-pea)" },
-  { key: "realEstateEquity", label: "Real estate (equity)", color: "var(--wealth-real-estate)" }
+  { key: "realEstateEquity", label: "Real estate (equity)", color: "var(--wealth-real-estate)" },
+  { key: "alternatives", label: "Alternatives (gold+crypto)", color: "var(--wealth-alternatives)" }
 ];
 
 // bucket: { balance, contributionsCum }. cap: Infinity for uncapped tier-3 vehicles. Caps
@@ -80,12 +85,14 @@ function wealthBuildRealEstatePosition(equity0, mortgageCfg, priceCagr) {
 function wealthSnapshot(year, state, realEstate) {
   var reEquity = realEstate ? realEstate.equityAtYear(year) : 0;
   var total = state.livretA.balance + state.ldds.balance + state.avFondsEuro.balance
-    + state.scpiInAv.balance + state.cat.balance + state.pea.balance + reEquity;
+    + state.scpiInAv.balance + state.cat.balance + state.pea.balance + reEquity
+    + state.alternatives.balance;
   return {
     year: year,
     livretA: state.livretA.balance, ldds: state.ldds.balance,
     avFondsEuro: state.avFondsEuro.balance, scpiInAv: state.scpiInAv.balance,
     cat: state.cat.balance, pea: state.pea.balance, realEstateEquity: reEquity,
+    alternatives: state.alternatives.balance,
     totalNetWorth: total
   };
 }
@@ -105,11 +112,25 @@ var WEALTH_MAX_REAL_ESTATE_CAGR = 0.15; // +/-15%/year, matches dbt's max_price_
 var WEALTH_MAX_EQUITY_ANNUALIZED_RETURN = 0.20; // +/-20%/year guard rail on the live ETF blend
 var WEALTH_EQUITY_ANNUALIZED_RETURN = 0.07; // fallback only, used when etf_blended_default isn't available yet - see wealthComputeProjection
 var WEALTH_REAL_ESTATE_CAGR_FALLBACK = 0.03; // matches export_wealth_assumptions.py's real_estate_fallback
+// Same +/-20%/year ceiling as equities, and for the same reason: BTC/ETH's realized annualized
+// return over a short ingestion window can be extreme, and compounding that uncapped over a
+// 20-40yr horizon would reproduce exactly the kind of blow-up this guard rail already exists to
+// prevent for PEA (see equity_performance_summary.sql's header comment for a real example of
+// that failure mode).
+var WEALTH_MAX_ALTERNATIVES_ANNUALIZED_RETURN = 0.20;
+var WEALTH_ALTERNATIVES_ANNUALIZED_RETURN = 0.06; // fallback only, matches export_wealth_assumptions.py's alternatives_fallback
 // Minimum down payment (apport) to realistically trigger a leveraged property purchase - a
 // EUR500 "down payment" doesn't buy any real French property. Below this, the growth-tier real
 // estate allocation goes to SCPI-in-AV instead (same "real estate flavor" exposure within the
 // preservation tier's AV wrapper, just unlevered). Lower bound of a EUR15k-20k range.
 var WEALTH_MIN_REAL_ESTATE_DOWN_PAYMENT = 15000;
+// Ongoing (year-by-year) growth-tier contributions split between PEA and alternatives only -
+// real estate doesn't participate here (it's a one-time lump sum sized from starting capital
+// only, see wealthBuildRealEstatePosition's comment: monthly savings are too small to buy
+// fractional houses, unlike gold/crypto which can genuinely be dollar-cost-averaged into).
+// Roughly matches WEALTH_TIER4_SUBSPLIT's pea:alternatives ratio (0.45:0.20), rounded to clean
+// numbers for the ongoing-contribution case specifically.
+var WEALTH_TIER4_ONGOING_SUBSPLIT = { pea: 0.7, alternatives: 0.3 };
 function wealthClamp(v, maxAbs, fallback) {
   if (typeof v !== "number" || !isFinite(v)) return fallback;
   return Math.max(-maxAbs, Math.min(maxAbs, v));
@@ -130,9 +151,14 @@ function wealthClamp(v, maxAbs, fallback) {
 // this logic.
 function wealthResolveGrowthAssumptions(assumptions) {
   var etfBlend = assumptions.equities && assumptions.equities.etf_blended_default;
+  // liquid_blended_default (GLD/BTC/ETH), not the all-ticker blended_default (which would
+  // include the illiquid GC=F physical-gold proxy) - same "don't compound an illiquid/
+  // non-representative proxy" reasoning as PEA's ETF-only blend above.
+  var altBlend = assumptions.alternatives && assumptions.alternatives.liquid_blended_default;
   return {
     peaAnnualizedReturn: wealthClamp(etfBlend && etfBlend.annualized_return, WEALTH_MAX_EQUITY_ANNUALIZED_RETURN, WEALTH_EQUITY_ANNUALIZED_RETURN),
-    realEstateCagr: wealthClamp(assumptions.real_estate.national_median_price_cagr, WEALTH_MAX_REAL_ESTATE_CAGR, WEALTH_REAL_ESTATE_CAGR_FALLBACK)
+    realEstateCagr: wealthClamp(assumptions.real_estate.national_median_price_cagr, WEALTH_MAX_REAL_ESTATE_CAGR, WEALTH_REAL_ESTATE_CAGR_FALLBACK),
+    alternativesAnnualizedReturn: wealthClamp(altBlend && altBlend.annualized_return, WEALTH_MAX_ALTERNATIVES_ANNUALIZED_RETURN, WEALTH_ALTERNATIVES_ANNUALIZED_RETURN)
   };
 }
 
@@ -141,6 +167,7 @@ function wealthComputeProjection(params, assumptions) {
   var growth = wealthResolveGrowthAssumptions(assumptions);
   var eq = { annualized_return: growth.peaAnnualizedReturn };
   var reCagr = growth.realEstateCagr;
+  var altReturn = growth.alternativesAnnualizedReturn;
   var split = WEALTH_TIER_SPLIT[params.riskTolerance];
 
   var state = {
@@ -149,7 +176,8 @@ function wealthComputeProjection(params, assumptions) {
     avFondsEuro: { balance: 0, contributionsCum: 0 },
     scpiInAv: { balance: 0, contributionsCum: 0 },
     cat: { balance: 0, contributionsCum: 0 },
-    pea: { balance: 0, contributionsCum: 0 }
+    pea: { balance: 0, contributionsCum: 0 },
+    alternatives: { balance: 0, contributionsCum: 0 }
   };
 
   var init = wealthWaterfallAllocate(params.startingCapital, state, C, split);
@@ -163,6 +191,9 @@ function wealthComputeProjection(params, assumptions) {
   wealthDepositInto(state.avFondsEuro, peaOverflowInit / 3, Infinity);
   wealthDepositInto(state.scpiInAv, peaOverflowInit / 3, Infinity);
   wealthDepositInto(state.cat, peaOverflowInit / 3, Infinity);
+  // No contribution cap on alternatives (unlike PEA's real EUR150k one), so no overflow
+  // handling needed here.
+  wealthDepositInto(state.alternatives, init.tier4 * WEALTH_TIER4_SUBSPLIT.alternatives, Infinity);
 
   // Below the minimum realistic down payment, no leveraged property purchase triggers - route
   // that portion to SCPI-in-AV instead (not the general 3-way preservation split: this money
@@ -196,18 +227,22 @@ function wealthComputeProjection(params, assumptions) {
     state.cat.balance += catInterest - catTaxThisYear;
     catTaxPaidCumulative += catTaxThisYear;
     state.pea.balance *= (1 + eq.annualized_return);
+    state.alternatives.balance *= (1 + altReturn);
 
     var yr = wealthWaterfallAllocate(annualContribution, state, C, split);
     wealthDepositInto(state.avFondsEuro, yr.tier3 / 3, Infinity);
     wealthDepositInto(state.scpiInAv, yr.tier3 / 3, Infinity);
     wealthDepositInto(state.cat, yr.tier3 / 3, Infinity);
-    // 100% of ongoing tier-4 -> PEA, until its EUR150k contribution cap is hit; overflow past
-    // that falls back to the (uncapped) preservation tier instead of vanishing - a real
-    // investor keeps saving through a different vehicle once PEA is maxed, not stops saving.
-    var peaOverflow = wealthDepositInto(state.pea, yr.tier4, C.pea.cap);
+    // Ongoing tier-4 splits between PEA and alternatives (see WEALTH_TIER4_ONGOING_SUBSPLIT -
+    // real estate doesn't get ongoing contributions), until PEA's EUR150k contribution cap is
+    // hit; overflow past that falls back to the (uncapped) preservation tier instead of
+    // vanishing - a real investor keeps saving through a different vehicle once PEA is maxed,
+    // not stops saving. Alternatives has no such cap, so no overflow handling needed there.
+    var peaOverflow = wealthDepositInto(state.pea, yr.tier4 * WEALTH_TIER4_ONGOING_SUBSPLIT.pea, C.pea.cap);
     wealthDepositInto(state.avFondsEuro, peaOverflow / 3, Infinity);
     wealthDepositInto(state.scpiInAv, peaOverflow / 3, Infinity);
     wealthDepositInto(state.cat, peaOverflow / 3, Infinity);
+    wealthDepositInto(state.alternatives, yr.tier4 * WEALTH_TIER4_ONGOING_SUBSPLIT.alternatives, Infinity);
 
     rows.push(wealthSnapshot(year, state, realEstate));
   }
@@ -239,20 +274,34 @@ function wealthTaxPEA(gain, holdingYears, C) {
   return gain * C.pea.social_charges_rate_after_5y;
 }
 
+// Alternatives (gold + crypto): flat 30% PFU on the realized gain, no holding-period discount -
+// a v1 simplification. Real French rules are more nuanced and instrument-specific: crypto
+// disposals by individuals are broadly taxed at the flat 30% PFU already (so this is close to
+// right for BTC-USD/ETH-USD), but physical/paper gold has its own optional flat-rate-per-sale
+// regime (taxe forfaitaire sur les metaux precieux) as an alternative to capital-gains tax -
+// not modeled here, flagged in the methodology panel.
+function wealthTaxAlternatives(gain, C) {
+  return gain * C.pfu.total_rate;
+}
+
 // Applied once, to the final year's accumulated gain per vehicle - not annually. Livret A
 // and LDDS are always tax-free, so they're absent here. CAT is also absent here - its tax is
 // already paid annually as it accrues (see wealthComputeProjection's catTaxPaidCumulative),
 // so state.cat.balance is already net and taxing it again here would double-count. Real estate
 // is shown pre-tax in v1 (French property capital-gains taper relief is its own multi-year
-// schedule - a v2 item). taxPaid here is tax due AT LIQUIDATION only - add
-// catTaxPaidCumulative for the complete lifetime tax picture (the caller does this for display).
+// schedule - a v2 item). Alternatives (gold+crypto) uses a flat 30% PFU on the gain, no
+// holding-period discount - see wealthTaxAlternatives. taxPaid here is tax due AT LIQUIDATION
+// only - add catTaxPaidCumulative for the complete lifetime tax picture (the caller does this
+// for display).
 function wealthComputeAfterTaxLiquidation(finalRow, state, params, C) {
   var avGain = Math.max(0, (state.avFondsEuro.balance + state.scpiInAv.balance) - (state.avFondsEuro.contributionsCum + state.scpiInAv.contributionsCum));
   var peaGain = Math.max(0, state.pea.balance - state.pea.contributionsCum);
+  var altGain = Math.max(0, state.alternatives.balance - state.alternatives.contributionsCum);
 
   var avTax = wealthTaxAV(avGain, params.horizonYears, params.household, params.tmiRate, C);
   var peaTax = wealthTaxPEA(peaGain, params.horizonYears, C);
-  var taxPaid = avTax + peaTax;
+  var altTax = wealthTaxAlternatives(altGain, C);
+  var taxPaid = avTax + peaTax + altTax;
 
   return { total: finalRow.totalNetWorth - taxPaid, taxPaid: taxPaid };
 }
@@ -324,13 +373,13 @@ function renderWealthChart(container, legendEl, rows) {
 
 var WEALTH_METHODOLOGY_HTML =
   "<h3>The waterfall</h3>" +
-  "<p>Every euro - starting capital and monthly savings alike - fills Livret A first (up to &euro;22,950), then LDDS (up to &euro;12,000), before anything else. Only the overflow beyond those caps splits between a preservation tier (Assurance Vie fonds euro, SCPI held as unit&eacute;s de compte inside an AV wrapper, CAT) and a growth tier (PEA, leveraged real estate), by your risk tolerance slider. PEA itself is also capped, at its real &euro;150,000 contribution limit - once hit, further growth-tier money doesn't vanish or sit idle, it falls back into the preservation tier instead, same as a real investor keeps saving through a different vehicle once PEA is maxed. This is a safety-first model, not a real financial plan for your specific situation.</p>" +
+  "<p>Every euro - starting capital and monthly savings alike - fills Livret A first (up to &euro;22,950), then LDDS (up to &euro;12,000), before anything else. Only the overflow beyond those caps splits between a preservation tier (Assurance Vie fonds euro, SCPI held as unit&eacute;s de compte inside an AV wrapper, CAT) and a growth tier (PEA, leveraged real estate, alternatives - gold+crypto), by your risk tolerance slider. Within the growth tier, your STARTING capital splits three ways (PEA 45% / real estate 35% / alternatives 20%, hand-picked and illustrative - alternatives gets the smallest slice, reflecting its higher realized volatility); ongoing monthly savings allocated to the growth tier split two ways instead, PEA and alternatives only (roughly 70%/30%) - real estate doesn't get ongoing contributions at all, see below. PEA itself is also capped, at its real &euro;150,000 contribution limit - once hit, further growth-tier money doesn't vanish or sit idle, it falls back into the preservation tier instead, same as a real investor keeps saving through a different vehicle once PEA is maxed (alternatives has no such cap). This is a safety-first model, not a real financial plan for your specific situation.</p>" +
   "<h3>Real estate is modeled as a one-time purchase</h3>" +
-  "<p>Monthly savings are too small to realistically drip into lumpy real-estate purchases, so leveraged real estate is sized once, from the risk-tolerance-driven growth-tier split of your STARTING capital only - a single mortgage amortization schedule, appreciating at the national median DVF price CAGR from year zero (see \"Growth assumption guard rails\" below for what happens when that figure isn't reliable yet). Ongoing monthly savings allocated to the growth tier go entirely to PEA instead. Appreciation-only: no rental income is assumed, since DVF has sale prices, not rent data. Below a &euro;15,000 minimum down payment (apport), no leveraged purchase triggers at all - a real down payment that small doesn't buy any real French property - and that allocation goes to SCPI-in-AV instead (unlevered, but the closest \"real estate flavor\" exposure this model has).</p>" +
+  "<p>Monthly savings are too small to realistically drip into lumpy real-estate purchases, so leveraged real estate is sized once, from the risk-tolerance-driven growth-tier split of your STARTING capital only - a single mortgage amortization schedule, appreciating at the national median DVF price CAGR from year zero (see \"Growth assumption guard rails\" below for what happens when that figure isn't reliable yet). Ongoing monthly savings allocated to the growth tier go to PEA and alternatives instead (gold/crypto, unlike a house, can genuinely be bought a little at a time). Appreciation-only: no rental income is assumed, since DVF has sale prices, not rent data. Below a &euro;15,000 minimum down payment (apport), no leveraged purchase triggers at all - a real down payment that small doesn't buy any real French property - and that allocation goes to SCPI-in-AV instead (unlevered, but the closest \"real estate flavor\" exposure this model has).</p>" +
   "<h3>Tax</h3>" +
-  "<p>Tax is applied once, at the end of your horizon, to each vehicle's realized gain - not annually - since French capital-gains tax is due on withdrawal, not on paper gains. Livret A and LDDS are always tax-free. AV/SCPI-in-AV use whichever is cheaper: the 30% flat tax (PFU) or your marginal bracket (TMI) plus 17.2% social charges; AV additionally gets an 8-year holding abatement (&euro;4,600 single / &euro;9,200 couple) and a reduced 24.7% rate on gains above it, assuming your cumulative AV premiums stay under &euro;150k. PEA is 0% income tax + 17.2% social charges after 5 years. Real estate is shown pre-tax (French real-estate capital-gains taper relief is its own complex schedule - a v2 item). <strong>CAT is the one exception</strong>: its interest is taxed annually as it accrues, always at the flat 30% PFU (12.8% income tax + 17.2% social charges, no TMI-bareme option) - only the net interest compounds into the next year, unlike every other vehicle here. The \"Tax:\" figure shown above adds this cumulative annual CAT tax to the liquidation-time tax on AV/PEA, for a complete lifetime total.</p>" +
+  "<p>Tax is applied once, at the end of your horizon, to each vehicle's realized gain - not annually - since French capital-gains tax is due on withdrawal, not on paper gains. Livret A and LDDS are always tax-free. AV/SCPI-in-AV use whichever is cheaper: the 30% flat tax (PFU) or your marginal bracket (TMI) plus 17.2% social charges; AV additionally gets an 8-year holding abatement (&euro;4,600 single / &euro;9,200 couple) and a reduced 24.7% rate on gains above it, assuming your cumulative AV premiums stay under &euro;150k. PEA is 0% income tax + 17.2% social charges after 5 years. Real estate is shown pre-tax (French real-estate capital-gains taper relief is its own complex schedule - a v2 item). <strong>Alternatives</strong> (gold+crypto) uses a flat 30% PFU on the gain, no holding-period discount - a simplification: real French crypto rules are broadly this already, but physical/paper gold has its own optional flat-rate-per-sale regime (taxe forfaitaire sur les m&eacute;taux pr&eacute;cieux) not modeled here. <strong>CAT is the one exception</strong>: its interest is taxed annually as it accrues, always at the flat 30% PFU (12.8% income tax + 17.2% social charges, no TMI-bareme option) - only the net interest compounds into the next year, unlike every other vehicle here. The \"Tax:\" figure shown above adds this cumulative annual CAT tax to the liquidation-time tax on AV/PEA/alternatives, for a complete lifetime total.</p>" +
   "<h3>Growth assumption guard rails</h3>" +
-  "<p><strong>PEA</strong> uses the live equal-weighted average annualized return across the PEA tab's tracked ETFs only (diversified index trackers - CW8.PA world, PE500.PA S&amp;P500, and similar), not individual stocks and not a single ticker. Averaging in individual large-cap stocks was tried and rejected: with a short ingestion window their returns were both real and extraordinarily volatile (a couple of names moved 90-120%/year), which would misrepresent what a typical diversified PEA investor experiences. The ETF-only average is clamped to &plusmn;20%/year and falls back to a fixed, dated ~7%/year assumption if no ETF has enough trading-day history yet - a defensive measure against a short/unusual data window getting compounded 20-40 years forward, not a sign the live figure is distrusted once it's reliable. <strong>Real estate</strong> gets the same defensive treatment: DVF's multi-year price CAGR is sourced from the national median across d&eacute;partements with a reliable multi-year window (a dated illustrative fallback, ~3%/year, is used if none do yet), hard-capped at &plusmn;15%/year.</p>" +
+  "<p><strong>PEA</strong> uses the live equal-weighted average annualized return across the PEA tab's tracked ETFs only (diversified index trackers - CW8.PA world, PE500.PA S&amp;P500, and similar), not individual stocks and not a single ticker. Averaging in individual large-cap stocks was tried and rejected: with a short ingestion window their returns were both real and extraordinarily volatile (a couple of names moved 90-120%/year), which would misrepresent what a typical diversified PEA investor experiences. The ETF-only average is clamped to &plusmn;20%/year and falls back to a fixed, dated ~7%/year assumption if no ETF has enough trading-day history yet - a defensive measure against a short/unusual data window getting compounded 20-40 years forward, not a sign the live figure is distrusted once it's reliable. <strong>Real estate</strong> gets the same defensive treatment: DVF's multi-year price CAGR is sourced from the national median across d&eacute;partements with a reliable multi-year window (a dated illustrative fallback, ~3%/year, is used if none do yet), hard-capped at &plusmn;15%/year. <strong>Alternatives</strong> uses the live equal-weighted average across the Alternatives tab's <em>liquid</em> tickers only (GLD, BTC-USD, ETH-USD) - excluding the illiquid physical-gold proxy (GC=F), same reasoning as PEA's ETF-only average - clamped to the same &plusmn;20%/year and falling back to a fixed, illustrative ~6%/year if no liquid ticker has enough trading-day history yet. This clamp matters especially here: crypto's realized annualized return over a short ingestion window can be extreme, and compounding that uncapped over a 20-40 year horizon would be a bad extrapolation.</p>" +
   "<h3>What's not modeled</h3>" +
   "<p>Monte Carlo bands (p10/p50/p90) are out of scope - this is a single deterministic path using published mean return/CAGR figures, not a distribution. Illustrative starting heuristic, not investment advice.</p>";
 
@@ -338,9 +387,10 @@ function initWealthSimulator(assumptions) {
   var emptyEl = document.getElementById("ws-empty");
   var contentEl = document.getElementById("ws-content");
   // assumptions.constants is what computation actually needs (Livret A/LDDS/AV/CAT/mortgage
-  // rates, PFU/abatement thresholds); equities.etf_blended_default is read too (see
-  // wealthComputeProjection) but isn't required here - wealthClamp falls back to a fixed
-  // assumption if it's missing, so an older export without that field still works.
+  // rates, PFU/abatement thresholds); equities.etf_blended_default and
+  // alternatives.liquid_blended_default are read too (see wealthComputeProjection) but aren't
+  // required here - wealthClamp falls back to a fixed assumption if either is missing, so an
+  // older export without those fields still works.
   if (!assumptions || !assumptions.constants || !assumptions.real_estate) {
     contentEl.style.display = "none";
     emptyEl.hidden = false;
@@ -370,7 +420,7 @@ function initWealthSimulator(assumptions) {
   // Column headers are annotated with each vehicle's assumed annual rate, so a reader doesn't
   // have to cross-reference the methodology panel to know what's driving a column's growth.
   // Livret A/LDDS/AV Fonds Euro/SCPI-in-AV/CAT come straight from assumptions.constants (fixed,
-  // dated figures, same every render); PEA and Real estate use wealthResolveGrowthAssumptions -
+  // dated figures, same every render); PEA, Real estate, and Alternatives use wealthResolveGrowthAssumptions -
   // the exact same clamped/fallback figure wealthComputeProjection itself compounds with, not a
   // second copy that could drift out of sync. One caveat not shown in the header itself (see the
   // methodology panel's Tax section): CAT's column already reflects annual 30% PFU tax on its
@@ -389,6 +439,7 @@ function initWealthSimulator(assumptions) {
     { key: "cat", label: rateLabel("CAT", C.cat.rate), format: function (v) { return fmtEUR0.format(v); } },
     { key: "pea", label: rateLabel("PEA", growth.peaAnnualizedReturn), format: function (v) { return fmtEUR0.format(v); } },
     { key: "realEstateEquity", label: rateLabel("Real estate (equity)", growth.realEstateCagr), format: function (v) { return fmtEUR0.format(v); } },
+    { key: "alternatives", label: rateLabel("Alternatives", growth.alternativesAnnualizedReturn), format: function (v) { return fmtEUR0.format(v); } },
     { key: "totalNetWorth", label: "Total (pre-tax)", format: function (v) { return fmtEUR0.format(v); } }
   ];
 

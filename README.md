@@ -3,7 +3,7 @@
 A dbt + Airflow + BigQuery project with two purposes: learn real data-engineering patterns
 (orchestration, incremental/dedup loading, staging→intermediate→marts modeling, dbt testing),
 and actually help answer a real question - where in France is it worth investing spare cash
-right now, in property or in a PEA equities watchlist.
+right now, in property, a PEA equities watchlist, or a gold/crypto alternatives watchlist.
 
 Several pipelines feed one warehouse:
 
@@ -13,17 +13,21 @@ Several pipelines feed one warehouse:
   (DVF)             │  (Airflow, ~2x/yr)│  │
                     └─────────────────┘  │
                     ┌─────────────────┐  │
-  data.gouv.fr  ───▶│  insee_ingest    │──┤        ┌───────────────────┐        ┌──────────────────────────┐
-  (INSEE)           │  (Airflow, yearly)│  ├──────▶ │  BigQuery raw_*    │ ─────▶ │  dbt: staging →           │
-                    └─────────────────┘  │        │  datasets          │        │  intermediate → marts     │
-                    ┌─────────────────┐  │        └───────────────────┘        └──────────────────────────┘
-  data.gouv.fr  ───▶│  tax_ingest      │──┤                                             │              │
-  (DGFiP)           │  (Airflow, yearly)│  │                                             ▼              ▼
-                    └─────────────────┘  │                              commune_opportunity_score  equity_performance_summary
-                    ┌─────────────────┐  │
-  yfinance      ───▶│  equities_ingest │──┘
-                    │  (Airflow, daily) │
-                    └─────────────────┘
+  data.gouv.fr  ───▶│  insee_ingest    │──┤
+  (INSEE)           │  (Airflow, yearly)│  │
+                    └─────────────────┘  │        ┌───────────────────┐        ┌──────────────────────────┐
+                    ┌─────────────────┐  │──────▶ │  BigQuery raw_*    │ ─────▶ │  dbt: staging →           │
+  data.gouv.fr  ───▶│  tax_ingest      │──┤        │  datasets          │        │  intermediate → marts     │
+  (DGFiP)           │  (Airflow, yearly)│  │        └───────────────────┘        └──────────────────────────┘
+                    └─────────────────┘  │                                            │
+                    ┌─────────────────┐  │                                            ▼
+  yfinance      ───▶│  equities_ingest │──┤                    commune_opportunity_score, equity_performance_summary,
+                    │  (Airflow, daily) │  │                    alternatives_performance_summary
+                    └─────────────────┘  │
+                    ┌───────────────────┐│
+  yfinance      ───▶│ alternatives_ingest│┘
+                    │  (Airflow, daily)  │
+                    └───────────────────┘
 
   Each ingest DAG's task declares an Airflow Dataset outlet on its raw table. dbt_transform_dag
   has no schedule of its own - Airflow triggers it once ALL raw tables have been updated at
@@ -81,6 +85,19 @@ Several pipelines feed one warehouse:
   (an absurd return from a noisy few-day average, or a falsely-flattering near-zero drawdown
   from not having lived through a bad week yet), so this project nulls rather than fabricates
   either way, see the model's header comment.
+- **`marts/alternatives/alternatives_performance_summary`** — same return/volatility/drawdown/
+  Sharpe treatment as `equity_performance_summary` above (median-of-5-day robust prices,
+  geometric annualization, `min_trading_days_for_return` gate), for a small gold/crypto
+  watchlist ([`dbt/seeds/alternatives_watchlist.csv`](dbt/seeds/alternatives_watchlist.csv)): a
+  physical-gold proxy (`GC=F`, COMEX futures — no direct "gold bar in a safe" price feed exists,
+  futures/spot is the standard proxy), a paper-gold ETF (`GLD`), and two major cryptocurrencies
+  (`BTC-USD`, `ETH-USD`). No benchmark comparison (no single coherent benchmark across gold and
+  crypto) and no dividends (none of the four instruments pays one). Each row carries a
+  `liquidity` label (illiquid/medium/liquid) — physical gold is illiquid, the ETF and both
+  cryptocurrencies are liquid; this label also decides which rows
+  `scripts/export_wealth_assumptions.py`'s `liquid_blended_default` is allowed to average, same
+  "don't compound an illiquid proxy" reasoning that already keeps individual stocks out of the
+  Wealth simulator's PEA growth assumption.
 
 All are starting points for your own research, not investment advice — the opportunity score
 in particular uses simple, transparent, hand-picked weights (see the comments in
@@ -98,6 +115,7 @@ you actually care about.
 | [Fiscalité locale des particuliers](https://www.data.gouv.fr/datasets/fiscalite-locale-des-particuliers) | DGFiP property tax rate (`taux_foncier_bati`) per commune | ~yearly |
 | [Populations légales communales 2017-2021](https://www.data.gouv.fr/datasets/populations-legales-communales-2017-2021) | Year-by-year population per commune, for the population-growth score factor (community republish of INSEE figures, org "icem7" — see [`dags/include/insee.py`](dags/include/insee.py) for why) | static (2017–2021) |
 | [yfinance](https://github.com/ranaroussi/yfinance) | Daily OHLCV/dividends for the PEA watchlist: CAC40 + non-French EU blue chips + PEA ETFs ([`dbt/seeds/pea_watchlist.csv`](dbt/seeds/pea_watchlist.csv)) | daily |
+| [yfinance](https://github.com/ranaroussi/yfinance) | Daily OHLCV for the alternatives watchlist: a physical-gold proxy (`GC=F`), a paper-gold ETF (`GLD`), and two cryptocurrencies (`BTC-USD`, `ETH-USD`) ([`dbt/seeds/alternatives_watchlist.csv`](dbt/seeds/alternatives_watchlist.csv)) | daily (weekday cron; crypto's weekend moves land via the 5-day rolling window on Monday's run) |
 
 **Known caveats, not bugs:**
 - DVF does **not** cover Alsace-Moselle (départements 57/67/68 use a different land registry)
@@ -115,6 +133,9 @@ you actually care about.
   wrapper structure for ETFs) and whether a specific broker's PEA custody actually supports a
   given foreign-listed line aren't always the same thing — verify with your broker before
   treating any row's `pea_eligible = true` as investment advice.
+- The alternatives watchlist is a snapshot too, and deliberately narrow (one gold proxy, one
+  gold ETF, two cryptocurrencies) rather than a broad basket — `liquidity` is a hand-set label,
+  not derived from real trading volume.
 
 ## Viewing the results
 
@@ -130,7 +151,8 @@ giving anyone BigQuery access:
    python scripts/export_marts.py
    ```
    This writes `docs/data/commune_opportunity_score.json`, `docs/data/equity_performance_summary.json`,
-   and `docs/data/meta.json` (an export timestamp + row counts).
+   `docs/data/alternatives_performance_summary.json`, and `docs/data/meta.json` (an export
+   timestamp + row counts).
 2. **Look at it locally** before publishing anything: `cd docs && python -m http.server 8000`,
    then open http://localhost:8000.
 3. **Publish via GitHub Pages**: push this repo to GitHub, then in the repo's Settings → Pages,
@@ -145,8 +167,9 @@ giving anyone BigQuery access:
 The dashboard itself (`docs/`) is a handful of plain static files — no build step, no npm
 install, no CDN dependencies, still just `<link>`/`<script src>` tags a browser reads directly.
 `index.html` holds markup only; `style.css` and `js/*.js` are split by concern (`utils.js`/
-`charts.js` are shared primitives, `real-estate.js`/`portfolio.js`/`wealth-sim.js` are one per
-tab, `main.js` is the bootstrap that ties them together — load order in `index.html` matters,
+`charts.js` are shared primitives, `real-estate.js`/`portfolio.js`/`alternatives.js`/
+`wealth-sim.js` are one per tab, `main.js` is the bootstrap that ties them together — load order
+in `index.html` matters,
 each depends on the ones before it). Light/dark mode, filters, a table view alongside every
 chart, full keyboard/hover tooltips, a France choropleth map (département boundaries from
 [gregoiredavid/france-geojson](https://github.com/gregoiredavid/france-geojson), MIT-licensed,
@@ -157,17 +180,17 @@ methodology disclosure per tab.
 
 ```
 docker/            Dockerfile + docker-compose.yml for the Airflow stack
-dags/               dvf_ingest, insee_ingest, tax_ingest, equities_ingest, dbt_transform DAGs
-dags/include/       download/parse/load logic used by the DAGs (bq.py, dvf.py, insee.py, tax.py, equities.py)
+dags/               dvf_ingest, insee_ingest, tax_ingest, equities_ingest, alternatives_ingest, dbt_transform DAGs
+dags/include/       download/parse/load logic used by the DAGs (bq.py, dvf.py, insee.py, tax.py, equities.py, alternatives.py)
 dbt/
-  seeds/            departements.csv (DVF-covered), pea_watchlist.csv (watchlist)
-  models/staging/    1:1 cleanup per source (dvf, insee, equities)
+  seeds/            departements.csv (DVF-covered), pea_watchlist.csv, alternatives_watchlist.csv (watchlists)
+  models/staging/    1:1 cleanup per source (dvf, insee, equities, alternatives)
   models/intermediate/  aggregations not yet business-facing
-  models/marts/      commune_opportunity_score, department_opportunity_score, equity_performance_summary
-scripts/            export_marts.py (BigQuery marts -> docs/data/*.json)
+  models/marts/      commune_opportunity_score, department_opportunity_score, equity_performance_summary, alternatives_performance_summary
+scripts/            export_marts.py, export_wealth_assumptions.py (BigQuery marts -> docs/data/*.json)
 docs/               static dashboard published via GitHub Pages
 docs/style.css       all dashboard CSS
-docs/js/             utils.js, charts.js (shared) -> real-estate.js, portfolio.js, wealth-sim.js (per tab) -> main.js (bootstrap)
+docs/js/             utils.js, charts.js (shared) -> real-estate.js, portfolio.js, alternatives.js, wealth-sim.js (per tab) -> main.js (bootstrap)
 docs/data/           *.json marts export + departements.geojson
 ```
 

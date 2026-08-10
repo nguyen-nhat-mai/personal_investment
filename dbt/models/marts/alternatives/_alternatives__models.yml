@@ -1,0 +1,26 @@
+version: 2
+
+models:
+  - name: alternatives_performance_summary
+    description: One row per gold/crypto watchlist ticker summarizing return, volatility, and risk-adjusted metrics ingested so far.
+    columns:
+      - name: ticker
+        tests:
+          - not_null
+          - unique
+      - name: liquidity
+        description: "illiquid/medium/liquid, from dbt/seeds/alternatives_watchlist.csv - a metadata label (same role asset_type/pea_eligible play in pea_watchlist), not something that changes how the price itself is fetched. Drives the Alternatives tab's UI badge and, in scripts/export_wealth_assumptions.py, which rows the Wealth simulator's growth-tier blend is allowed to use (liquid-only)."
+      - name: first_price
+        description: "Median of the first 5 trading days' adj_close - not a single point-to-point value, same robustness reasoning as equity_performance_summary.first_price."
+      - name: last_price
+        description: "Median of the last 5 trading days' adj_close - same robustness reasoning as first_price."
+      - name: period_return_pct
+        description: "last_price / first_price - 1, over whatever history is ingested so far - NOT annualized, so it isn't comparable across tickers with different amounts of history. See annualized_return for a comparable figure."
+      - name: trading_days
+        description: "Number of daily rows this ticker's stats are computed over. Gates annualized_return/annualized_volatility/max_drawdown_pct - below min_trading_days_for_return (60) all three are null rather than an unreliable extrapolation."
+      - name: annualized_return
+        description: "power(last_price / first_price, 252 / trading_days) - 1: proper geometric annualization of the actual realized return, using the robust median-based first_price/last_price - see equity_performance_summary.annualized_return for why this must be geometric, not arithmetic-mean-based. Null below min_trading_days_for_return days of history."
+      - name: max_drawdown_pct
+        description: "Worst peak-to-trough decline over whatever history is ingested. Null below min_trading_days_for_return days."
+      - name: sharpe_ratio
+        description: "(annualized_return - risk_free_rate_pct) / annualized_volatility. risk_free_rate_pct is the same dated hand-set constant used across this project - see dbt_project.yml. Null whenever annualized_return/annualized_volatility are."

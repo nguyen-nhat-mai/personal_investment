@@ -9,6 +9,7 @@
     --baseline:       #c3c2b7;
     --series-1:       #2a78d6; /* blue */
     --series-2:       #eb6834; /* orange */
+    --series-3:       #1baf7a; /* aqua - slot 3 of the same 8-hue categorical order */
     --diverging-pos:  #2a78d6; /* blue */
     --diverging-neg:  #e34948; /* red */
     --good-text:      #006300;
@@ -28,6 +29,7 @@
     --wealth-cat:           #e87ba4; /* magenta */
     --wealth-pea:           #008300; /* green */
     --wealth-real-estate:   #4a3aa7; /* violet */
+    --wealth-alternatives:  #e34948; /* red - slot 8, same as diverging-neg (different role: series identity, not a gain/loss signal) */
   }
   @media (prefers-color-scheme: dark) {
     :root:where(:not([data-theme="light"])) {
@@ -41,6 +43,7 @@
       --baseline:       #383835;
       --series-1:       #3987e5;
       --series-2:       #d95926;
+      --series-3:       #199e70;
       --diverging-pos:  #3987e5;
       --diverging-neg:  #e66767;
       --good-text:      #0ca30c;
@@ -59,6 +62,7 @@
       --wealth-cat:           #d55181;
       --wealth-pea:           #17b317;
       --wealth-real-estate:   #9085e9;
+      --wealth-alternatives:  #e66767;
     }
   }
   :root[data-theme="dark"] {
@@ -72,6 +76,7 @@
     --baseline:       #383835;
     --series-1:       #3987e5;
     --series-2:       #d95926;
+    --series-3:       #199e70;
     --diverging-pos:  #3987e5;
     --diverging-neg:  #e66767;
     --good-text:      #0ca30c;
@@ -86,6 +91,7 @@
     --wealth-cat:           #d55181;
     --wealth-pea:           #17b317;
     --wealth-real-estate:   #9085e9;
+    --wealth-alternatives:  #e66767;
   }
 
   * { box-sizing: border-box; }

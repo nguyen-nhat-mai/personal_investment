@@ -7,7 +7,10 @@ it into export_marts.py's generic "select * from every mart" loop) is the point.
   - Real market data, queried from BigQuery: PEA-eligible equity return/volatility
     (equity_performance_summary, blended both across all qualifying tickers and, separately,
     across ETFs only - see etf_blended_default, what the Wealth simulator's PEA growth
-    assumption actually uses) and real-estate price CAGR (department_opportunity_score).
+    assumption actually uses), gold/crypto return/volatility (alternatives_performance_summary,
+    blended both across all qualifying tickers and, separately, across liquid ones only - see
+    liquid_blended_default, what the Wealth simulator's alternatives growth assumption actually
+    uses), and real-estate price CAGR (department_opportunity_score).
   - Hand-set constants that are NOT market data at all - Livret A/LDDS/PEA are legal caps and
     decreed/regulated rates, Assurance Vie/SCPI-in-AV/CAT/mortgage are illustrative
     market-average assumptions with no source anywhere in this pipeline. See CONSTANTS below;
@@ -25,9 +28,10 @@ Run manually, same workflow as export_marts.py:
     python scripts/export_wealth_assumptions.py
     git add docs/data/wealth_assumptions.json && git commit -m "Refresh wealth assumptions" && git push
 
-`dbt/models/marts/portfolio/equity_performance_summary.sql` and
-`dbt/models/marts/real_estate/department_opportunity_score.sql` are where the two queried
-columns (annualized_return, median_price_cagr) get defined.
+`dbt/models/marts/portfolio/equity_performance_summary.sql`,
+`dbt/models/marts/alternatives/alternatives_performance_summary.sql`, and
+`dbt/models/marts/real_estate/department_opportunity_score.sql` are where the queried columns
+(annualized_return, median_price_cagr) get defined.
 """
 from __future__ import annotations
 
@@ -47,6 +51,13 @@ EQUITIES_QUERY = """
     select ticker, name, asset_type, trading_days, annualized_return, annualized_volatility
     from `{project}.{dataset}.equity_performance_summary`
     where pea_eligible = true
+    order by ticker
+"""
+
+ALTERNATIVES_QUERY = """
+    select ticker, name, asset_class, instrument_type, liquidity, trading_days,
+        annualized_return, annualized_volatility
+    from `{project}.{dataset}.alternatives_performance_summary`
     order by ticker
 """
 
@@ -146,6 +157,14 @@ CONSTANTS = {
     "real_estate_fallback": {
         "national_median_price_cagr": 0.03,  # VERIFY: illustrative long-run French residential appreciation assumption
     },
+    "alternatives_fallback": {
+        "annualized_return": 0.06,  # VERIFY: illustrative blended gold+crypto long-run assumption -
+                                     # deliberately conservative given how volatile a real
+                                     # equal-weight GLD/BTC/ETH blend can be, see the Wealth
+                                     # simulator's own +/-20%/year clamp on the live figure
+        "annualized_volatility": 0.35,  # VERIFY: illustrative - straddles gold's historically low
+                                          # vol and crypto's historically very high vol
+    },
 }
 
 
@@ -198,6 +217,42 @@ def export(project: str, dataset: str) -> None:
         etf_blended_default = dict(CONSTANTS["equities_fallback"])
         etf_blended_default["method"] = "fallback illustrative assumption - no pea_eligible ETF yet has enough trading-day history (see constants.equities_fallback and equity_performance_summary.trading_days)"
 
+    print("Querying alternatives_performance_summary ...", file=sys.stderr)
+    alternatives = _rows_as_dicts(client, ALTERNATIVES_QUERY.format(project=project, dataset=dataset))
+    print(f"  {len(alternatives)} alternatives tickers", file=sys.stderr)
+
+    # Same "only blend rows that cleared min_trading_days_for_return" gate as equities above -
+    # null there means "not enough reliable history yet", not zero.
+    alt_qualifying = [r for r in alternatives if r.get("annualized_return") is not None and r.get("annualized_volatility") is not None]
+    print(f"  {len(alt_qualifying)} of those have enough trading-day history to trust", file=sys.stderr)
+    if alt_qualifying:
+        alt_blended_default = {
+            "annualized_return": sum(r["annualized_return"] for r in alt_qualifying) / len(alt_qualifying),
+            "annualized_volatility": sum(r["annualized_volatility"] for r in alt_qualifying) / len(alt_qualifying),
+            "method": f"equal-weighted mean across {len(alt_qualifying)} alternatives tickers with enough trading-day history (see alternatives_performance_summary.trading_days)",
+        }
+    else:
+        alt_blended_default = dict(CONSTANTS["alternatives_fallback"])
+        alt_blended_default["method"] = "fallback illustrative assumption - no alternatives ticker yet has enough trading-day history (see constants.alternatives_fallback and alternatives_performance_summary.trading_days)"
+
+    # liquid-only blend, separate from blended_default above: the Wealth simulator's growth-tier
+    # assumption uses this one, not the all-ticker blend - same "don't compound an illiquid
+    # proxy" reasoning that already keeps individual stocks out of PEA's growth assumption in
+    # favor of an ETF-only blend (see etf_blended_default above). liquidity is lowercase
+    # "liquid" in dbt/seeds/alternatives_watchlist.csv; GC=F (the physical-gold proxy) is
+    # "illiquid" and deliberately excluded here.
+    alt_liquid_qualifying = [r for r in alt_qualifying if r.get("liquidity") == "liquid"]
+    print(f"  {len(alt_liquid_qualifying)} of those are liquid with enough trading-day history to trust", file=sys.stderr)
+    if alt_liquid_qualifying:
+        alt_liquid_blended_default = {
+            "annualized_return": sum(r["annualized_return"] for r in alt_liquid_qualifying) / len(alt_liquid_qualifying),
+            "annualized_volatility": sum(r["annualized_volatility"] for r in alt_liquid_qualifying) / len(alt_liquid_qualifying),
+            "method": f"equal-weighted mean across {len(alt_liquid_qualifying)} liquid alternatives tickers with enough trading-day history (see alternatives_performance_summary.trading_days)",
+        }
+    else:
+        alt_liquid_blended_default = dict(CONSTANTS["alternatives_fallback"])
+        alt_liquid_blended_default["method"] = "fallback illustrative assumption - no liquid alternatives ticker yet has enough trading-day history (see constants.alternatives_fallback and alternatives_performance_summary.trading_days)"
+
     print("Querying department_opportunity_score (national median CAGR) ...", file=sys.stderr)
     national = _rows_as_dicts(client, REAL_ESTATE_NATIONAL_QUERY.format(project=project, dataset=dataset))
     national_median_price_cagr = national[0]["national_median_price_cagr"] if national else None
@@ -217,6 +272,11 @@ def export(project: str, dataset: str) -> None:
             "pea_eligible": equities,
             "blended_default": blended_default,
             "etf_blended_default": etf_blended_default,
+        },
+        "alternatives": {
+            "watchlist": alternatives,
+            "blended_default": alt_blended_default,
+            "liquid_blended_default": alt_liquid_blended_default,
         },
         "real_estate": {
             "national_median_price_cagr": national_median_price_cagr,

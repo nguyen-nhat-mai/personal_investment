@@ -1,0 +1,5 @@
+ticker,name,asset_class,instrument_type,liquidity
+GC=F,Gold Futures (COMEX),gold,physical_gold,illiquid
+GLD,SPDR Gold Shares,gold,paper_gold,liquid
+BTC-USD,Bitcoin,crypto,crypto,liquid
+ETH-USD,Ethereum,crypto,crypto,liquid

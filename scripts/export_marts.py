@@ -30,6 +30,7 @@ MARTS = {
     "commune_opportunity_score": "real_estate",
     "department_opportunity_score": "real_estate",
     "equity_performance_summary": "portfolio",
+    "alternatives_performance_summary": "alternatives",
 }
 
 
