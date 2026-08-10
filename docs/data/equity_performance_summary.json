@@ -19,7 +19,7 @@
     "max_drawdown_pct": -0.2269673214343684,
     "sharpe_ratio": 3.419313162843134,
     "relative_performance_vs_benchmark": 1.031693789433177,
-    "total_dividends": 2.7,
+    "total_dividends": 2.6999999999999997,
     "dividend_yield_pct": 0.03221956923238279
   },
   {
@@ -42,8 +42,8 @@
     "max_drawdown_pct": -0.3192415530139716,
     "sharpe_ratio": 2.293103309647527,
     "relative_performance_vs_benchmark": 0.7558376536199793,
-    "total_dividends": 1.080625,
-    "dividend_yield_pct": 0.01692178186144322
+    "total_dividends": 1.0806250000000002,
+    "dividend_yield_pct": 0.016921781861443223
   },
   {
     "ticker": "ASML.AS",
@@ -686,8 +686,8 @@
     "max_drawdown_pct": -0.1471338391642972,
     "sharpe_ratio": 0.6709061386297512,
     "relative_performance_vs_benchmark": -0.007072605497219664,
-    "total_dividends": 9.75,
-    "dividend_yield_pct": 0.07750397268264424
+    "total_dividends": 9.750000000000002,
+    "dividend_yield_pct": 0.07750397268264425
   },
   {
     "ticker": "SGO.PA",

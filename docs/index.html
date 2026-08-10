@@ -330,11 +330,15 @@
           market-assumption JSON is fetched. Every euro fills Livret A then LDDS first
           (safety-first), then splits between a preservation tier (Assurance Vie fonds euro,
           SCPI-in-AV, CAT) and a growth tier (PEA, leveraged real estate) by risk tolerance;
-          PEA overflow past its real &euro;150,000 cap falls back into the preservation tier.
-          Most French capital-gains tax rules are applied once, to the final year's liquidation
-          figure, not annually &mdash; CAT is the exception, taxed annually as its interest
-          accrues (flat 30% PFU). Leveraged real estate needs a &euro;15,000 minimum down
-          payment to trigger at all; below that, the allocation goes to SCPI-in-AV instead.
+          PEA overflow past its real &euro;150,000 cap (cumulative contributions, tracked
+          separately from growth) falls back into the preservation tier. PEA growth uses a
+          fixed ~7%/year long-run assumption, not the PEA tab's own live-computed returns -
+          even the diversified benchmark ETF's 2-year figure was too high (17.9%/year) to
+          compound realistically over a 20-40 year horizon. Most French capital-gains tax
+          rules are applied once, to the final year's liquidation figure, not annually &mdash;
+          CAT is the exception, taxed annually as its interest accrues (flat 30% PFU).
+          Leveraged real estate needs a &euro;15,000 minimum down payment to trigger at all;
+          below that, the allocation goes to SCPI-in-AV instead.
           Illustrative starting heuristic, not investment advice &mdash;
           see the tab's own "How is this calculated?" panel for every assumption and
           simplification.</p>

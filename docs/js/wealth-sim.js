@@ -94,15 +94,18 @@ function wealthSnapshot(year, state, realEstate) {
 // (withdrawal), not annually on paper gains, so tax is applied once at the end instead (see
 // wealthComputeAfterTaxLiquidation). Returns { rows, state, realEstate } - state and
 // realEstate carry the cost-basis info the tax step needs.
-// Defensive sanity bounds on the two BigQuery-sourced growth assumptions, applied on top of
-// (not instead of) the dbt-side min_trading_days_for_return gate and export-script fallback -
-// belt and suspenders against compounding an extreme number 20-40 years forward, same spirit
-// as this project's existing max_price_cagr_pct/max_population_cagr_pct dbt vars. Hardcoded
-// (not read from assumptions.constants) on purpose: this is the last line of defense, so it
-// shouldn't depend on the same payload it's defending against being well-formed.
-var WEALTH_MAX_EQUITY_ANNUALIZED_RETURN = 0.5; // +/-50%/year
+//
+// PEA uses a fixed long-run equity-return assumption, always - see the comment where
+// WEALTH_EQUITY_ANNUALIZED_RETURN is used below for why live-computed data is deliberately not
+// trusted here, unlike every other guard rail in this file. Real estate is different: DVF
+// multi-year price CAGR is far less volatile than 2 years of individual stock returns, so it
+// stays BigQuery-sourced with a defensive clamp - belt and suspenders against compounding an
+// extreme number 20-40 years forward, same spirit as this project's existing
+// max_price_cagr_pct/max_population_cagr_pct dbt vars. Hardcoded (not read from
+// assumptions.constants) on purpose: this is the last line of defense, so it shouldn't depend
+// on the same payload it's defending against being well-formed.
 var WEALTH_MAX_REAL_ESTATE_CAGR = 0.15; // +/-15%/year, matches dbt's max_price_cagr_pct
-var WEALTH_EQUITY_RETURN_FALLBACK = 0.07; // matches export_wealth_assumptions.py's equities_fallback
+var WEALTH_EQUITY_ANNUALIZED_RETURN = 0.07; // fixed long-run assumption, see wealthComputeProjection
 var WEALTH_REAL_ESTATE_CAGR_FALLBACK = 0.03; // matches export_wealth_assumptions.py's real_estate_fallback
 // Minimum down payment (apport) to realistically trigger a leveraged property purchase - a
 // EUR500 "down payment" doesn't buy any real French property. Below this, the growth-tier real
@@ -116,9 +119,17 @@ function wealthClamp(v, maxAbs, fallback) {
 
 function wealthComputeProjection(params, assumptions) {
   var C = assumptions.constants;
-  var eq = {
-    annualized_return: wealthClamp(assumptions.equities.blended_default && assumptions.equities.blended_default.annualized_return, WEALTH_MAX_EQUITY_ANNUALIZED_RETURN, WEALTH_EQUITY_RETURN_FALLBACK)
-  };
+  // PEA growth uses a fixed long-run assumption (WEALTH_EQUITY_ANNUALIZED_RETURN, ~7%/year),
+  // NOT assumptions.equities.blended_default or any single ticker's own live-computed
+  // annualized_return - deliberately, not just as a fallback. Checked against real data: with
+  // ~2 years of backfilled history, the equal-weighted mean across the watchlist was 19.3%/year
+  // (pulled up by real but extraordinary 2-year rallies - GLE.PA +121%/year, MT.AS +93%/year),
+  // and even the diversified benchmark alone (CW8.PA) was 17.9%/year - both real, both
+  // reflecting an abnormally strong short window, neither suitable for compounding 20-40 years
+  // forward. Every other vehicle here (Livret A, LDDS, AV Fonds Euro, SCPI-in-AV, CAT) already
+  // uses a fixed dated constant from assumptions.constants rather than live market data, for
+  // exactly this reason - PEA now gets the same treatment instead of being the one outlier.
+  var eq = { annualized_return: WEALTH_EQUITY_ANNUALIZED_RETURN };
   var reCagr = wealthClamp(assumptions.real_estate.national_median_price_cagr, WEALTH_MAX_REAL_ESTATE_CAGR, WEALTH_REAL_ESTATE_CAGR_FALLBACK);
   var split = WEALTH_TIER_SPLIT[params.riskTolerance];
 
@@ -309,14 +320,17 @@ var WEALTH_METHODOLOGY_HTML =
   "<h3>Tax</h3>" +
   "<p>Tax is applied once, at the end of your horizon, to each vehicle's realized gain - not annually - since French capital-gains tax is due on withdrawal, not on paper gains. Livret A and LDDS are always tax-free. AV/SCPI-in-AV use whichever is cheaper: the 30% flat tax (PFU) or your marginal bracket (TMI) plus 17.2% social charges; AV additionally gets an 8-year holding abatement (&euro;4,600 single / &euro;9,200 couple) and a reduced 24.7% rate on gains above it, assuming your cumulative AV premiums stay under &euro;150k. PEA is 0% income tax + 17.2% social charges after 5 years. Real estate is shown pre-tax (French real-estate capital-gains taper relief is its own complex schedule - a v2 item). <strong>CAT is the one exception</strong>: its interest is taxed annually as it accrues, always at the flat 30% PFU (12.8% income tax + 17.2% social charges, no TMI-bareme option) - only the net interest compounds into the next year, unlike every other vehicle here. The \"Tax:\" figure shown above adds this cumulative annual CAT tax to the liquidation-time tax on AV/PEA, for a complete lifetime total.</p>" +
   "<h3>Growth assumption guard rails</h3>" +
-  "<p><strong>PEA</strong>: the average annualized return across PEA-eligible tickers with enough trading-day history to be trustworthy (this pipeline ingests daily, so early on that can mean few or no tickers qualify yet) - a dated illustrative fallback (~7%/year) is used until real history accumulates. <strong>Real estate</strong>: the national median DVF price CAGR across d&eacute;partements with a reliable multi-year window - a dated illustrative fallback (~3%/year) is used if none do yet. Both figures are also hard-capped (&plusmn;50%/year equities, &plusmn;15%/year real estate) before being compounded over your horizon, so neither a data hiccup nor a genuinely extreme historical figure can produce an absurd multi-decade projection. Which one applied for your current numbers is visible in the underlying <code>wealth_assumptions.json</code> export (<code>equities.blended_default.method</code>, <code>real_estate.national_median_price_cagr_is_fallback</code>).</p>" +
+  "<p><strong>PEA</strong> always uses a fixed, dated long-run assumption (~7%/year) - deliberately NOT the PEA tab's own live-computed returns, even the diversified benchmark ETF's (CW8.PA). Checked against real data: with ~2 years of ingested history, the equal-weighted average across the watchlist was 19.3%/year, and even CW8.PA alone was 17.9%/year - both real numbers, both reflecting a genuinely strong but abnormal 2-year window (a few individual stocks moved 90-120%/year), not a rate that belongs compounded 20-40 years forward. Every other vehicle here (Livret A, LDDS, AV Fonds Euro, SCPI-in-AV, CAT) already used a fixed assumption for the same reason; PEA now matches them instead of being the exception. <strong>Real estate</strong> is different: DVF's multi-year price CAGR is far less volatile than 2 years of stock returns, so it stays sourced from the national median across d&eacute;partements with a reliable multi-year window (a dated illustrative fallback, ~3%/year, is used if none do yet), hard-capped at &plusmn;15%/year as a defensive measure - not the primary safeguard PEA needed.</p>" +
   "<h3>What's not modeled</h3>" +
   "<p>Monte Carlo bands (p10/p50/p90) are out of scope - this is a single deterministic path using published mean return/CAGR figures, not a distribution. Illustrative starting heuristic, not investment advice.</p>";
 
 function initWealthSimulator(assumptions) {
   var emptyEl = document.getElementById("ws-empty");
   var contentEl = document.getElementById("ws-content");
-  if (!assumptions || !assumptions.equities || !assumptions.equities.blended_default) {
+  // assumptions.constants is what computation actually needs (Livret A/LDDS/AV/CAT/mortgage
+  // rates, PFU/abatement thresholds) - equities.blended_default isn't checked here since PEA no
+  // longer reads it (see wealthComputeProjection).
+  if (!assumptions || !assumptions.constants || !assumptions.real_estate) {
     contentEl.style.display = "none";
     emptyEl.hidden = false;
     emptyEl.innerHTML = "No wealth-assumptions data published yet. Run <code>python scripts/export_wealth_assumptions.py</code> after dbt_transform has run at least once.";
