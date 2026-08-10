@@ -251,6 +251,10 @@
     border-radius: 10px;
     padding: 14px 16px;
   }
+  /* Marks the currently-selected option among a row of otherwise-equivalent stat tiles (e.g.
+     the wealth simulator's risk-tolerance comparison) - same accent token nav.tabs already
+     uses for "this one is active". */
+  .stat-tile.selected { border-color: var(--series-1); box-shadow: inset 0 0 0 1px var(--series-1); }
   .stat-tile .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
   .stat-tile .value { font-size: 24px; font-weight: 600; }
   .stat-tile .sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
@@ -601,8 +605,9 @@
   <div>
     <h1>France Investment Insights</h1>
     <p class="subtitle">
-      Real-estate opportunity by commune (DVF + INSEE) and a PEA watchlist (CAC40 + non-French
-      EU blue chips + PEA ETFs), built with dbt + Airflow + BigQuery.
+      Real-estate opportunity by commune (DVF + INSEE), a PEA watchlist (CAC40 + non-French EU
+      blue chips + PEA ETFs), and a French wealth simulator (Livret A/LDDS, PEA, Assurance Vie,
+      leveraged real estate) &mdash; built with dbt + Airflow + BigQuery.
     </p>
     <p class="meta-line" id="meta-line">Loading...</p>
   </div>
@@ -755,6 +760,14 @@
 
       <figure class="chart-card">
         <figcaption>
+          <span class="title">Risk tolerance comparison</span>
+          <span class="caption-note">Same capital, savings, horizon &amp; tax settings &mdash; only risk tolerance changes</span>
+        </figcaption>
+        <div class="stat-row" id="ws-risk-compare"></div>
+      </figure>
+
+      <figure class="chart-card">
+        <figcaption>
           <span class="title">Net worth by vehicle, year by year</span>
           <span class="caption-note">Pre-tax balances &middot; tax applied only at the final-year liquidation figure above</span>
         </figcaption>
@@ -892,9 +905,8 @@
           directions (an absurdly large annualized return from a noisy few-day average, or a
           falsely-flattering near-zero drawdown from not having lived through a bad week yet),
           so &ldquo;not enough history&rdquo; shows as &ldquo;&ndash;&rdquo;, never a fabricated
-          number. A &ldquo;Data window&rdquo; stat and per-ticker Since/Until columns make the
-          actual ingested period visible everywhere these numbers appear. <strong>Vs.
-          CW8.PA</strong> (simple excess return, not Beta-adjusted alpha) is computed over a
+          number. Per-ticker Since/Until columns in the table make the actual ingested period
+          visible. <strong>Vs. CW8.PA</strong> (simple excess return, not Beta-adjusted alpha) is computed over a
           date-aligned common window with the benchmark, since this watchlist now spans 5
           exchanges with different holiday calendars. <strong>Country</strong> is derived from
           each ticker's ISIN prefix (legal domicile) rather than hand-typed &mdash; that caught 5
@@ -1000,6 +1012,9 @@
   // For small per-share values (dividends) where rounding to 0 decimals would hide the number
   // entirely - fmtEUR0.format(0.85) is "0 EUR", fmtEUR2.format(0.85) is "0,85 EUR".
   var fmtEUR2 = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // Signed: for EUR deltas (e.g. the wealth simulator's risk-tolerance comparison) where +/- is
+  // the point - plain fmtEUR0 shows "-" for negatives but nothing for positives.
+  var fmtEUR0Signed = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0, signDisplay: "exceptZero" });
   // Signed: for deltas (YoY change, period return) where +/- is the point.
   var fmtPct1 = new Intl.NumberFormat("fr-FR", { style: "percent", maximumFractionDigits: 1, signDisplay: "exceptZero" });
   // Unsigned: for magnitudes that are never negative (volatility) - a "+" there would
@@ -1673,8 +1688,6 @@
 
     var methodologyPanel = document.getElementById("pf-methodology-panel");
     methodologyPanel.innerHTML =
-      "<h3>Why the charts use annualized return, not period return</h3>" +
-      "<p>The bar chart, scatter chart, and \"Best performer\" stat all rank and plot by <strong>annualized return</strong>, not raw period return - period return isn't comparable across tickers with different amounts of ingested history (a ticker with 2 years of data and one with 5 days aren't on the same footing), and pairing a non-annualized figure against already-annualized volatility on the scatter chart would be comparing different units on the same axis. Period return is still shown in the table, alongside \"Since\"/\"Until\" so it's clear exactly what window it covers - the \"Data window\" stat tile above shows the same thing at a glance for whatever's currently filtered.</p>" +
       "<h3>Return, volatility &amp; drawdown</h3>" +
       "<p><strong>Period return</strong> is the median of the last 5 trading days' adjusted-close price over the median of the first 5, minus one, over whatever history has been ingested so far for that ticker - a median of 5, not a single point-to-point comparison, so one glitchy data point on the literal first or last ingested day can't swing the whole figure on its own (this is a real fix, not a hypothetical one: GLE.PA briefly showed +327% from exactly that failure mode before it). <strong>Annualized volatility</strong> is the standard deviation of daily returns scaled by &radic;252. <strong>Max drawdown</strong> is the worst peak-to-trough decline seen so far. All of these, plus Sharpe below, use adjusted close (<code>adj_close</code>) throughout, not raw close - dividends and splits are already priced in, not double-counted separately.</p>" +
       "<h3>The 60-trading-day gate</h3>" +
@@ -1767,17 +1780,7 @@
       var volValues = filtered.map(function (d) { return d.annualized_volatility; }).filter(function (v) { return v != null; });
       var avgVol = volValues.length ? volValues.reduce(function (s, v) { return s + v; }, 0) / volValues.length : null;
       var bestSharpe = filtered.filter(function (d) { return d.sharpe_ratio != null; }).sort(function (a, b) { return b.sharpe_ratio - a.sharpe_ratio; })[0];
-      // "Since" - the earliest first_date and latest last_date across whatever's currently
-      // filtered, so it's always clear what window the numbers above actually cover, without
-      // having to open the table. Per-ticker first_date/last_date are also in the table itself
-      // for anyone who wants the exact per-ticker window, not just the filtered-set envelope.
-      var firstDates = filtered.map(function (d) { return d.first_date; }).filter(function (v) { return v != null; }).sort();
-      var lastDates = filtered.map(function (d) { return d.last_date; }).filter(function (v) { return v != null; }).sort();
-      var dataWindow = firstDates.length && lastDates.length
-        ? firstDates[0] + " to " + lastDates[lastDates.length - 1]
-        : "–";
       addStatTile(statsEl, "Tickers tracked", fmtInt.format(filtered.length), null);
-      addStatTile(statsEl, "Data window", dataWindow, "Earliest-to-latest ingested date across tickers shown");
       addStatTile(statsEl, "Best performer (annualized)", best ? best.ticker : "–", best ? fmtPct1.format(best.annualized_return) : "Needs 60+ trading days of history");
       addStatTile(statsEl, "Avg. annualized volatility", avgVol != null ? fmtPct1Plain.format(avgVol) : "–", null);
       addStatTile(statsEl, "Best risk-adjusted (Sharpe)", bestSharpe ? bestSharpe.ticker : "–", bestSharpe ? "Sharpe " + fmtScore.format(bestSharpe.sharpe_ratio) : "Needs 60+ trading days of history");
@@ -2160,6 +2163,8 @@
       };
     }
 
+    var RISK_TOLERANCE_LABELS = { conservative: "Conservative", balanced: "Balanced", aggressive: "Aggressive" };
+
     function rerender() {
       document.getElementById("ws-capital-out").textContent = fmtEUR0.format(Number(controls.capital.value));
       document.getElementById("ws-monthly-out").textContent = fmtEUR0.format(Number(controls.monthly.value)) + "/mo";
@@ -2169,6 +2174,34 @@
       var result = wealthComputeProjection(params, assumptions);
       var finalRow = result.rows[result.rows.length - 1];
       var afterTax = wealthComputeAfterTaxLiquidation(finalRow, result.state, params, assumptions.constants);
+
+      // Same capital/savings/horizon/tax settings, only riskTolerance varies - so it's clear
+      // what the slider is actually trading off, not just what the current setting produces.
+      // The other two tiles' sub-line is a colored delta vs. the current selection (same
+      // --diverging-pos/--diverging-neg tokens the bar charts already use for gains/losses) -
+      // the absolute value itself stays neutral ink, since "higher net worth" isn't unambiguously
+      // "better" here (this is a deterministic comparison, not a risk-adjusted one - more risk
+      // tolerance isn't free, it's just not modeled as a downside in this single-path
+      // projection - see the methodology panel).
+      var compareEl = document.getElementById("ws-risk-compare");
+      compareEl.innerHTML = "";
+      var currentAfterTaxTotal = afterTax.total;
+      Object.keys(RISK_TOLERANCE_LABELS).forEach(function (risk) {
+        var isCurrent = risk === params.riskTolerance;
+        var riskParams = Object.assign({}, params, { riskTolerance: risk });
+        var riskResult = isCurrent ? result : wealthComputeProjection(riskParams, assumptions);
+        var riskFinalRow = riskResult.rows[riskResult.rows.length - 1];
+        var riskAfterTax = isCurrent ? afterTax : wealthComputeAfterTaxLiquidation(riskFinalRow, riskResult.state, riskParams, assumptions.constants);
+        var delta = riskAfterTax.total - currentAfterTaxTotal;
+        addStatTile(
+          compareEl,
+          RISK_TOLERANCE_LABELS[risk] + (isCurrent ? " (current)" : ""),
+          fmtEUR0.format(riskAfterTax.total),
+          isCurrent ? "Pre-tax: " + fmtEUR0.format(riskFinalRow.totalNetWorth) : fmtEUR0Signed.format(delta) + " vs. current",
+          isCurrent,
+          isCurrent ? null : (delta >= 0 ? "var(--diverging-pos)" : "var(--diverging-neg)")
+        );
+      });
 
       var statsEl = document.getElementById("ws-stats");
       statsEl.innerHTML = "";
@@ -2187,9 +2220,9 @@
     rerender();
   }
 
-  function addStatTile(container, label, value, sub) {
+  function addStatTile(container, label, value, sub, selected, subColor) {
     var tile = document.createElement("div");
-    tile.className = "stat-tile";
+    tile.className = "stat-tile" + (selected ? " selected" : "");
     var l = document.createElement("div");
     l.className = "label";
     l.textContent = label;
@@ -2201,6 +2234,10 @@
     if (sub) {
       var s = document.createElement("div");
       s.className = "sub";
+      // subColor is for a delta/comparison sub-line (e.g. "+12 345 EUR vs. current") where
+      // sign carries real meaning - same --diverging-pos/--diverging-neg tokens the bar charts
+      // already use for gains/losses, not a new color language.
+      if (subColor) s.style.color = subColor;
       s.textContent = sub;
       tile.appendChild(s);
     }
