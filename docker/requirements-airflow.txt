@@ -1,0 +1,12 @@
+# Installed into the custom Airflow image (see Dockerfile).
+#
+# dbt-bigquery is installed alongside Airflow itself (rather than in a separate container/
+# venv) to keep this first version simple. If pip's resolver fails on shared transitive deps
+# (Jinja2/click/markupsafe are common culprits between Airflow and dbt-core), the escape hatch
+# is to run dbt in its own image and trigger it from Airflow via DockerOperator, or to swap the
+# dbt_transform DAG to astronomer-cosmos - not needed for a project this size.
+google-cloud-bigquery~=3.25
+pandas~=2.2
+requests~=2.32
+yfinance~=0.2.43
+dbt-bigquery~=1.8

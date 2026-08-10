@@ -1,0 +1,96 @@
+# Trimmed-down Airflow stack for a solo learning project: one Postgres (Airflow metadata only -
+# separate from the BigQuery warehouse the DAGs actually load data into), one webserver, one
+# scheduler, LocalExecutor. No Redis/Celery/worker/flower - unnecessary for a single machine.
+#
+# Loosely based on the official Airflow quick-start compose
+# (https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html),
+# trimmed to LocalExecutor and pointed at the custom image in ./Dockerfile.
+#
+# Run from this directory: `docker compose up airflow-init` once, then `docker compose up -d`.
+
+x-airflow-common: &airflow-common
+  build:
+    context: .
+    dockerfile: Dockerfile
+  environment: &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-}
+    AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_WEBSERVER_SECRET_KEY:-}
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.basic_auth"
+    GCP_PROJECT: ${GCP_PROJECT}
+    DVF_YEARS: ${DVF_YEARS:-2020,2021,2022,2023,2024}
+    GOOGLE_APPLICATION_CREDENTIALS: /opt/airflow/keys/gcp-service-account.json
+  volumes:
+    - ../dags:/opt/airflow/dags
+    - ../dbt:/opt/airflow/dbt
+    - airflow-logs:/opt/airflow/logs
+    - ${GCP_KEY_PATH}:/opt/airflow/keys/gcp-service-account.json:ro
+  user: "${AIRFLOW_UID:-50000}:0"
+  depends_on: &airflow-common-depends-on
+    postgres:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: always
+
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db migrate
+        airflow users create \
+          --username "${AIRFLOW_ADMIN_USER:-admin}" \
+          --password "${AIRFLOW_ADMIN_PASSWORD:-admin}" \
+          --firstname Admin --lastname User \
+          --role Admin --email admin@example.com || true
+
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+    restart: always
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    healthcheck:
+      test: ["CMD-SHELL", "airflow jobs check --job-type SchedulerJob --hostname \"$${HOSTNAME}\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+    restart: always
+
+volumes:
+  postgres-db-volume:
+  airflow-logs:
