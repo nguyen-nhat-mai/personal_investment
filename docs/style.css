@@ -269,6 +269,32 @@
   figure.chart-card figcaption .title { font-size: 14px; font-weight: 600; }
   figure.chart-card figcaption .caption-note { font-size: 12px; color: var(--text-muted); }
 
+  .view-by-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .view-by-row .view-by-label { font-size: 12px; color: var(--text-secondary); }
+
+  /* Boxed alternative to .legend-item for a single-select toggle (e.g. PEA's "View by" ranking
+     metric) that reads as one control with two options, not a multi-select filter list. Active
+     state uses a neutral --gridline fill + bold text, matching this file's existing restraint
+     around solid color fills (nav.tabs/.stat-tile.selected use a thin accent border or
+     underline, never a saturated block) rather than introducing a new heavier pattern. */
+  .segmented-toggle {
+    display: inline-flex;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .segmented-toggle button {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 12px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  .segmented-toggle button + button { border-left: 1px solid var(--border); }
+  .segmented-toggle button[aria-pressed="true"] { background: var(--gridline); color: var(--text-primary); font-weight: 600; }
+  .segmented-toggle button[aria-pressed="false"]:hover { color: var(--text-primary); }
+
   .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
   .legend-item {
     display: flex;

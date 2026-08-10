@@ -68,12 +68,13 @@ function initPortfolio(data) {
     legendEl.appendChild(btn);
   });
 
-  // Ranking metric - a single-select toggle (only one active at a time), reusing .legend-item's
-  // visual style (including the aria-pressed="false" dim-opacity rule) even though semantically
-  // this isn't a multi-select filter like the Stock/ETF legend above. Drives BOTH the bar
-  // chart's ranking and the table's row order (and, transitively, "Best performer (annualized)"
-  // is unaffected - that stat always finds its own max regardless of table order) - one control,
-  // one mental model, rather than the bar chart and table silently disagreeing on rank order.
+  // Ranking metric - a single-select toggle (only one active at a time), styled as a boxed
+  // .segmented-toggle rather than the Stock/ETF .legend above, and placed just above the
+  // ranking chart but outside its card (not inside the bar chart's own figcaption) since it
+  // drives BOTH the bar chart's ranking and the table's row order - "Best performer
+  // (annualized)" is unaffected either way, that stat always finds its own max regardless of
+  // table order - one control, one mental model, rather than the bar chart and table silently
+  // disagreeing on rank order.
   var BAR_METRICS = {
     annualized_return: {
       title: "Annualized return by ticker",
