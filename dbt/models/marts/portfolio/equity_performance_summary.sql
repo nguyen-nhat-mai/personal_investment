@@ -10,7 +10,8 @@ per_ticker as (
         min(date) as first_date,
         max(date) as last_date,
         avg(daily_return) as avg_daily_return,
-        stddev(daily_return) * sqrt(252) as annualized_volatility
+        stddev(daily_return) * sqrt(252) as annualized_volatility,
+        power(1 + avg(daily_return), 252) - 1 as annualized_return
     from returns
     group by ticker
 ),
@@ -43,6 +44,7 @@ select
     safe_divide(fl.last_price - fl.first_price, fl.first_price) as period_return_pct,
     t.avg_daily_return,
     t.annualized_volatility,
+    t.annualized_return,
     d.total_dividends
 from per_ticker t
 join first_last_price fl using (ticker)

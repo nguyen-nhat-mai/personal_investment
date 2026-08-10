@@ -1,0 +1,55 @@
+{
+  "exported_at": "2026-08-10T09:00:00+00:00",
+  "project": "local-dev-fixture",
+  "dataset": "analytics",
+  "_fixture_note": "Hand-written for local UI development (python -m http.server) - not a real export. Run scripts/export_wealth_assumptions.py against real BigQuery credentials to replace this file. See that script's CONSTANTS dict for where every non-market-data figure below comes from.",
+  "equities": {
+    "pea_eligible": [
+      { "ticker": "CW8.PA", "name": "Amundi MSCI World UCITS ETF", "asset_type": "etf", "annualized_return": 0.0745, "annualized_volatility": 0.152 },
+      { "ticker": "PE500.PA", "name": "Amundi PEA S&P 500 UCITS ETF", "asset_type": "etf", "annualized_return": 0.0912, "annualized_volatility": 0.171 },
+      { "ticker": "AI.PA", "name": "Air Liquide", "asset_type": "stock", "annualized_return": 0.0611, "annualized_volatility": 0.198 },
+      { "ticker": "MC.PA", "name": "LVMH", "asset_type": "stock", "annualized_return": 0.0523, "annualized_volatility": 0.243 },
+      { "ticker": "AIR.PA", "name": "Airbus", "asset_type": "stock", "annualized_return": 0.0834, "annualized_volatility": 0.276 }
+    ],
+    "blended_default": {
+      "annualized_return": 0.0725,
+      "annualized_volatility": 0.208,
+      "method": "equal-weighted mean of annualized_return/annualized_volatility across pea_eligible=true rows in equity_performance_summary"
+    }
+  },
+  "real_estate": {
+    "national_median_price_cagr": 0.0298,
+    "by_department": [
+      { "code_departement": "75", "nom_departement": "Paris", "median_price_cagr": 0.0451 },
+      { "code_departement": "69", "nom_departement": "Rhône", "median_price_cagr": 0.0387 },
+      { "code_departement": "33", "nom_departement": "Gironde", "median_price_cagr": 0.0312 },
+      { "code_departement": "44", "nom_departement": "Loire-Atlantique", "median_price_cagr": 0.0298 },
+      { "code_departement": "23", "nom_departement": "Creuse", "median_price_cagr": 0.0071 }
+    ]
+  },
+  "constants": {
+    "as_of": "2026-08-10",
+    "livret_a": { "rate": 0.017, "cap": 22950 },
+    "ldds": { "rate": 0.017, "cap": 12000 },
+    "av_fonds_euro": { "rate": 0.025 },
+    "scpi_in_av": { "distribution_rate": 0.045 },
+    "cat": { "rate": 0.025 },
+    "pea": { "cap": 150000, "income_tax_rate_after_5y": 0.0, "social_charges_rate_after_5y": 0.172 },
+    "pfu": { "total_rate": 0.30, "ir_component": 0.128, "ps_component": 0.172 },
+    "av_abatement": {
+      "holding_years_required": 8,
+      "single": 4600,
+      "couple": 9200,
+      "reduced_rate_below_150k_cumulative_premiums": 0.247,
+      "rate_above_150k_cumulative_premiums": 0.30
+    },
+    "tmi_brackets": [
+      { "up_to": 11497, "rate": 0.0 },
+      { "up_to": 29315, "rate": 0.11 },
+      { "up_to": 83823, "rate": 0.30 },
+      { "up_to": 180294, "rate": 0.41 },
+      { "up_to": null, "rate": 0.45 }
+    ],
+    "mortgage": { "default_rate": 0.035, "default_ltv": 0.80, "default_term_years": 20 }
+  }
+}

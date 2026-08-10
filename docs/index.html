@@ -26,6 +26,16 @@
     --seq-low:        #cde2fb;
     --seq-high:       #0d366b;
     --no-data-fill:   #e1e0d9;
+    /* Wealth simulator categorical series (stacked area, bottom = safety -> top = growth).
+       Slots 1-7 of the same validated 8-hue categorical order series-1/series-2/diverging-neg
+       already sample from - already-adopted, no new palette validation needed. */
+    --wealth-livret-a:      #2a78d6; /* blue */
+    --wealth-ldds:          #eb6834; /* orange */
+    --wealth-av-fonds-euro: #1baf7a; /* aqua/green */
+    --wealth-scpi-av:       #eda100; /* yellow */
+    --wealth-cat:           #e87ba4; /* magenta */
+    --wealth-pea:           #008300; /* green */
+    --wealth-real-estate:   #4a3aa7; /* violet */
   }
   @media (prefers-color-scheme: dark) {
     :root:where(:not([data-theme="light"])) {
@@ -50,6 +60,13 @@
       --seq-low:        #1f3350;
       --seq-high:       #86b6ef;
       --no-data-fill:   #2c2c2a;
+      --wealth-livret-a:      #3987e5;
+      --wealth-ldds:          #d95926;
+      --wealth-av-fonds-euro: #199e70;
+      --wealth-scpi-av:       #c98500;
+      --wealth-cat:           #d55181;
+      --wealth-pea:           #17b317;
+      --wealth-real-estate:   #9085e9;
     }
   }
   :root[data-theme="dark"] {
@@ -70,6 +87,13 @@
     --seq-low:        #1f3350;
     --seq-high:       #86b6ef;
     --no-data-fill:   #2c2c2a;
+    --wealth-livret-a:      #3987e5;
+    --wealth-ldds:          #d95926;
+    --wealth-av-fonds-euro: #199e70;
+    --wealth-scpi-av:       #c98500;
+    --wealth-cat:           #d55181;
+    --wealth-pea:           #17b317;
+    --wealth-real-estate:   #9085e9;
   }
 
   * { box-sizing: border-box; }
@@ -154,6 +178,66 @@
     padding: 5px 8px;
     font-size: 13px;
   }
+
+  .sim-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px 20px;
+    margin-bottom: 20px;
+  }
+  .sim-controls label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .sim-controls select {
+    background: var(--surface-1);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 13px;
+  }
+  .sim-controls output {
+    font-size: 12px;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--gridline);
+    margin: 4px 0;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--series-1);
+    border: 2px solid var(--surface-1);
+    cursor: pointer;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--series-1);
+    border: 2px solid var(--surface-1);
+    cursor: pointer;
+  }
+  input[type="range"]::-moz-range-track {
+    background: var(--gridline);
+    height: 4px;
+    border-radius: 2px;
+  }
+
+  .wealth-area { stroke: var(--surface-1); stroke-width: 2; }
 
   .stat-row {
     display: grid;
@@ -422,6 +506,13 @@
   /* Scatter (SVG) */
   .scatter-wrap { width: 100%; }
   svg.scatter { width: 100%; height: auto; display: block; }
+
+  /* Wealth simulator stacked-area chart (SVG) - shares the scatter's gridline/axis-label look */
+  .chart-wrap { width: 100%; }
+  svg.wealth-chart { width: 100%; height: auto; display: block; }
+  .wealth-chart .gridline { stroke: var(--gridline); stroke-width: 1; }
+  .wealth-chart .axis-line { stroke: var(--baseline); stroke-width: 1; }
+  .wealth-chart .axis-label { fill: var(--text-muted); font-size: 10px; }
   .scatter .gridline { stroke: var(--gridline); stroke-width: 1; }
   .scatter .axis-line { stroke: var(--baseline); stroke-width: 1; }
   .scatter .axis-label { fill: var(--text-muted); font-size: 10px; }
@@ -522,6 +613,7 @@
   <nav class="tabs" role="tablist">
     <button role="tab" id="tab-btn-re" aria-selected="true" aria-controls="tab-real-estate" type="button">Real estate</button>
     <button role="tab" id="tab-btn-pf" aria-selected="false" aria-controls="tab-portfolio" type="button">Portfolio</button>
+    <button role="tab" id="tab-btn-ws" aria-selected="false" aria-controls="tab-wealth-sim" type="button">Wealth simulator</button>
     <button role="tab" id="tab-btn-how" aria-selected="false" aria-controls="tab-how-it-works" type="button">How it works</button>
   </nav>
 
@@ -612,6 +704,65 @@
       <div class="table-scroll" id="pf-table-wrap" hidden></div>
     </div>
     <div class="empty-state" id="pf-empty" hidden></div>
+  </section>
+
+  <section class="panel" id="tab-wealth-sim" role="tabpanel" aria-labelledby="tab-btn-ws" hidden>
+    <div class="sim-controls" id="ws-controls">
+      <label>Starting capital
+        <input type="range" id="ws-capital" min="0" max="500000" step="1000" value="20000">
+        <output id="ws-capital-out"></output>
+      </label>
+      <label>Monthly savings
+        <input type="range" id="ws-monthly" min="0" max="5000" step="50" value="500">
+        <output id="ws-monthly-out"></output>
+      </label>
+      <label>Horizon
+        <input type="range" id="ws-horizon" min="1" max="40" step="1" value="20">
+        <output id="ws-horizon-out"></output>
+      </label>
+      <label>Risk tolerance
+        <select id="ws-risk">
+          <option value="conservative">Conservative (70% preservation / 30% growth)</option>
+          <option value="balanced" selected>Balanced (50% / 50%)</option>
+          <option value="aggressive">Aggressive (25% / 75%)</option>
+        </select>
+      </label>
+      <label>Marginal tax bracket (TMI)
+        <select id="ws-tmi">
+          <option value="0">0%</option>
+          <option value="0.11">11%</option>
+          <option value="0.30" selected>30%</option>
+          <option value="0.41">41%</option>
+          <option value="0.45">45%</option>
+        </select>
+      </label>
+      <label>Household
+        <select id="ws-household">
+          <option value="single" selected>Single</option>
+          <option value="couple">Couple</option>
+        </select>
+      </label>
+    </div>
+
+    <div id="ws-content">
+      <button class="methodology-toggle" id="ws-methodology-toggle" type="button" aria-expanded="false">How is this calculated?</button>
+      <div class="methodology-panel" id="ws-methodology-panel" hidden></div>
+
+      <div class="stat-row" id="ws-stats"></div>
+
+      <figure class="chart-card">
+        <figcaption>
+          <span class="title">Net worth by vehicle, year by year</span>
+          <span class="caption-note">Pre-tax balances &middot; tax applied only at the final-year liquidation figure above</span>
+        </figcaption>
+        <div class="legend" id="ws-legend"></div>
+        <div class="chart-wrap" id="ws-chart"></div>
+      </figure>
+
+      <button class="table-toggle" id="ws-table-toggle" type="button" aria-expanded="false">Show table view</button>
+      <div class="table-scroll" id="ws-table-wrap" hidden></div>
+    </div>
+    <div class="empty-state" id="ws-empty" hidden></div>
   </section>
 
   <section class="panel" id="tab-how-it-works" role="tabpanel" aria-labelledby="tab-btn-how" hidden>
@@ -728,6 +879,17 @@
           way to compare risk across tickers with different price levels. <strong>Dividends</strong>
           are just summed over the ingested history.</p>
         </div>
+        <div class="about-card">
+          <h3>Wealth simulator</h3>
+          <p>Client-side only &mdash; slider values never leave the browser, only aggregate
+          market-assumption JSON is fetched. Every euro fills Livret A then LDDS first
+          (safety-first), then splits between a preservation tier (Assurance Vie fonds euro,
+          SCPI-in-AV, CAT) and a growth tier (PEA, leveraged real estate) by risk tolerance.
+          French capital-gains tax rules are applied once, to the final year's liquidation
+          figure, not annually. Illustrative starting heuristic, not investment advice &mdash;
+          see the tab's own "How is this calculated?" panel for every assumption and
+          simplification.</p>
+        </div>
       </div>
 
       <h2>What's not included in the score (yet)</h2>
@@ -789,6 +951,7 @@
   var TABS = [
     { id: "re", btn: document.getElementById("tab-btn-re"), panel: document.getElementById("tab-real-estate") },
     { id: "pf", btn: document.getElementById("tab-btn-pf"), panel: document.getElementById("tab-portfolio") },
+    { id: "ws", btn: document.getElementById("tab-btn-ws"), panel: document.getElementById("tab-wealth-sim") },
     { id: "how", btn: document.getElementById("tab-btn-how"), panel: document.getElementById("tab-how-it-works") }
   ];
   function selectTab(which) {
@@ -1230,12 +1393,14 @@
     fetchJson("data/commune_opportunity_score.json"),
     fetchJson("data/departements.geojson"),
     fetchJson("data/equity_performance_summary.json"),
+    fetchJson("data/wealth_assumptions.json"),
     fetchJson("data/meta.json")
   ]).then(function (res) {
     var realEstate = res[0] || [];
     var departmentsGeo = res[1];
     var portfolio = res[2] || [];
-    var meta = res[3];
+    var wealthAssumptions = res[3];
+    var meta = res[4];
 
     var metaLine = document.getElementById("meta-line");
     if (meta && meta.exported_at) {
@@ -1246,6 +1411,7 @@
 
     initRealEstate(realEstate, departmentsGeo);
     initPortfolio(portfolio);
+    initWealthSimulator(wealthAssumptions);
   });
 
   /* ---------- Real estate tab ---------- */
@@ -1544,6 +1710,350 @@
 
     typeSelect.addEventListener("change", applyFilters);
     applyFilters();
+  }
+
+  /* ---------- Wealth simulator tab ---------- */
+  // Every euro fills Livret A then LDDS first (safety-first, unconditional); risk tolerance
+  // only governs how the OVERFLOW beyond those caps splits between the preservation tier
+  // (Assurance Vie fonds euro / SCPI-in-AV / CAT) and the growth tier (PEA / leveraged real
+  // estate). See the tab's own methodology panel for the full explanation.
+  var WEALTH_TIER_SPLIT = {
+    conservative: { preservation: 0.70, growth: 0.30 },
+    balanced:     { preservation: 0.50, growth: 0.50 },
+    aggressive:   { preservation: 0.25, growth: 0.75 }
+  };
+  // v1 simplification: within the growth tier, PEA vs. leveraged real estate is a fixed
+  // 50/50 split regardless of risk tolerance - only the preservation/growth ratio itself is
+  // risk-driven, to avoid an under-specified second "how aggressive is the leverage" axis.
+  var WEALTH_TIER4_SUBSPLIT = { pea: 0.5, realEstate: 0.5 };
+
+  var WEALTH_SERIES = [
+    { key: "livretA", label: "Livret A", color: "var(--wealth-livret-a)" },
+    { key: "ldds", label: "LDDS", color: "var(--wealth-ldds)" },
+    { key: "avFondsEuro", label: "AV Fonds Euro", color: "var(--wealth-av-fonds-euro)" },
+    { key: "scpiInAv", label: "SCPI-in-AV", color: "var(--wealth-scpi-av)" },
+    { key: "cat", label: "CAT", color: "var(--wealth-cat)" },
+    { key: "pea", label: "PEA", color: "var(--wealth-pea)" },
+    { key: "realEstateEquity", label: "Real estate (equity)", color: "var(--wealth-real-estate)" }
+  ];
+
+  // bucket: { balance, contributionsCum }. cap: Infinity for uncapped tier-3 vehicles. Caps
+  // in real French law are on contributions (versements), not balance - market growth
+  // legitimately pushes the balance above the cap, so contributionsCum is tracked separately.
+  function wealthDepositInto(bucket, amount, cap) {
+    var room = Math.max(0, cap - bucket.contributionsCum);
+    var used = Math.min(amount, room);
+    bucket.contributionsCum += used;
+    bucket.balance += used;
+    return amount - used; // leftover, routed further down the waterfall
+  }
+
+  function wealthWaterfallAllocate(amount, state, C, split) {
+    var afterLivretA = wealthDepositInto(state.livretA, amount, C.livret_a.cap);
+    var afterLdds = wealthDepositInto(state.ldds, afterLivretA, C.ldds.cap);
+    return { tier3: afterLdds * split.preservation, tier4: afterLdds * split.growth };
+  }
+
+  // One-time leveraged position, sized once from the growth-tier split of STARTING capital
+  // only (see methodology panel: monthly savings routed to the growth tier go 100% to PEA
+  // instead, since fractional-house purchases aren't realistic). Appreciation-only - no
+  // rental income assumed, since DVF has no rent data, only sale prices.
+  function wealthBuildRealEstatePosition(equity0, mortgageCfg, priceCagr) {
+    if (!(equity0 > 0)) return null;
+    var ltv = mortgageCfg.default_ltv;
+    var propertyPrice0 = equity0 / (1 - ltv);
+    var principal = propertyPrice0 * ltv;
+    var rMonthly = mortgageCfg.default_rate / 12;
+    var nMonths = mortgageCfg.default_term_years * 12;
+    var monthlyPayment = rMonthly === 0
+      ? principal / nMonths
+      : principal * (rMonthly * Math.pow(1 + rMonthly, nMonths)) / (Math.pow(1 + rMonthly, nMonths) - 1);
+
+    function outstandingBalance(afterMonths) {
+      var m = Math.min(afterMonths, nMonths);
+      if (m <= 0) return principal;
+      if (rMonthly === 0) return Math.max(0, principal - monthlyPayment * m);
+      var bal = principal * Math.pow(1 + rMonthly, m)
+        - monthlyPayment * (Math.pow(1 + rMonthly, m) - 1) / rMonthly;
+      return Math.max(0, bal);
+    }
+
+    return {
+      propertyPrice0: propertyPrice0,
+      principal: principal,
+      equityAtYear: function (year) {
+        var value = propertyPrice0 * Math.pow(1 + priceCagr, year);
+        return Math.max(0, value - outstandingBalance(year * 12));
+      }
+    };
+  }
+
+  function wealthSnapshot(year, state, realEstate) {
+    var reEquity = realEstate ? realEstate.equityAtYear(year) : 0;
+    var total = state.livretA.balance + state.ldds.balance + state.avFondsEuro.balance
+      + state.scpiInAv.balance + state.cat.balance + state.pea.balance + reEquity;
+    return {
+      year: year,
+      livretA: state.livretA.balance, ldds: state.ldds.balance,
+      avFondsEuro: state.avFondsEuro.balance, scpiInAv: state.scpiInAv.balance,
+      cat: state.cat.balance, pea: state.pea.balance, realEstateEquity: reEquity,
+      totalNetWorth: total
+    };
+  }
+
+  // Year-by-year loop, PRE-TAX balances only - French capital-gains tax is due on realization
+  // (withdrawal), not annually on paper gains, so tax is applied once at the end instead (see
+  // wealthComputeAfterTaxLiquidation). Returns { rows, state, realEstate } - state and
+  // realEstate carry the cost-basis info the tax step needs.
+  function wealthComputeProjection(params, assumptions) {
+    var C = assumptions.constants;
+    var eq = assumptions.equities.blended_default;
+    var reCagr = assumptions.real_estate.national_median_price_cagr;
+    var split = WEALTH_TIER_SPLIT[params.riskTolerance];
+
+    var state = {
+      livretA: { balance: 0, contributionsCum: 0 },
+      ldds: { balance: 0, contributionsCum: 0 },
+      avFondsEuro: { balance: 0, contributionsCum: 0 },
+      scpiInAv: { balance: 0, contributionsCum: 0 },
+      cat: { balance: 0, contributionsCum: 0 },
+      pea: { balance: 0, contributionsCum: 0 }
+    };
+
+    var init = wealthWaterfallAllocate(params.startingCapital, state, C, split);
+    wealthDepositInto(state.avFondsEuro, init.tier3 / 3, Infinity);
+    wealthDepositInto(state.scpiInAv, init.tier3 / 3, Infinity);
+    wealthDepositInto(state.cat, init.tier3 / 3, Infinity);
+    wealthDepositInto(state.pea, init.tier4 * WEALTH_TIER4_SUBSPLIT.pea, C.pea.cap);
+    var realEstate = wealthBuildRealEstatePosition(init.tier4 * WEALTH_TIER4_SUBSPLIT.realEstate, C.mortgage, reCagr);
+
+    var annualContribution = params.monthlySavings * 12;
+    var rows = [wealthSnapshot(0, state, realEstate)];
+
+    for (var year = 1; year <= params.horizonYears; year++) {
+      state.livretA.balance *= (1 + C.livret_a.rate);
+      state.ldds.balance *= (1 + C.ldds.rate);
+      state.avFondsEuro.balance *= (1 + C.av_fonds_euro.rate);
+      state.scpiInAv.balance *= (1 + C.scpi_in_av.distribution_rate);
+      state.cat.balance *= (1 + C.cat.rate);
+      state.pea.balance *= (1 + eq.annualized_return);
+
+      var yr = wealthWaterfallAllocate(annualContribution, state, C, split);
+      wealthDepositInto(state.avFondsEuro, yr.tier3 / 3, Infinity);
+      wealthDepositInto(state.scpiInAv, yr.tier3 / 3, Infinity);
+      wealthDepositInto(state.cat, yr.tier3 / 3, Infinity);
+      wealthDepositInto(state.pea, yr.tier4, C.pea.cap); // 100% of ongoing tier-4 -> PEA
+
+      rows.push(wealthSnapshot(year, state, realEstate));
+    }
+    return { rows: rows, state: state, realEstate: realEstate };
+  }
+
+  // Cheaper-of PFU-or-progressive-bareme on a gain, plus social charges (17.2%) always.
+  function wealthTaxFlatOrBareme(gain, tmiRate, C) {
+    var pfuIr = gain * (C.pfu.total_rate - C.pfu.ps_component);
+    var baremeIr = gain * tmiRate;
+    return C.pfu.ps_component * gain + Math.min(pfuIr, baremeIr);
+  }
+
+  // Assurance Vie (and SCPI-in-AV, same wrapper): social charges always apply to the full
+  // gain; below the 8-year mark it's PFU-or-bareme like any other capital income; at/above
+  // 8 years, an abatement (single/couple) shields part of the gain from income tax, and the
+  // remainder gets the reduced 24.7% rate (7.5% IR + 17.2% PS - isolated below) or your
+  // bareme, whichever is cheaper. Assumes cumulative AV premiums stay under EUR150k (the
+  // >150k split is a documented v2 item, not modeled here).
+  function wealthTaxAV(gain, holdingYears, household, tmiRate, C) {
+    var ps = C.pfu.ps_component * gain;
+    if (holdingYears < C.av_abatement.holding_years_required) {
+      return ps + Math.min(gain * (C.pfu.total_rate - C.pfu.ps_component), gain * tmiRate);
+    }
+    var abatement = household === "couple" ? C.av_abatement.couple : C.av_abatement.single;
+    var taxable = Math.max(0, gain - abatement);
+    var reducedIr = C.av_abatement.reduced_rate_below_150k_cumulative_premiums - C.pfu.ps_component;
+    return ps + taxable * Math.min(reducedIr, tmiRate);
+  }
+
+  // PEA: 0% income tax + 17.2% social charges after the 5-year mark; before that, PFU as a
+  // simplification (early PEA withdrawal has its own, harsher, closure-triggering rules in
+  // reality - not modeled here, flagged in the methodology panel).
+  function wealthTaxPEA(gain, holdingYears, C) {
+    if (holdingYears < 5) return gain * C.pfu.total_rate;
+    return gain * C.pea.social_charges_rate_after_5y;
+  }
+
+  // Applied once, to the final year's accumulated gain per vehicle - not annually. Livret A
+  // and LDDS are always tax-free, so they're absent here. Real estate is shown pre-tax in v1
+  // (French property capital-gains taper relief is its own multi-year schedule - a v2 item).
+  function wealthComputeAfterTaxLiquidation(finalRow, state, params, C) {
+    var avGain = Math.max(0, (state.avFondsEuro.balance + state.scpiInAv.balance) - (state.avFondsEuro.contributionsCum + state.scpiInAv.contributionsCum));
+    var catGain = Math.max(0, state.cat.balance - state.cat.contributionsCum);
+    var peaGain = Math.max(0, state.pea.balance - state.pea.contributionsCum);
+
+    var avTax = wealthTaxAV(avGain, params.horizonYears, params.household, params.tmiRate, C);
+    var catTax = wealthTaxFlatOrBareme(catGain, params.tmiRate, C);
+    var peaTax = wealthTaxPEA(peaGain, params.horizonYears, C);
+    var taxPaid = avTax + catTax + peaTax;
+
+    return { total: finalRow.totalNetWorth - taxPaid, taxPaid: taxPaid };
+  }
+
+  function renderWealthChart(container, legendEl, rows) {
+    container.innerHTML = "";
+    legendEl.innerHTML = "";
+
+    var W = 900, H = 340;
+    var margin = { top: 12, right: 16, bottom: 34, left: 64 };
+    var innerW = W - margin.left - margin.right, innerH = H - margin.top - margin.bottom;
+    var xMax = rows[rows.length - 1].year || 1;
+    var yMax = Math.max.apply(null, rows.map(function (r) { return r.totalNetWorth; }).concat([1])) * 1.08;
+
+    function sx(year) { return margin.left + (year / xMax) * innerW; }
+    function sy(v) { return margin.top + innerH - (v / yMax) * innerH; }
+
+    var svg = svgEl("svg", { class: "wealth-chart", viewBox: "0 0 " + W + " " + H, role: "img",
+      "aria-label": "Net worth by vehicle, year by year" });
+
+    var GRID = 4;
+    for (var i = 0; i <= GRID; i++) {
+      var gy = margin.top + (innerH / GRID) * i;
+      svg.appendChild(svgEl("line", { class: "gridline", x1: margin.left, x2: margin.left + innerW, y1: gy, y2: gy }));
+      var yVal = yMax - (yMax / GRID) * i;
+      var yLabel = svgEl("text", { class: "axis-label", x: margin.left - 8, y: gy + 3, "text-anchor": "end" });
+      yLabel.textContent = fmtEUR0.format(yVal);
+      svg.appendChild(yLabel);
+    }
+    for (var j = 0; j <= GRID; j++) {
+      var gx = margin.left + (innerW / GRID) * j;
+      var xVal = (xMax / GRID) * j;
+      var xLabel = svgEl("text", { class: "axis-label", x: gx, y: H - 8, "text-anchor": "middle" });
+      xLabel.textContent = "Yr " + Math.round(xVal);
+      svg.appendChild(xLabel);
+    }
+    svg.appendChild(svgEl("line", { class: "axis-line", x1: margin.left, x2: margin.left, y1: margin.top, y2: margin.top + innerH }));
+    svg.appendChild(svgEl("line", { class: "axis-line", x1: margin.left, x2: margin.left + innerW, y1: margin.top + innerH, y2: margin.top + innerH }));
+
+    var stackBottom = rows.map(function () { return 0; });
+    WEALTH_SERIES.forEach(function (s) {
+      var top = rows.map(function (r, idx) { return stackBottom[idx] + r[s.key]; });
+      var d = "M" + sx(rows[0].year) + "," + sy(stackBottom[0]);
+      rows.forEach(function (r, idx) { d += " L" + sx(r.year) + "," + sy(top[idx]); });
+      for (var k = rows.length - 1; k >= 0; k--) { d += " L" + sx(rows[k].year) + "," + sy(stackBottom[k]); }
+      d += " Z";
+      var path = svgEl("path", { d: d, fill: s.color, class: "wealth-area", "data-series": s.key });
+      var finalValue = rows[rows.length - 1][s.key];
+      var tipRows = [["Value at year " + rows[rows.length - 1].year, fmtEUR0.format(finalValue)]];
+      path.addEventListener("pointermove", function (e) { showTooltip(e, s.label, tipRows); });
+      path.addEventListener("pointerleave", hideTooltip);
+      svg.appendChild(path);
+      stackBottom = top;
+
+      var item = document.createElement("span");
+      item.className = "legend-item";
+      var sw = document.createElement("span");
+      sw.className = "legend-swatch";
+      sw.style.background = s.color;
+      item.appendChild(sw);
+      var lbl = document.createElement("span");
+      lbl.textContent = s.label;
+      item.appendChild(lbl);
+      legendEl.appendChild(item);
+    });
+
+    container.appendChild(svg);
+  }
+
+  var WEALTH_METHODOLOGY_HTML =
+    "<h3>The waterfall</h3>" +
+    "<p>Every euro - starting capital and monthly savings alike - fills Livret A first (up to &euro;22,950), then LDDS (up to &euro;12,000), before anything else. Only the overflow beyond those caps splits between a preservation tier (Assurance Vie fonds euro, SCPI held as unit&eacute;s de compte inside an AV wrapper, CAT) and a growth tier (PEA, leveraged real estate), by your risk tolerance slider. This is a safety-first model, not a real financial plan for your specific situation.</p>" +
+    "<h3>Real estate is modeled as a one-time purchase</h3>" +
+    "<p>Monthly savings are too small to realistically drip into lumpy real-estate purchases, so leveraged real estate is sized once, from the risk-tolerance-driven growth-tier split of your STARTING capital only - a single mortgage amortization schedule, appreciating at the national median DVF price CAGR from year zero. Ongoing monthly savings allocated to the growth tier go entirely to PEA instead. Appreciation-only: no rental income is assumed, since DVF has sale prices, not rent data.</p>" +
+    "<h3>Tax</h3>" +
+    "<p>Tax is applied once, at the end of your horizon, to each vehicle's realized gain - not annually - since French capital-gains tax is due on withdrawal, not on paper gains (a simplification for CAT interest too, which is technically taxable as received). Livret A and LDDS are always tax-free. AV/SCPI-in-AV and CAT use whichever is cheaper: the 30% flat tax (PFU) or your marginal bracket (TMI) plus 17.2% social charges; AV additionally gets an 8-year holding abatement (&euro;4,600 single / &euro;9,200 couple) and a reduced 24.7% rate on gains above it, assuming your cumulative AV premiums stay under &euro;150k. PEA is 0% income tax + 17.2% social charges after 5 years. Real estate is shown pre-tax (French real-estate capital-gains taper relief is its own complex schedule - a v2 item).</p>" +
+    "<h3>What's not modeled</h3>" +
+    "<p>Monte Carlo bands (p10/p50/p90) are out of scope - this is a single deterministic path using published mean return/CAGR figures, not a distribution. Illustrative starting heuristic, not investment advice.</p>";
+
+  function initWealthSimulator(assumptions) {
+    var emptyEl = document.getElementById("ws-empty");
+    var contentEl = document.getElementById("ws-content");
+    if (!assumptions || !assumptions.equities || !assumptions.equities.blended_default) {
+      contentEl.style.display = "none";
+      emptyEl.hidden = false;
+      emptyEl.innerHTML = "No wealth-assumptions data published yet. Run <code>python scripts/export_wealth_assumptions.py</code> after dbt_transform has run at least once.";
+      return;
+    }
+
+    var methodologyPanel = document.getElementById("ws-methodology-panel");
+    methodologyPanel.innerHTML = WEALTH_METHODOLOGY_HTML;
+    var methodologyBtn = document.getElementById("ws-methodology-toggle");
+    methodologyBtn.addEventListener("click", function () {
+      var expanded = methodologyBtn.getAttribute("aria-expanded") === "true";
+      methodologyBtn.setAttribute("aria-expanded", String(!expanded));
+      methodologyPanel.hidden = expanded;
+      methodologyBtn.textContent = expanded ? "How is this calculated?" : "Hide methodology";
+    });
+
+    var controls = {
+      capital: document.getElementById("ws-capital"),
+      monthly: document.getElementById("ws-monthly"),
+      horizon: document.getElementById("ws-horizon"),
+      risk: document.getElementById("ws-risk"),
+      tmi: document.getElementById("ws-tmi"),
+      household: document.getElementById("ws-household")
+    };
+
+    var tableColumns = [
+      { key: "year", label: "Year" },
+      { key: "livretA", label: "Livret A", format: function (v) { return fmtEUR0.format(v); } },
+      { key: "ldds", label: "LDDS", format: function (v) { return fmtEUR0.format(v); } },
+      { key: "avFondsEuro", label: "AV Fonds Euro", format: function (v) { return fmtEUR0.format(v); } },
+      { key: "scpiInAv", label: "SCPI-in-AV", format: function (v) { return fmtEUR0.format(v); } },
+      { key: "cat", label: "CAT", format: function (v) { return fmtEUR0.format(v); } },
+      { key: "pea", label: "PEA", format: function (v) { return fmtEUR0.format(v); } },
+      { key: "realEstateEquity", label: "Real estate (equity)", format: function (v) { return fmtEUR0.format(v); } },
+      { key: "totalNetWorth", label: "Total (pre-tax)", format: function (v) { return fmtEUR0.format(v); } }
+    ];
+
+    var currentRows = [];
+    var invalidateTable = wireTableToggle("ws-table-toggle", "ws-table-wrap", function () {
+      renderTable(document.getElementById("ws-table-wrap"), currentRows, tableColumns);
+    });
+
+    function readParams() {
+      return {
+        startingCapital: Number(controls.capital.value),
+        monthlySavings: Number(controls.monthly.value),
+        horizonYears: Number(controls.horizon.value),
+        riskTolerance: controls.risk.value,
+        tmiRate: Number(controls.tmi.value),
+        household: controls.household.value
+      };
+    }
+
+    function rerender() {
+      document.getElementById("ws-capital-out").textContent = fmtEUR0.format(Number(controls.capital.value));
+      document.getElementById("ws-monthly-out").textContent = fmtEUR0.format(Number(controls.monthly.value)) + "/mo";
+      document.getElementById("ws-horizon-out").textContent = controls.horizon.value + " yr";
+
+      var params = readParams();
+      var result = wealthComputeProjection(params, assumptions);
+      var finalRow = result.rows[result.rows.length - 1];
+      var afterTax = wealthComputeAfterTaxLiquidation(finalRow, result.state, params, assumptions.constants);
+
+      var statsEl = document.getElementById("ws-stats");
+      statsEl.innerHTML = "";
+      addStatTile(statsEl, "Pre-tax net worth (year " + params.horizonYears + ")", fmtEUR0.format(finalRow.totalNetWorth), null);
+      addStatTile(statsEl, "After-tax net worth if liquidated", fmtEUR0.format(afterTax.total), "Tax: " + fmtEUR0.format(afterTax.taxPaid));
+      addStatTile(statsEl, "Total contributed", fmtEUR0.format(params.startingCapital + params.monthlySavings * 12 * params.horizonYears), null);
+
+      currentRows = result.rows;
+      renderWealthChart(document.getElementById("ws-chart"), document.getElementById("ws-legend"), result.rows);
+      var wrap = document.getElementById("ws-table-wrap");
+      if (!wrap.hidden) { renderTable(wrap, currentRows, tableColumns); }
+      invalidateTable();
+    }
+
+    Object.keys(controls).forEach(function (k) { controls[k].addEventListener("input", rerender); });
+    rerender();
   }
 
   function addStatTile(container, label, value, sub) {

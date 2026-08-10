@@ -31,3 +31,8 @@ models:
       - name: median_opportunity_score
         tests:
           - not_null
+      - name: median_price_cagr
+        description: >
+          Median of commune_opportunity_score.price_cagr across the department's communes.
+          Null when no commune in the department has a 2-year+ reliable CAGR window. Feeds
+          the wealth simulator's real-estate return assumption.

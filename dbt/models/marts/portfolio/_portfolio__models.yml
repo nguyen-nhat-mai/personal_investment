@@ -8,3 +8,5 @@ models:
         tests:
           - not_null
           - unique
+      - name: annualized_return
+        description: "(1 + avg_daily_return)^252 - 1: geometric annualization of the average daily return. Feeds the wealth simulator's default PEA-equity assumption."
