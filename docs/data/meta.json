@@ -1,6 +1,9 @@
 {
-  "exported_at": null,
-  "project": null,
-  "dataset": null,
-  "row_counts": {}
+  "exported_at": "2026-08-10T03:17:04.854816+00:00",
+  "project": "personal-investment-505011",
+  "dataset": "analytics",
+  "row_counts": {
+    "commune_opportunity_score": 18501,
+    "equity_performance_summary": 42
+  }
 }
