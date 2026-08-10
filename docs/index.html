@@ -168,19 +168,23 @@
 
       <figure class="chart-card">
         <figcaption>
-          <span class="title">Annualized return by ticker</span>
-          <span class="caption-note">Needs 60+ trading days of history - see "How is this calculated?"</span>
-        </figcaption>
-        <div class="bar-chart" id="pf-bar"></div>
-      </figure>
-
-      <figure class="chart-card">
-        <figcaption>
           <span class="title">Risk vs. return</span>
           <span class="caption-note">Annualized volatility vs. annualized return</span>
         </figcaption>
         <div class="legend" id="pf-legend"></div>
         <div class="scatter-wrap" id="pf-scatter"></div>
+      </figure>
+
+      <figure class="chart-card">
+        <figcaption>
+          <span class="title" id="pf-bar-title">Annualized return by ticker</span>
+          <span class="caption-note">Needs 60+ trading days of history - see "How is this calculated?"</span>
+        </figcaption>
+        <div class="legend" id="pf-bar-metric-toggle">
+          <button class="legend-item" id="pf-bar-metric-return" type="button" aria-pressed="true">Annualized return</button>
+          <button class="legend-item" id="pf-bar-metric-sharpe" type="button" aria-pressed="false">Best risk-adjusted (Sharpe)</button>
+        </div>
+        <div class="bar-chart" id="pf-bar"></div>
       </figure>
 
       <button class="table-toggle" id="pf-table-toggle" type="button" aria-expanded="false">Show table view</button>

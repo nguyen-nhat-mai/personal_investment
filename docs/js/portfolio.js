@@ -66,6 +66,37 @@ function initPortfolio(data) {
     legendEl.appendChild(btn);
   });
 
+  // Bar chart ranking metric - a single-select toggle (only one active at a time), reusing
+  // .legend-item's visual style (including the aria-pressed="false" dim-opacity rule) even
+  // though semantically this isn't a multi-select filter like the Stock/ETF legend above.
+  // Scoped to just this chart: the table and "Best performer"/"Avg." stats always stay ranked
+  // by annualized_return regardless of this toggle.
+  var BAR_METRICS = {
+    annualized_return: {
+      title: "Annualized return by ticker",
+      valueKey: "annualized_return",
+      valueFormatter: function (v) { return fmtPct1.format(v); }
+    },
+    sharpe_ratio: {
+      title: "Sharpe ratio by ticker",
+      valueKey: "sharpe_ratio",
+      valueFormatter: function (v) { return fmtScore.format(v); }
+    }
+  };
+  var barMetric = "annualized_return";
+  var barMetricButtons = {
+    annualized_return: document.getElementById("pf-bar-metric-return"),
+    sharpe_ratio: document.getElementById("pf-bar-metric-sharpe")
+  };
+  Object.keys(barMetricButtons).forEach(function (key) {
+    barMetricButtons[key].addEventListener("click", function () {
+      if (barMetric === key) return;
+      barMetric = key;
+      Object.keys(barMetricButtons).forEach(function (k) { barMetricButtons[k].setAttribute("aria-pressed", String(k === key)); });
+      render(currentFilteredData);
+    });
+  });
+
   var columns = [
     { key: "ticker", label: "Ticker" },
     { key: "name", label: "Name" },
@@ -73,7 +104,6 @@ function initPortfolio(data) {
     { key: "country", label: "Country", format: function (v) { return v || "–"; } },
     { key: "first_date", label: "Since", format: function (v) { return v || "–"; } },
     { key: "last_date", label: "Until", format: function (v) { return v || "–"; } },
-    { key: "period_return_pct", label: "Period return", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
     { key: "annualized_return", label: "Annualized return", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
     { key: "annualized_volatility", label: "Volatility", format: function (v) { return v == null ? "–" : fmtPct1Plain.format(v); } },
     { key: "max_drawdown_pct", label: "Max drawdown", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
@@ -108,25 +138,39 @@ function initPortfolio(data) {
     statsEl.innerHTML = "";
     var best = filtered.filter(function (d) { return d.annualized_return != null; }).sort(function (a, b) { return b.annualized_return - a.annualized_return; })[0];
     // Only average tickers that actually have a value - null means "not enough trading-day
-    // history yet" (see min_trading_days_for_return), not zero volatility. Coalescing null
-    // to 0 here would silently average in every not-yet-reliable ticker as if it were a real
-    // 0%, understating the true figure (in the extreme - no ticker qualifying yet - showing
-    // a misleading "0%" instead of "not enough data").
+    // history yet" (see min_trading_days_for_return), not zero return/volatility. Coalescing
+    // null to 0 here would silently average in every not-yet-reliable ticker as if it were a
+    // real 0%, understating the true figure (in the extreme - no ticker qualifying yet -
+    // showing a misleading "0%" instead of "not enough data").
+    var retValues = filtered.map(function (d) { return d.annualized_return; }).filter(function (v) { return v != null; });
+    var avgReturn = retValues.length ? retValues.reduce(function (s, v) { return s + v; }, 0) / retValues.length : null;
     var volValues = filtered.map(function (d) { return d.annualized_volatility; }).filter(function (v) { return v != null; });
     var avgVol = volValues.length ? volValues.reduce(function (s, v) { return s + v; }, 0) / volValues.length : null;
     var bestSharpe = filtered.filter(function (d) { return d.sharpe_ratio != null; }).sort(function (a, b) { return b.sharpe_ratio - a.sharpe_ratio; })[0];
-    addStatTile(statsEl, "Tickers tracked", fmtInt.format(filtered.length), null);
+    var stockCount = filtered.filter(function (d) { return d.asset_type === "stock"; }).length;
+    var etfCount = filtered.filter(function (d) { return d.asset_type === "etf"; }).length;
+    addStatTile(statsEl, "Tickers tracked", fmtInt.format(filtered.length), stockCount + " stocks, " + etfCount + " ETFs");
     addStatTile(statsEl, "Best performer (annualized)", best ? best.ticker : "–", best ? fmtPct1.format(best.annualized_return) : "Needs 60+ trading days of history");
+    // Shown next to "Best performer" deliberately - a single extreme ticker being the "best"
+    // doesn't say much about the watchlist as a whole; the average makes it visible when a
+    // headline figure is an outlier rather than representative (e.g. one stock at +327% next
+    // to a watchlist averaging a much more modest figure).
+    addStatTile(statsEl, "Avg. annualized return", avgReturn != null ? fmtPct1.format(avgReturn) : "–", null);
     addStatTile(statsEl, "Avg. annualized volatility", avgVol != null ? fmtPct1Plain.format(avgVol) : "–", null);
     addStatTile(statsEl, "Best risk-adjusted (Sharpe)", bestSharpe ? bestSharpe.ticker : "–", bestSharpe ? "Sharpe " + fmtScore.format(bestSharpe.sharpe_ratio) : "Needs 60+ trading days of history");
 
-    renderDivergingBarChart(document.getElementById("pf-bar"), filtered.filter(function (d) { return d.annualized_return != null; }).map(function (d) {
-      return {
-        label: d.ticker,
-        value: d.annualized_return,
-        extra: [["Name", d.name || d.ticker], ["Type", d.asset_type || "–"], ["Trading days", fmtInt.format(d.trading_days)], ["Period return", d.period_return_pct == null ? "–" : fmtPct1.format(d.period_return_pct)]]
-      };
-    }), { valueFormatter: function (v) { return fmtPct1.format(v); } });
+    var metricCfg = BAR_METRICS[barMetric];
+    document.getElementById("pf-bar-title").textContent = metricCfg.title;
+    var barItems = filtered.filter(function (d) { return d[metricCfg.valueKey] != null; })
+      .sort(function (a, b) { return b[metricCfg.valueKey] - a[metricCfg.valueKey]; })
+      .map(function (d) {
+        return {
+          label: d.ticker,
+          value: d[metricCfg.valueKey],
+          extra: [["Name", d.name || d.ticker], ["Type", d.asset_type || "–"], ["Trading days", fmtInt.format(d.trading_days)]]
+        };
+      });
+    renderDivergingBarChart(document.getElementById("pf-bar"), barItems, { valueFormatter: metricCfg.valueFormatter });
 
     renderScatterChart(document.getElementById("pf-scatter"), filtered.filter(function (d) { return d.annualized_volatility != null && d.annualized_return != null; }).map(function (d) {
       return {

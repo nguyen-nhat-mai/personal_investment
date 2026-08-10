@@ -42,8 +42,8 @@
     "max_drawdown_pct": -0.2781762687858537,
     "sharpe_ratio": 0.8776155562975196,
     "relative_performance_vs_benchmark": 0.15798337224623427,
-    "total_dividends": 10.299999999999999,
-    "dividend_yield_pct": 0.028819250632061404
+    "total_dividends": 10.3,
+    "dividend_yield_pct": 0.028819250632061408
   },
   {
     "ticker": "HO.PA",
@@ -134,8 +134,8 @@
     "max_drawdown_pct": -0.26721240345307473,
     "sharpe_ratio": 0.7432538091167572,
     "relative_performance_vs_benchmark": 0.09138586417015349,
-    "total_dividends": 16.08,
-    "dividend_yield_pct": 0.21656565656565654
+    "total_dividends": 16.080000000000002,
+    "dividend_yield_pct": 0.2165656565656566
   },
   {
     "ticker": "CS.PA",
@@ -157,8 +157,8 @@
     "max_drawdown_pct": -0.24394383322893165,
     "sharpe_ratio": 0.8086873656867454,
     "relative_performance_vs_benchmark": 0.07966439571420847,
-    "total_dividends": 9.69,
-    "dividend_yield_pct": 0.21692411903290632
+    "total_dividends": 9.689999999999998,
+    "dividend_yield_pct": 0.21692411903290626
   },
   {
     "ticker": "ITX.MC",
@@ -226,8 +226,8 @@
     "max_drawdown_pct": -0.4793289967090141,
     "sharpe_ratio": 0.39829058095100456,
     "relative_performance_vs_benchmark": 0.06702291744314559,
-    "total_dividends": 33.18,
-    "dividend_yield_pct": 0.022208835341365463
+    "total_dividends": 33.18000000000001,
+    "dividend_yield_pct": 0.022208835341365467
   },
   {
     "ticker": "ORA.PA",
@@ -249,8 +249,8 @@
     "max_drawdown_pct": -0.20026846112957608,
     "sharpe_ratio": 0.9310964800579947,
     "relative_performance_vs_benchmark": 0.06637907511596675,
-    "total_dividends": 3.62,
-    "dividend_yield_pct": 0.2218137296380011
+    "total_dividends": 3.6199999999999997,
+    "dividend_yield_pct": 0.22181372963800108
   },
   {
     "ticker": "MT.AS",
@@ -479,7 +479,7 @@
     "max_drawdown_pct": -0.2317396332349147,
     "sharpe_ratio": 0.442772795823848,
     "relative_performance_vs_benchmark": -0.005864323239018532,
-    "total_dividends": 13.625094,
+    "total_dividends": 13.625093999999999,
     "dividend_yield_pct": 0.07904103500439405
   },
   {
@@ -571,8 +571,8 @@
     "max_drawdown_pct": -0.3613585772756648,
     "sharpe_ratio": 0.27212341171348214,
     "relative_performance_vs_benchmark": -0.020978695541543413,
-    "total_dividends": 10.22,
-    "dividend_yield_pct": 0.07349873984681515
+    "total_dividends": 10.219999999999999,
+    "dividend_yield_pct": 0.07349873984681514
   },
   {
     "ticker": "SGO.PA",
@@ -594,8 +594,8 @@
     "max_drawdown_pct": -0.45246008046076325,
     "sharpe_ratio": 0.20536125909887187,
     "relative_performance_vs_benchmark": -0.027990014107529104,
-    "total_dividends": 10.23,
-    "dividend_yield_pct": 0.12004224188528585
+    "total_dividends": 10.229999999999999,
+    "dividend_yield_pct": 0.12004224188528584
   },
   {
     "ticker": "PAEEM.PA",
@@ -663,8 +663,8 @@
     "max_drawdown_pct": -0.6633716832219569,
     "sharpe_ratio": 0.08442599398639722,
     "relative_performance_vs_benchmark": -0.054585848820736915,
-    "total_dividends": 1.271844,
-    "dividend_yield_pct": 0.02712399267552082
+    "total_dividends": 1.2718440000000002,
+    "dividend_yield_pct": 0.027123992675520826
   },
   {
     "ticker": "RMS.PA",
@@ -824,8 +824,8 @@
     "max_drawdown_pct": -0.2779689593079378,
     "sharpe_ratio": -0.06055217323886014,
     "relative_performance_vs_benchmark": -0.10370246272533845,
-    "total_dividends": 18.69,
-    "dividend_yield_pct": 0.25087248322147654
+    "total_dividends": 18.689999999999998,
+    "dividend_yield_pct": 0.2508724832214765
   },
   {
     "ticker": "OR.PA",
@@ -847,8 +847,8 @@
     "max_drawdown_pct": -0.2991901626331273,
     "sharpe_ratio": -0.06261280459770105,
     "relative_performance_vs_benchmark": -0.10508522030402712,
-    "total_dividends": 31.6,
-    "dividend_yield_pct": 0.0815483870967742
+    "total_dividends": 31.599999999999998,
+    "dividend_yield_pct": 0.08154838709677419
   },
   {
     "ticker": "NOVO-B.CO",
@@ -870,7 +870,7 @@
     "max_drawdown_pct": -0.7674707118614915,
     "sharpe_ratio": -0.04247082230002553,
     "relative_performance_vs_benchmark": -0.10611401015003397,
-    "total_dividends": 43.900000000000006,
+    "total_dividends": 43.9,
     "dividend_yield_pct": 0.14524400330851944
   },
   {
@@ -962,7 +962,7 @@
     "max_drawdown_pct": -0.6393490440731608,
     "sharpe_ratio": -0.33451094404630566,
     "relative_performance_vs_benchmark": -0.19463615928173839,
-    "total_dividends": 3.82,
+    "total_dividends": 3.8200000000000003,
     "dividend_yield_pct": 0.054822043387911024
   },
   {
@@ -985,8 +985,8 @@
     "max_drawdown_pct": -0.5927252129931855,
     "sharpe_ratio": -0.3592569055246377,
     "relative_performance_vs_benchmark": -0.19973948313038647,
-    "total_dividends": 15.850000000000001,
-    "dividend_yield_pct": 0.14541284403669727
+    "total_dividends": 15.85,
+    "dividend_yield_pct": 0.14541284403669724
   },
   {
     "ticker": "DSY.PA",
@@ -1031,8 +1031,8 @@
     "max_drawdown_pct": -0.68867348457501,
     "sharpe_ratio": -0.682450108962389,
     "relative_performance_vs_benchmark": -0.2598282701215855,
-    "total_dividends": 22.360000000000003,
-    "dividend_yield_pct": 0.32396408414265315
+    "total_dividends": 22.36,
+    "dividend_yield_pct": 0.3239640841426531
   },
   {
     "ticker": "KER.PA",
@@ -1077,8 +1077,8 @@
     "max_drawdown_pct": -0.799830539022002,
     "sharpe_ratio": -0.5318426067405855,
     "relative_performance_vs_benchmark": -0.2941660514422645,
-    "total_dividends": 4.609999999999999,
-    "dividend_yield_pct": 0.9465147144963877
+    "total_dividends": 4.61,
+    "dividend_yield_pct": 0.9465147144963879
   },
   {
     "ticker": "TEP.PA",
