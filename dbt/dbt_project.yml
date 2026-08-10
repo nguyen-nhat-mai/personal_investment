@@ -51,3 +51,11 @@ vars:
   # decision, see the model's header comment), just a guard rail against egregious outliers.
   high_property_tax_threshold_pct: 35
   max_property_tax_penalty_pts: 15
+  # Minimum trading days before a ticker's annualized_return/annualized_volatility is trusted,
+  # used in equity_performance_summary.sql. (1 + avg_daily_return)^252 geometrically amplifies
+  # whatever the average is - over a handful of days (this pipeline is early-stage; equities_
+  # ingest just started) that average is noise, and the ^252 blows a small noisy number up into
+  # an absurd one (seen for real: 8,102%/year for one ticker on day-one data). Below this bar
+  # both columns are null instead - same "not enough reliable history yet" policy this project
+  # already uses for price_cagr - rather than a fabricated number.
+  min_trading_days_for_return: 60

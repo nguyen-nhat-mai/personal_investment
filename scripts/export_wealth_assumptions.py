@@ -42,7 +42,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "docs" / "data"
 
 EQUITIES_QUERY = """
-    select ticker, name, asset_type, annualized_return, annualized_volatility
+    select ticker, name, asset_type, trading_days, annualized_return, annualized_volatility
     from `{project}.{dataset}.equity_performance_summary`
     where pea_eligible = true
     order by ticker
@@ -133,6 +133,17 @@ CONSTANTS = {
         "default_ltv": 0.80,  # 80% loan-to-value / 20% down payment
         "default_term_years": 20,
     },
+    # Fallbacks used only when the real BigQuery-sourced figure isn't trustworthy yet (equities:
+    # no pea_eligible ticker has min_trading_days_for_return days of history; real estate: no
+    # department has a reliable multi-year CAGR) - see equities.blended_default.method /
+    # real_estate.national_median_price_cagr_is_fallback in the output for which one applied.
+    "equities_fallback": {
+        "annualized_return": 0.07,  # VERIFY: illustrative long-run diversified-equity assumption
+        "annualized_volatility": 0.15,  # VERIFY: illustrative long-run diversified-equity assumption
+    },
+    "real_estate_fallback": {
+        "national_median_price_cagr": 0.03,  # VERIFY: illustrative long-run French residential appreciation assumption
+    },
 }
 
 
@@ -151,18 +162,28 @@ def export(project: str, dataset: str) -> None:
     equities = _rows_as_dicts(client, EQUITIES_QUERY.format(project=project, dataset=dataset))
     print(f"  {len(equities)} pea-eligible tickers", file=sys.stderr)
 
-    if equities:
+    # Only blend tickers whose annualized_return/annualized_volatility actually cleared
+    # min_trading_days_for_return in the mart (null there means "not enough reliable history
+    # yet", not zero) - averaging in nulls-as-zero would be just as misleading as the raw
+    # blow-up this gate exists to prevent.
+    qualifying = [r for r in equities if r.get("annualized_return") is not None and r.get("annualized_volatility") is not None]
+    print(f"  {len(qualifying)} of those have enough trading-day history to trust", file=sys.stderr)
+    if qualifying:
         blended_default = {
-            "annualized_return": sum(r["annualized_return"] for r in equities) / len(equities),
-            "annualized_volatility": sum(r["annualized_volatility"] for r in equities) / len(equities),
-            "method": "equal-weighted mean of annualized_return/annualized_volatility across pea_eligible=true rows in equity_performance_summary",
+            "annualized_return": sum(r["annualized_return"] for r in qualifying) / len(qualifying),
+            "annualized_volatility": sum(r["annualized_volatility"] for r in qualifying) / len(qualifying),
+            "method": f"equal-weighted mean across {len(qualifying)} pea_eligible tickers with enough trading-day history (see equity_performance_summary.trading_days)",
         }
     else:
-        blended_default = None
+        blended_default = dict(CONSTANTS["equities_fallback"])
+        blended_default["method"] = "fallback illustrative assumption - no pea_eligible ticker yet has enough trading-day history (see constants.equities_fallback and equity_performance_summary.trading_days)"
 
     print("Querying department_opportunity_score (national median CAGR) ...", file=sys.stderr)
     national = _rows_as_dicts(client, REAL_ESTATE_NATIONAL_QUERY.format(project=project, dataset=dataset))
     national_median_price_cagr = national[0]["national_median_price_cagr"] if national else None
+    national_median_is_fallback = national_median_price_cagr is None
+    if national_median_is_fallback:
+        national_median_price_cagr = CONSTANTS["real_estate_fallback"]["national_median_price_cagr"]
 
     print("Querying department_opportunity_score (by department) ...", file=sys.stderr)
     by_department = _rows_as_dicts(client, REAL_ESTATE_BY_DEPT_QUERY.format(project=project, dataset=dataset))
@@ -178,6 +199,7 @@ def export(project: str, dataset: str) -> None:
         },
         "real_estate": {
             "national_median_price_cagr": national_median_price_cagr,
+            "national_median_price_cagr_is_fallback": national_median_is_fallback,
             "by_department": by_department,
         },
         "constants": CONSTANTS,

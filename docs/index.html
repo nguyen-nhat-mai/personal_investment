@@ -1811,10 +1811,27 @@
   // (withdrawal), not annually on paper gains, so tax is applied once at the end instead (see
   // wealthComputeAfterTaxLiquidation). Returns { rows, state, realEstate } - state and
   // realEstate carry the cost-basis info the tax step needs.
+  // Defensive sanity bounds on the two BigQuery-sourced growth assumptions, applied on top of
+  // (not instead of) the dbt-side min_trading_days_for_return gate and export-script fallback -
+  // belt and suspenders against compounding an extreme number 20-40 years forward, same spirit
+  // as this project's existing max_price_cagr_pct/max_population_cagr_pct dbt vars. Hardcoded
+  // (not read from assumptions.constants) on purpose: this is the last line of defense, so it
+  // shouldn't depend on the same payload it's defending against being well-formed.
+  var WEALTH_MAX_EQUITY_ANNUALIZED_RETURN = 0.5; // +/-50%/year
+  var WEALTH_MAX_REAL_ESTATE_CAGR = 0.15; // +/-15%/year, matches dbt's max_price_cagr_pct
+  var WEALTH_EQUITY_RETURN_FALLBACK = 0.07; // matches export_wealth_assumptions.py's equities_fallback
+  var WEALTH_REAL_ESTATE_CAGR_FALLBACK = 0.03; // matches export_wealth_assumptions.py's real_estate_fallback
+  function wealthClamp(v, maxAbs, fallback) {
+    if (typeof v !== "number" || !isFinite(v)) return fallback;
+    return Math.max(-maxAbs, Math.min(maxAbs, v));
+  }
+
   function wealthComputeProjection(params, assumptions) {
     var C = assumptions.constants;
-    var eq = assumptions.equities.blended_default;
-    var reCagr = assumptions.real_estate.national_median_price_cagr;
+    var eq = {
+      annualized_return: wealthClamp(assumptions.equities.blended_default && assumptions.equities.blended_default.annualized_return, WEALTH_MAX_EQUITY_ANNUALIZED_RETURN, WEALTH_EQUITY_RETURN_FALLBACK)
+    };
+    var reCagr = wealthClamp(assumptions.real_estate.national_median_price_cagr, WEALTH_MAX_REAL_ESTATE_CAGR, WEALTH_REAL_ESTATE_CAGR_FALLBACK);
     var split = WEALTH_TIER_SPLIT[params.riskTolerance];
 
     var state = {
@@ -1975,6 +1992,8 @@
     "<p>Monthly savings are too small to realistically drip into lumpy real-estate purchases, so leveraged real estate is sized once, from the risk-tolerance-driven growth-tier split of your STARTING capital only - a single mortgage amortization schedule, appreciating at the national median DVF price CAGR from year zero. Ongoing monthly savings allocated to the growth tier go entirely to PEA instead. Appreciation-only: no rental income is assumed, since DVF has sale prices, not rent data.</p>" +
     "<h3>Tax</h3>" +
     "<p>Tax is applied once, at the end of your horizon, to each vehicle's realized gain - not annually - since French capital-gains tax is due on withdrawal, not on paper gains (a simplification for CAT interest too, which is technically taxable as received). Livret A and LDDS are always tax-free. AV/SCPI-in-AV and CAT use whichever is cheaper: the 30% flat tax (PFU) or your marginal bracket (TMI) plus 17.2% social charges; AV additionally gets an 8-year holding abatement (&euro;4,600 single / &euro;9,200 couple) and a reduced 24.7% rate on gains above it, assuming your cumulative AV premiums stay under &euro;150k. PEA is 0% income tax + 17.2% social charges after 5 years. Real estate is shown pre-tax (French real-estate capital-gains taper relief is its own complex schedule - a v2 item).</p>" +
+    "<h3>Growth assumption guard rails</h3>" +
+    "<p>PEA growth uses the average annualized return across PEA-eligible tickers with enough trading-day history to be trustworthy (this pipeline ingests daily, so early on that can mean few or no tickers qualify yet - a dated illustrative fallback (~7%/year) is used until real history accumulates, same treatment real estate CAGR gets if no d&eacute;partement has a reliable multi-year window yet). Both figures are also hard-capped (&plusmn;50%/year equities, &plusmn;15%/year real estate) before being compounded over your horizon, so a data hiccup can't produce an absurd 20-year projection.</p>" +
     "<h3>What's not modeled</h3>" +
     "<p>Monte Carlo bands (p10/p50/p90) are out of scope - this is a single deterministic path using published mean return/CAGR figures, not a distribution. Illustrative starting heuristic, not investment advice.</p>";
 

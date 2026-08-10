@@ -8,5 +8,7 @@ models:
         tests:
           - not_null
           - unique
+      - name: trading_days
+        description: "Number of daily rows this ticker's stats are computed over. Gates annualized_return/annualized_volatility - below min_trading_days_for_return (60) both are null rather than an unreliable extrapolation."
       - name: annualized_return
-        description: "(1 + avg_daily_return)^252 - 1: geometric annualization of the average daily return. Feeds the wealth simulator's default PEA-equity assumption."
+        description: "(1 + avg_daily_return)^252 - 1: geometric annualization of the average daily return. Null below min_trading_days_for_return days of history (see trading_days) - a short noisy average gets amplified 252-fold into an absurd number otherwise. Feeds the wealth simulator's default PEA-equity assumption."

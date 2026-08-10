@@ -1,5 +1,12 @@
 -- One row per ticker: cumulative return, annualized volatility, and total dividends over
 -- whatever history has been ingested so far.
+--
+-- annualized_return/annualized_volatility are null below min_trading_days_for_return days of
+-- history: (1 + avg_daily_return)^252 geometrically amplifies whatever avg_daily_return is, and
+-- over just a handful of days that average is noise, not signal - blown up 252-fold it produces
+-- an absurd-looking "return" (seen for real: 8,102%/year on day-one data) instead of a merely
+-- unreliable one. Same policy int_dvf__commune_price_cagr already uses for thin real-estate
+-- history: not enough reliable data yet is null, not a fabricated number.
 with returns as (
     select * from {{ ref('int_equities__daily_returns') }}
 ),
@@ -9,9 +16,14 @@ per_ticker as (
         ticker,
         min(date) as first_date,
         max(date) as last_date,
+        count(*) as trading_days,
         avg(daily_return) as avg_daily_return,
-        stddev(daily_return) * sqrt(252) as annualized_volatility,
-        power(1 + avg(daily_return), 252) - 1 as annualized_return
+        case when count(*) >= {{ var('min_trading_days_for_return') }}
+            then stddev(daily_return) * sqrt(252)
+        end as annualized_volatility,
+        case when count(*) >= {{ var('min_trading_days_for_return') }}
+            then power(1 + avg(daily_return), 252) - 1
+        end as annualized_return
     from returns
     group by ticker
 ),
@@ -42,6 +54,7 @@ select
     fl.first_price,
     fl.last_price,
     safe_divide(fl.last_price - fl.first_price, fl.first_price) as period_return_pct,
+    t.trading_days,
     t.avg_daily_return,
     t.annualized_volatility,
     t.annualized_return,
