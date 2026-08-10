@@ -95,14 +95,6 @@
   h1 { font-size: 22px; margin: 0 0 4px; }
   .subtitle { color: var(--text-secondary); font-size: 14px; margin: 0; max-width: 60ch; }
   .meta-line { color: var(--text-muted); font-size: 12px; margin-top: 6px; }
-  .disclaimer {
-    font-size: 12px;
-    color: var(--text-muted);
-    border-left: 2px solid var(--border);
-    padding-left: 10px;
-    margin-top: 10px;
-    max-width: 60ch;
-  }
 
   button.theme-toggle {
     background: var(--surface-1);
@@ -348,8 +340,54 @@
   }
 
   /* Choropleth map (SVG) */
-  .map-wrap { width: 100%; }
+  .map-layout {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .map-wrap { flex: 1 1 400px; min-width: 260px; }
   svg.choropleth { width: 100%; height: auto; display: block; }
+  .map-top-depts {
+    flex: 0 0 200px;
+    min-width: 180px;
+  }
+  .map-top-depts h4 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+    margin: 0 0 8px;
+    font-weight: 600;
+  }
+  .map-top-item {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--gridline);
+    font-size: 13px;
+  }
+  .map-top-item:last-child { border-bottom: none; }
+  .map-top-rank {
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    width: 14px;
+    flex-shrink: 0;
+  }
+  .map-top-name {
+    color: var(--text-primary);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .map-top-score {
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
   .map-dept {
     stroke: var(--surface-1);
     stroke-width: 1;
@@ -476,12 +514,6 @@
       built with dbt + Airflow + BigQuery.
     </p>
     <p class="meta-line" id="meta-line">Loading...</p>
-    <p class="disclaimer">
-      Illustrative research aid, not investment advice. The opportunity score uses simple,
-      transparent, hand-picked weights &mdash; see
-      <code>dbt/models/marts/real_estate/commune_opportunity_score.sql</code> in the repo for
-      the exact formula and tune it to what you actually care about.
-    </p>
   </div>
   <button class="theme-toggle" id="theme-toggle" type="button">Theme: system</button>
 </header>
@@ -512,9 +544,12 @@
       <figure class="chart-card">
         <figcaption>
           <span class="title">Opportunity score by d&eacute;partement</span>
-          <span class="caption-note">Median across communes &middot; darker = higher score</span>
+          <span class="caption-note">Median across communes &middot; see color scale below</span>
         </figcaption>
-        <div class="map-wrap" id="re-map"></div>
+        <div class="map-layout">
+          <div class="map-wrap" id="re-map"></div>
+          <div class="map-top-depts" id="re-map-top"></div>
+        </div>
         <div class="map-legend" id="re-map-legend"></div>
       </figure>
 
@@ -603,6 +638,23 @@
           PEA-eligible ETFs (Amundi MSCI World, Amundi S&amp;P 500), pulled via
           <code>yfinance</code> on weekday evenings.</p>
         </div>
+        <div class="about-card">
+          <h3>Property tax rates &mdash; DGFiP</h3>
+          <p>Commune-level building property tax rates ("taxe fonci&egrave;re sur les
+          propri&eacute;t&eacute;s b&acirc;ties"), from the French tax authority's "Fiscalit&eacute;
+          locale des particuliers" dataset (<code>data.gouv.fr</code> / <code>data.economie.gouv.fr</code>).
+          Reference data, refreshed yearly. Shown in the Real estate table, not yet part of the
+          opportunity score.</p>
+        </div>
+        <div class="about-card">
+          <h3>Population history &mdash; "Populations l&eacute;gales" 2017-2021</h3>
+          <p>Year-by-year official population per commune, feeding the population-growth factor
+          in the score. A community republish (<code>data.gouv.fr</code> org "icem7") of INSEE
+          figures rather than first-party INSEE hosting &mdash; the official INSEE bulk API
+          proved too slow/unreliable to fetch reliably from this environment, this source is
+          hosted on the same fast infrastructure DVF uses. Static reference data (2017&ndash;2021
+          is the fullest span available as of this writing, not automatically current).</p>
+        </div>
       </div>
 
       <h2>How it's processed</h2>
@@ -632,13 +684,12 @@
         <div class="about-card">
           <h3>Real-estate opportunity score</h3>
           <p>Per commune and property type, for the most recent DVF year, with at least 5
-          qualifying sales that year. Blends four factors (0&ndash;100 total), proportionally
+          qualifying sales that year. Blends five factors (0&ndash;100 total), proportionally
           rescaled from a suggested six-factor weighting: price/m&sup2; below the national
-          median, multi-year price CAGR, transaction liquidity (sales per capita), and local
-          median income each contribute roughly a quarter to a fifth of the score. Population
-          growth and property tax/DPE were in the original suggestion but aren't wired in yet
-          &mdash; see "What's not included" below. Full breakdown on the Real estate tab's own
-          "How is this calculated?" panel.</p>
+          median, multi-year price CAGR, transaction liquidity (sales per capita), population
+          growth, and local median income. Property tax was in the original suggestion but isn't
+          wired into the score &mdash; see "What's not included" below. Full breakdown on the
+          Real estate tab's own "How is this calculated?" panel.</p>
         </div>
         <div class="about-card">
           <h3>Price CAGR &amp; year-over-year change</h3>
@@ -648,6 +699,13 @@
           <strong>Year-over-year</strong> (shown for reference only) compares just the latest
           two reliable years. Both are "&ndash;"/neutral rather than a number when there isn't
           enough reliable history.</p>
+        </div>
+        <div class="about-card">
+          <h3>Population growth</h3>
+          <p>Compound annual growth rate in official municipal population, 2017&ndash;2021
+          (from a different, INSEE-derived source than the current-year population figure used
+          elsewhere), capped at &plusmn;5%/year. A shrinking population pulls the score down
+          just as much as a growing one pulls it up &mdash; it's not a one-way bonus.</p>
         </div>
         <div class="about-card">
           <h3>Transaction liquidity</h3>
@@ -672,16 +730,22 @@
         </div>
       </div>
 
-      <h2>What's not included (yet)</h2>
+      <h2>What's not included in the score (yet)</h2>
       <p>The opportunity score started from a broader six-factor idea &mdash; price, price
-      appreciation, liquidity, population growth, income, and property tax/DPE &mdash; and this
-      pipeline currently has real data for four of those six. <strong>Population growth</strong>
-      needs a historical multi-year INSEE population series; the dataset actually ingested here
-      is a single current-year snapshot, so growth can't be computed from it as-is.
-      <strong>Property tax rate and DPE (energy rating) distribution</strong> aren't ingested at
-      all &mdash; they'd need two new sources (likely DGFiP for taxe fonci&egrave;re, ADEME for
-      DPE) and new Airflow/dbt pipelines, the same pattern as everything else in this repo. Both
-      are natural next additions, not ruled out &mdash; just not built.</p>
+      appreciation, liquidity, population growth, income, and property tax/DPE. Five of those
+      six now genuinely drive the score. Population growth in particular took two attempts: the
+      first (INSEE's own bulk API) was too slow/unreliable to fetch from this environment
+      (repeated stalls over ~20 minutes); the fix was a community-republished dataset
+      (<code>data.gouv.fr</code> org "icem7") hosted on the same fast infrastructure DVF uses,
+      covering 2017&ndash;2021 &mdash; not perfectly current, but a real multi-year trend rather
+      than a same-year snapshot. <strong>Property tax rate</strong> (DGFiP, yearly) is ingested
+      and shown in the Real estate table but deliberately not folded into the score itself
+      &mdash; a genuinely new factor changes the weighting of everything else, so that's a
+      pending decision, not an oversight. <strong>% of department population</strong> is also
+      shown as a separate informational column: a size/concentration snapshot, distinct from
+      the population growth rate that now scores. <strong>DPE (energy rating)
+      distribution</strong> isn't ingested at all &mdash; it would need a new ADEME source and
+      its own Airflow/dbt pipeline, a natural next addition, not ruled out.</p>
 
       <h2>Known limitations</h2>
       <p>This is a research aid built for learning, not investment advice. The real-estate score
@@ -1105,6 +1169,50 @@
     legendContainer.appendChild(noDataLabel);
   }
 
+  function renderTopDepartments(container, dataByCode, opts) {
+    container.innerHTML = "";
+    var entries = Object.keys(dataByCode)
+      .map(function (code) { return { label: dataByCode[code].label, value: dataByCode[code].value }; })
+      .sort(function (a, b) { return b.value - a.value; })
+      .slice(0, 5);
+
+    var heading = document.createElement("h4");
+    heading.textContent = "Top 5 départements";
+    container.appendChild(heading);
+
+    if (!entries.length) {
+      var empty = document.createElement("p");
+      empty.style.fontSize = "12px";
+      empty.style.color = "var(--text-muted)";
+      empty.textContent = "No data for the current filters.";
+      container.appendChild(empty);
+      return;
+    }
+
+    entries.forEach(function (e, i) {
+      var row = document.createElement("div");
+      row.className = "map-top-item";
+
+      var rank = document.createElement("span");
+      rank.className = "map-top-rank";
+      rank.textContent = (i + 1) + ".";
+
+      var name = document.createElement("span");
+      name.className = "map-top-name";
+      name.textContent = e.label;
+      name.title = e.label;
+
+      var score = document.createElement("span");
+      score.className = "map-top-score";
+      score.textContent = opts.valueFormatter(e.value);
+
+      row.appendChild(rank);
+      row.appendChild(name);
+      row.appendChild(score);
+      container.appendChild(row);
+    });
+  }
+
   /* ---------- data loading ---------- */
   function fetchJson(path) {
     return fetch(path, { cache: "no-cache" }).then(function (r) {
@@ -1165,9 +1273,9 @@
     methodologyPanel.innerHTML =
       "<h3>Opportunity score</h3>" +
       "<p>For each commune and property type, using the most recent DVF year in the data, communes need at least 5 qualifying sales that year to be scored at all &mdash; thinner markets are dropped rather than shown with a noisy number.</p>" +
-      "<p>The score (0&ndash;100) blends four factors, proportionally rescaled from a suggested six-factor weighting so they still sum to 100: up to ~27 points for being cheaper than the national median price/m&sup2; (capped at 2&times; the national median); up to ~27 points for multi-year price CAGR (capped at &plusmn;15%/year); up to ~27 points for transaction liquidity (this year's sales per capita, capped at 2%); up to 20 points for local median disposable income, capped at &euro;30,000. Two suggested factors &mdash; population growth and property tax/DPE &mdash; aren't wired in yet (need data sources this pipeline doesn't ingest); see the &ldquo;How it works&rdquo; tab. See <code>dbt/models/marts/real_estate/commune_opportunity_score.sql</code> for the exact formula &mdash; it's simple and transparent on purpose, tune the weights to what you actually care about.</p>" +
-      "<h3>Price CAGR</h3>" +
-      "<p>Compound annual growth rate between the earliest and latest years with at least 5 qualifying sales for that commune/type &mdash; not a fixed 3&ndash;5 year window, just whatever span of reliable years the ingested DVF data actually covers (currently up to 2021&ndash;2024). Communes without at least a 2-year reliable window score as neutral (0% CAGR) rather than being excluded.</p>" +
+      "<p>The score (0&ndash;100) blends five factors, proportionally rescaled from a suggested six-factor weighting so they still sum to 100: up to ~22 points for being cheaper than the national median price/m&sup2; (capped at 2&times; the national median); up to ~22 points for multi-year price CAGR (capped at &plusmn;15%/year); up to ~22 points for transaction liquidity (this year's sales per capita, capped at 2%); up to ~17 points for population growth, 2017&ndash;2021 CAGR (capped at &plusmn;5%/year); up to ~17 points for local median disposable income, capped at &euro;30,000. One suggested factor isn't in the score: property tax rate is shown in the table but deliberately not folded into the formula (a genuine new factor changes everything else's weighting, a pending decision). See the &ldquo;How it works&rdquo; tab. See <code>dbt/models/marts/real_estate/commune_opportunity_score.sql</code> for the exact formula &mdash; it's simple and transparent on purpose, tune the weights to what you actually care about.</p>" +
+      "<h3>Price &amp; population CAGR</h3>" +
+      "<p><strong>Price CAGR</strong>: compound annual growth rate between the earliest and latest years with at least 5 qualifying sales for that commune/type &mdash; not a fixed window, just whatever span of reliable DVF years is ingested (currently up to 2021&ndash;2024). Communes without at least a 2-year reliable window score as neutral (0%) rather than being excluded. <strong>Population CAGR</strong>: growth rate across 2017&ndash;2021 (the fullest reliable series available - see &ldquo;How it works&rdquo; for why it's not more current), from official INSEE census figures, not DVF.</p>" +
       "<h3>Year-over-year change</h3>" +
       "<p>Shown for reference (it no longer drives the score directly, CAGR does): compares the current year's median price/m&sup2; to the prior year's, but only when the prior year also had at least 5 qualifying sales &mdash; otherwise shown as “–” rather than a number a single outlier sale could swing wildly.</p>" +
       "<h3>Data-quality filters</h3>" +
@@ -1227,10 +1335,16 @@
       { key: "code_departement", label: "Dept" },
       { key: "type_local", label: "Type" },
       { key: "median_price_per_sqm", label: "Price/m²", format: function (v) { return v == null ? "–" : fmtEUR0.format(v); } },
-      { key: "price_cagr", label: "CAGR", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
+      { key: "price_cagr", label: "Price CAGR", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
       { key: "yoy_price_change_pct", label: "YoY", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
       { key: "transactions_per_capita", label: "Sales/capita", format: function (v) { return v == null ? "–" : fmtPct1Plain.format(v); } },
+      { key: "population_cagr", label: "Pop. CAGR", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
       { key: "median_disposable_income", label: "Median income", format: function (v) { return v == null ? "–" : fmtEUR0.format(v); } },
+      // taux_foncier_bati is already a percentage value (e.g. 43.9 meaning 43.9%), not a 0-1
+      // fraction like the other percent fields here - divide by 100 before reusing the
+      // percent formatter rather than adding a whole separate formatter for one field.
+      { key: "taux_foncier_bati", label: "Property tax", format: function (v) { return v == null ? "–" : fmtPct1Plain.format(v / 100); } },
+      { key: "population_share_of_department", label: "% of dept. pop.", format: function (v) { return v == null ? "–" : fmtPct1Plain.format(v); } },
       { key: "opportunity_score", label: "Score", format: function (v) { return fmtScore.format(v); } }
     ];
 
@@ -1286,6 +1400,9 @@
           valueFormatter: function (v) { return fmtScore.format(v); },
           ariaLabel: "Median opportunity score by département"
         });
+        renderTopDepartments(document.getElementById("re-map-top"), dataByCode, {
+          valueFormatter: function (v) { return fmtScore.format(v); }
+        });
       }
 
       // bar chart: top 15, colored by property type
@@ -1295,7 +1412,7 @@
           label: d.nom_commune,
           value: d.opportunity_score,
           color: typeColor(d.type_local),
-          extra: [["Type", d.type_local], ["Price/m²", fmtEUR0.format(d.median_price_per_sqm)], ["CAGR", d.price_cagr == null ? "–" : fmtPct1.format(d.price_cagr)], ["Dept", d.code_departement]]
+          extra: [["Type", d.type_local], ["Price/m²", fmtEUR0.format(d.median_price_per_sqm)], ["Price CAGR", d.price_cagr == null ? "–" : fmtPct1.format(d.price_cagr)], ["Pop. CAGR", d.population_cagr == null ? "–" : fmtPct1.format(d.population_cagr)], ["Dept", d.code_departement]]
         };
       }), { valueFormatter: function (v) { return fmtScore.format(v); } });
 
@@ -1307,7 +1424,7 @@
           label: d.nom_commune,
           color: typeColor(d.type_local),
           group: d.type_local,
-          extra: [["Type", d.type_local], ["Price/m²", fmtEUR0.format(d.median_price_per_sqm)], ["CAGR", d.price_cagr == null ? "–" : fmtPct1.format(d.price_cagr)], ["Score", fmtScore.format(d.opportunity_score)], ["Dept", d.code_departement]]
+          extra: [["Type", d.type_local], ["Price/m²", fmtEUR0.format(d.median_price_per_sqm)], ["Price CAGR", d.price_cagr == null ? "–" : fmtPct1.format(d.price_cagr)], ["Pop. CAGR", d.population_cagr == null ? "–" : fmtPct1.format(d.population_cagr)], ["Score", fmtScore.format(d.opportunity_score)], ["Dept", d.code_departement]]
         };
       }), {
         width: 900, height: 340,

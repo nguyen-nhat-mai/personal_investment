@@ -1,6 +1,7 @@
-"""Ingest INSEE-sourced commune reference data (population, area, density, median income)
-into BigQuery. Scheduled yearly, mid-January - matches how often this reference data actually
-refreshes; there's nothing gained from pulling it more often.
+"""Ingest INSEE-sourced commune reference data (population, area, density, median income, and
+a 2017-2021 population history for growth calculations) into BigQuery. Scheduled yearly,
+mid-January - matches how often this reference data actually refreshes; there's nothing gained
+from pulling it more often.
 """
 from __future__ import annotations
 
@@ -16,6 +17,7 @@ GCP_PROJECT = os.environ["GCP_PROJECT"]
 
 INSEE_POP_DATASET = Dataset(f"bigquery://{GCP_PROJECT}/raw_insee/commune_population")
 INSEE_INCOME_DATASET = Dataset(f"bigquery://{GCP_PROJECT}/raw_insee/commune_income")
+INSEE_POP_HISTORY_DATASET = Dataset(f"bigquery://{GCP_PROJECT}/raw_insee/commune_population_history")
 
 
 @dag(
@@ -27,7 +29,7 @@ INSEE_INCOME_DATASET = Dataset(f"bigquery://{GCP_PROJECT}/raw_insee/commune_inco
     default_args={"retries": 2, "retry_delay": timedelta(minutes=5)},
 )
 def insee_ingest_dag():
-    @task(outlets=[INSEE_POP_DATASET, INSEE_INCOME_DATASET])
+    @task(outlets=[INSEE_POP_DATASET, INSEE_INCOME_DATASET, INSEE_POP_HISTORY_DATASET])
     def load_insee() -> dict:
         return ingest_insee(project=GCP_PROJECT)
 

@@ -36,3 +36,4 @@ vars:
   # single extreme commune can dominate its sub-score, same spirit as the YoY cap.
   max_price_cagr_pct: 0.15  # +/-15%/year - generous for real estate, still bounds small-sample noise
   high_liquidity_transactions_per_capita: 0.02  # per-type annual sales / population treated as "high" liquidity
+  max_population_cagr_pct: 0.05  # +/-5%/year - generous for population growth (booming exurbs vs. rural decline)

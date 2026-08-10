@@ -5,39 +5,47 @@ A dbt + Airflow + BigQuery project with two purposes: learn real data-engineerin
 and actually help answer a real question - where in France is it worth investing spare cash
 right now, in property or in a CAC40/PEA equities watchlist.
 
-Two pipelines feed one warehouse:
+Several pipelines feed one warehouse:
 
 ```
                     ┌─────────────────┐
   data.gouv.fr  ───▶│  dvf_ingest      │──┐
   (DVF)             │  (Airflow, ~2x/yr)│  │
-                    └─────────────────┘  │        ┌───────────────────┐        ┌──────────────────────────┐
-                    ┌─────────────────┐  ├──────▶ │  BigQuery raw_*    │ ─────▶ │  dbt: staging →           │
-  data.gouv.fr  ───▶│  insee_ingest    │──┤        │  datasets          │        │  intermediate → marts     │
-  (INSEE)           │  (Airflow, yearly)│  │        └───────────────────┘        └──────────────────────────┘
-                    └─────────────────┘  │                                             │              │
-                    ┌─────────────────┐  │                                             ▼              ▼
-  yfinance      ───▶│  equities_ingest │──┘                              commune_opportunity_score  equity_performance_summary
+                    └─────────────────┘  │
+                    ┌─────────────────┐  │
+  data.gouv.fr  ───▶│  insee_ingest    │──┤        ┌───────────────────┐        ┌──────────────────────────┐
+  (INSEE)           │  (Airflow, yearly)│  ├──────▶ │  BigQuery raw_*    │ ─────▶ │  dbt: staging →           │
+                    └─────────────────┘  │        │  datasets          │        │  intermediate → marts     │
+                    ┌─────────────────┐  │        └───────────────────┘        └──────────────────────────┘
+  data.gouv.fr  ───▶│  tax_ingest      │──┤                                             │              │
+  (DGFiP)           │  (Airflow, yearly)│  │                                             ▼              ▼
+                    └─────────────────┘  │                              commune_opportunity_score  equity_performance_summary
+                    ┌─────────────────┐  │
+  yfinance      ───▶│  equities_ingest │──┘
                     │  (Airflow, daily) │
                     └─────────────────┘
 
   Each ingest DAG's task declares an Airflow Dataset outlet on its raw table. dbt_transform_dag
-  has no schedule of its own - Airflow triggers it once ALL FOUR raw tables have been updated
-  at least once since its last run (Dataset-list scheduling is AND, not OR - see the docstring
+  has no schedule of its own - Airflow triggers it once ALL raw tables have been updated at
+  least once since its last run (Dataset-list scheduling is AND, not OR - see the docstring
   in dbt_transform_dag.py), then it runs `dbt deps && dbt build`.
 ```
 
 ## What it builds
 
 - **`marts/real_estate/commune_opportunity_score`** — every French commune (DVF-covered
-  départements) with at least 5 qualifying sales in the latest year, ranked on four factors:
+  départements) with at least 5 qualifying sales in the latest year, ranked on five factors:
   price/m² vs. the national median, multi-year price CAGR (see
   [`int_dvf__commune_price_cagr.sql`](dbt/models/intermediate/int_dvf__commune_price_cagr.sql)),
-  transaction liquidity (sales per capita), and local median income. Weights are proportionally
-  rescaled from a suggested six-factor model (this pipeline doesn't yet have data for population
-  growth or property tax/DPE — see the dashboard's "How it works" tab). Excludes non-market
-  transactions (forced auctions, exchanges, expropriations) and implausible prices (below
-  €100/m² or above €30,000/m² — both found via a real data anomaly, see
+  transaction liquidity (sales per capita), population growth (2017–2021 CAGR, see
+  [`int_insee__commune_population_cagr.sql`](dbt/models/intermediate/int_insee__commune_population_cagr.sql)),
+  and local median income. Also carries commune-level property tax rate (DGFiP,
+  `taux_foncier_bati`) and % of department population as informational columns — ingested but
+  not folded into the score itself. Weights are proportionally rescaled from a suggested
+  six-factor model (only DPE energy ratings aren't in the pipeline yet — see the dashboard's
+  "How it works" tab). Excludes non-market transactions (forced auctions, exchanges,
+  expropriations) and implausible prices (below €100/m² or above €30,000/m² — both found via a
+  real data anomaly, see
   [`int_dvf__commune_period_stats.sql`](dbt/models/intermediate/int_dvf__commune_period_stats.sql)).
 - **`marts/real_estate/department_opportunity_score`** — department-level median rollup of the
   above, for the dashboard's choropleth map.
@@ -57,6 +65,8 @@ you actually care about.
 | [DVF](https://www.data.gouv.fr/datasets/demandes-de-valeurs-foncieres-geolocalisees) | Every property sale in France (government open data) | ~2x/year |
 | [Communes et villes de France](https://www.data.gouv.fr/datasets/communes-et-villes-de-france-en-csv-excel-json-parquet-et-feather) | Population, area, density per commune | ~yearly |
 | [Revenu des Français à la commune](https://www.data.gouv.fr/datasets/revenu-des-francais-a-la-commune) | INSEE Filosofi median income per commune | ~yearly |
+| [Fiscalité locale des particuliers](https://www.data.gouv.fr/datasets/fiscalite-locale-des-particuliers) | DGFiP property tax rate (`taux_foncier_bati`) per commune | ~yearly |
+| [Populations légales communales 2017-2021](https://www.data.gouv.fr/datasets/populations-legales-communales-2017-2021) | Year-by-year population per commune, for the population-growth score factor (community republish of INSEE figures, org "icem7" — see [`dags/include/insee.py`](dags/include/insee.py) for why) | static (2017–2021) |
 | [yfinance](https://github.com/ranaroussi/yfinance) | Daily OHLCV/dividends for CAC40 + 2 popular PEA ETFs ([`dbt/seeds/cac40_tickers.csv`](dbt/seeds/cac40_tickers.csv)) | daily |
 
 **Known caveats, not bugs:**
@@ -106,21 +116,21 @@ in `docker/.env`, default `admin`/`admin`).
 
 ### 3. First run
 
-All four DAGs start **paused** (Airflow's default) - unpausing is required, not optional, and
+All DAGs start **paused** (Airflow's default) - unpausing is required, not optional, and
 paused DAGs don't respond to Dataset triggers either (a gotcha worth knowing before you wonder
 why `dbt_transform` never fires). `dbt_transform` also needs the raw tables to exist before it
 has anything to build against, so:
 
-1. In the Airflow UI, unpause and manually trigger `insee_ingest`, `dvf_ingest`, and
-   `equities_ingest` (order between them doesn't matter). `dvf_ingest` fans out into one
+1. In the Airflow UI, unpause and manually trigger `insee_ingest`, `dvf_ingest`, `tax_ingest`,
+   and `equities_ingest` (order between them doesn't matter). `dvf_ingest` fans out into one
    Airflow task per (département, year) pair via dynamic task mapping - expect it to take a
    while even running several in parallel; ~93 départements is a lot of downloads.
-2. Unpause `dbt_transform` too - it triggers itself once all three of the above have landed
+2. Unpause `dbt_transform` too - it triggers itself once all of the above have landed
    (Dataset-list scheduling is AND, not OR: see the note in `dbt_transform_dag.py`), or trigger
    it manually from the UI once you've got some real data in.
 3. From then on: `dvf_ingest` runs itself every April 5 / October 5, `insee_ingest` every
-   January 15, `equities_ingest` every weekday evening, and `dbt_transform` fires once all
-   three ingest DAGs have landed data since its last run.
+   January 15, `tax_ingest` every January 20, `equities_ingest` every weekday evening, and
+   `dbt_transform` fires once all ingest DAGs have landed data since its last run.
 
 ### Iterating on dbt models locally (optional)
 
@@ -171,8 +181,8 @@ methodology disclosure.
 
 ```
 docker/            Dockerfile + docker-compose.yml for the Airflow stack
-dags/               dvf_ingest, insee_ingest, equities_ingest, dbt_transform DAGs
-dags/include/       download/parse/load logic used by the DAGs (bq.py, dvf.py, insee.py, equities.py)
+dags/               dvf_ingest, insee_ingest, tax_ingest, equities_ingest, dbt_transform DAGs
+dags/include/       download/parse/load logic used by the DAGs (bq.py, dvf.py, insee.py, tax.py, equities.py)
 dbt/
   seeds/            departements.csv (DVF-covered), cac40_tickers.csv (watchlist)
   models/staging/    1:1 cleanup per source (dvf, insee, equities)

@@ -3,9 +3,9 @@ version: 2
 models:
   - name: commune_opportunity_score
     description: >
-      Ranks French communes on price/m2, multi-year price CAGR, transaction liquidity, and
-      local income for the most recent DVF year available. Illustrative starting heuristic,
-      not investment advice.
+      Ranks French communes on price/m2, multi-year price CAGR, transaction liquidity,
+      population growth (2017-2021), and local income for the most recent DVF year available.
+      Illustrative starting heuristic, not investment advice.
     columns:
       - name: code_commune
         tests:

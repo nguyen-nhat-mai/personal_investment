@@ -1,7 +1,7 @@
 """Run `dbt build` after the raw tables this project depends on have changed.
 
 Uses Airflow's data-aware scheduling (Datasets) instead of a fixed cron - but note
-`schedule=[list of Datasets]` is AND semantics, not OR: this DAG runs once ALL FOUR datasets
+`schedule=[list of Datasets]` is AND semantics, not OR: this DAG runs once ALL of the datasets
 below have had at least one update since its last run, not "whenever any one of them updates"
 (verified empirically 2026-08-10 - a stale comment here previously claimed OR). That's actually
 convenient during a big dvf_ingest backfill (dynamic task mapping fires one outlet event per
@@ -30,6 +30,8 @@ UPSTREAM_DATASETS = [
     Dataset(f"bigquery://{GCP_PROJECT}/raw_insee/commune_population"),
     Dataset(f"bigquery://{GCP_PROJECT}/raw_insee/commune_income"),
     Dataset(f"bigquery://{GCP_PROJECT}/raw_equities/prices"),
+    Dataset(f"bigquery://{GCP_PROJECT}/raw_tax/commune_property_tax"),
+    Dataset(f"bigquery://{GCP_PROJECT}/raw_insee/commune_population_history"),
 ]
 
 

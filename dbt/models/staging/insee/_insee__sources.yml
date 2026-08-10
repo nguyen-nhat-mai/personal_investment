@@ -18,6 +18,13 @@ sources:
         description: >
           INSEE Filosofi median disposable income per commune ("Revenu des Francais a la
           commune", data.gouv.fr). Median disposable income is column disp_mediane.
+      - name: commune_population_history
+        description: >
+          Population per commune per year, 2017-2021 ("Populations legales communales
+          2017-2021", data.gouv.fr org icem7 - a community republish of official INSEE figures,
+          not first-party INSEE hosting; see dags/include/insee.py docstring for why). One row
+          per (commune, year). codgeo/pmun/annee_rp are commune code / municipal population /
+          census year.
 
 models:
   - name: stg_insee__commune_population
@@ -34,3 +41,12 @@ models:
         tests:
           - not_null
           - unique
+  - name: stg_insee__commune_population_history
+    description: Population per commune per year, 2017-2021.
+    columns:
+      - name: code_insee
+        tests:
+          - not_null
+      - name: year
+        tests:
+          - not_null

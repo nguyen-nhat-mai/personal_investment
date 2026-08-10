@@ -1,0 +1,25 @@
+version: 2
+
+sources:
+  - name: raw_tax
+    description: >
+      Raw landing zone for French commune-level local tax rates (DGFiP "Fiscalite locale des
+      particuliers", via data.gouv.fr), loaded by the tax_ingest Airflow DAG (full
+      WRITE_TRUNCATE refresh each run - reference data, revised annually).
+    database: "{{ env_var('GCP_PROJECT') }}"
+    schema: raw_tax
+    tables:
+      - name: commune_property_tax
+        description: >
+          One row per commune per year. Columns confirmed against the real file 2026-08-10:
+          insee_com (full national INSEE commune code), exercice (year), taux_global_tfb
+          (aggregated building property tax rate). Other tax types (TFNB, TH, TEOM) are loaded
+          too but not currently used downstream.
+
+models:
+  - name: stg_tax__commune_property_tax
+    description: Property tax (taxe fonciere sur les proprietes baties) rate per commune per year.
+    columns:
+      - name: code_commune
+        tests:
+          - not_null
