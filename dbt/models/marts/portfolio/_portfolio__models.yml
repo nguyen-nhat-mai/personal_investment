@@ -2,13 +2,19 @@ version: 2
 
 models:
   - name: equity_performance_summary
-    description: One row per ticker summarizing return, volatility, and dividends ingested so far.
+    description: One row per ticker summarizing return, volatility, risk-adjusted metrics, and dividends ingested so far.
     columns:
       - name: ticker
         tests:
           - not_null
           - unique
       - name: trading_days
-        description: "Number of daily rows this ticker's stats are computed over. Gates annualized_return/annualized_volatility - below min_trading_days_for_return (60) both are null rather than an unreliable extrapolation."
+        description: "Number of daily rows this ticker's stats are computed over. Gates annualized_return/annualized_volatility/max_drawdown_pct - below min_trading_days_for_return (60) all three are null rather than an unreliable extrapolation."
       - name: annualized_return
         description: "(1 + avg_daily_return)^252 - 1: geometric annualization of the average daily return. Null below min_trading_days_for_return days of history (see trading_days) - a short noisy average gets amplified 252-fold into an absurd number otherwise. Feeds the wealth simulator's default PEA-equity assumption."
+      - name: max_drawdown_pct
+        description: "Worst peak-to-trough decline (see int_equities__daily_returns.drawdown_pct) over whatever history is ingested. Null below min_trading_days_for_return days - too little history makes this falsely small (a good few days looks like 0% drawdown), the opposite failure mode from annualized_return but the same underlying problem."
+      - name: sharpe_ratio
+        description: "(annualized_return - risk_free_rate_pct) / annualized_volatility. risk_free_rate_pct is a dated hand-set constant (illustrative French OAT baseline, not a BigQuery-sourced yield curve) - see dbt_project.yml. Null whenever annualized_return/annualized_volatility are (see trading_days)."
+      - name: relative_performance_vs_benchmark
+        description: "This ticker's annualized_return minus benchmark_ticker's (CW8.PA by default, a world-equity tracker - see dbt_project.yml). Simple excess return, not a Beta-adjusted CAPM alpha. Null if either side lacks enough trading-day history."

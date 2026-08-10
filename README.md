@@ -3,7 +3,7 @@
 A dbt + Airflow + BigQuery project with two purposes: learn real data-engineering patterns
 (orchestration, incremental/dedup loading, staging→intermediate→marts modeling, dbt testing),
 and actually help answer a real question - where in France is it worth investing spare cash
-right now, in property or in a CAC40/PEA equities watchlist.
+right now, in property or in a PEA equities watchlist.
 
 Several pipelines feed one warehouse:
 
@@ -52,8 +52,16 @@ Several pipelines feed one warehouse:
   [`int_dvf__commune_period_stats.sql`](dbt/models/intermediate/int_dvf__commune_period_stats.sql)).
 - **`marts/real_estate/department_opportunity_score`** — department-level median rollup of the
   above, for the dashboard's choropleth map.
-- **`marts/portfolio/equity_performance_summary`** — one row per CAC40/PEA-ETF ticker with
-  period return, annualized volatility, and dividends.
+- **`marts/portfolio/equity_performance_summary`** — one row per PEA watchlist ticker (CAC40 +
+  non-French EU blue chips + PEA ETFs, see [`dbt/seeds/pea_watchlist.csv`](dbt/seeds/pea_watchlist.csv))
+  with period return, annualized volatility, max drawdown, Sharpe ratio (against a dated
+  illustrative risk-free rate, `risk_free_rate_pct`), simple excess return vs. a benchmark
+  (`benchmark_ticker`, CW8.PA by default — not a Beta-adjusted CAPM alpha), and dividends.
+  Return/volatility/drawdown/Sharpe/vs.-benchmark are all null below `min_trading_days_for_return`
+  (60) days of ingested history for a ticker — short-history extrapolation fails in both
+  directions (an absurd return from a noisy few-day average, or a falsely-flattering near-zero
+  drawdown from not having lived through a bad week yet), so this project nulls rather than
+  fabricates either way, see the model's header comment.
 
 All are starting points for your own research, not investment advice — the opportunity score
 in particular uses simple, transparent, hand-picked weights (see the comments in
@@ -70,7 +78,7 @@ you actually care about.
 | [Revenu des Français à la commune](https://www.data.gouv.fr/datasets/revenu-des-francais-a-la-commune) | INSEE Filosofi median income per commune | ~yearly |
 | [Fiscalité locale des particuliers](https://www.data.gouv.fr/datasets/fiscalite-locale-des-particuliers) | DGFiP property tax rate (`taux_foncier_bati`) per commune | ~yearly |
 | [Populations légales communales 2017-2021](https://www.data.gouv.fr/datasets/populations-legales-communales-2017-2021) | Year-by-year population per commune, for the population-growth score factor (community republish of INSEE figures, org "icem7" — see [`dags/include/insee.py`](dags/include/insee.py) for why) | static (2017–2021) |
-| [yfinance](https://github.com/ranaroussi/yfinance) | Daily OHLCV/dividends for CAC40 + 2 popular PEA ETFs ([`dbt/seeds/cac40_tickers.csv`](dbt/seeds/cac40_tickers.csv)) | daily |
+| [yfinance](https://github.com/ranaroussi/yfinance) | Daily OHLCV/dividends for the PEA watchlist: CAC40 + non-French EU blue chips + PEA ETFs ([`dbt/seeds/pea_watchlist.csv`](dbt/seeds/pea_watchlist.csv)) | daily |
 
 **Known caveats, not bugs:**
 - DVF does **not** cover Alsace-Moselle (départements 57/67/68 use a different land registry)
@@ -82,8 +90,12 @@ you actually care about.
   not INSEE's more common `codgeo`/`libgeo`/`medXX` convention) were verified against the real
   files and are hardcoded in the staging models; if data.gouv.fr changes either schema, re-check
   `raw_insee.commune_population` / `raw_insee.commune_income` in BigQuery directly.
-- CAC40 constituents and ETF tickers drift over time — the seed is a snapshot; sanity-check it
+- PEA watchlist constituents drift over time — the seed is a snapshot; sanity-check CAC40 names
   periodically against [Euronext](https://live.euronext.com/en/markets/paris/equities-by-index/cac40).
+  Legal PEA eligibility (the EU/EEA-headquarters rule for direct stocks, or a fund's UCITS
+  wrapper structure for ETFs) and whether a specific broker's PEA custody actually supports a
+  given foreign-listed line aren't always the same thing — verify with your broker before
+  treating any row's `pea_eligible = true` as investment advice.
 
 ## Viewing the results
 
@@ -125,7 +137,7 @@ docker/            Dockerfile + docker-compose.yml for the Airflow stack
 dags/               dvf_ingest, insee_ingest, tax_ingest, equities_ingest, dbt_transform DAGs
 dags/include/       download/parse/load logic used by the DAGs (bq.py, dvf.py, insee.py, tax.py, equities.py)
 dbt/
-  seeds/            departements.csv (DVF-covered), cac40_tickers.csv (watchlist)
+  seeds/            departements.csv (DVF-covered), pea_watchlist.csv (watchlist)
   models/staging/    1:1 cleanup per source (dvf, insee, equities)
   models/intermediate/  aggregations not yet business-facing
   models/marts/      commune_opportunity_score, department_opportunity_score, equity_performance_summary

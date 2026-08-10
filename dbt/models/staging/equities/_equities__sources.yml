@@ -20,7 +20,7 @@ models:
           - not_null
           - relationships:
               arguments:
-                to: ref('cac40_tickers')
+                to: ref('pea_watchlist')
                 field: ticker
       - name: date
         tests:

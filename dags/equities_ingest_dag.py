@@ -1,5 +1,6 @@
-"""Ingest daily OHLCV data for the CAC40 + PEA ETF watchlist into BigQuery.
-Scheduled weekday evenings after Euronext Paris close.
+"""Ingest daily OHLCV data for the PEA watchlist (CAC40 + non-French EU blue chips + PEA ETFs)
+into BigQuery. Scheduled weekday evenings, after every relevant European exchange's close
+(Paris/Amsterdam/Frankfurt/Copenhagen/Madrid all close by 17:40 CET - 18:00 leaves a buffer).
 """
 from __future__ import annotations
 

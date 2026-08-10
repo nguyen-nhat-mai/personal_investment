@@ -1,7 +1,7 @@
-"""Download daily OHLCV + dividend/split data for the CAC40 + PEA ETF watchlist via yfinance
-and load it into BigQuery.
+"""Download daily OHLCV + dividend/split data for the PEA watchlist (CAC40 constituents,
+non-French EU blue chips, and PEA-eligible ETFs) via yfinance and load it into BigQuery.
 
-The ticker list lives in dbt/seeds/cac40_tickers.csv (dbt seeds also load it into the
+The ticker list lives in dbt/seeds/pea_watchlist.csv (dbt seeds also load it into the
 warehouse so marts can join against it). Airflow reads its own copy of that CSV directly
 here rather than depending on dbt having already run, to keep the two tools decoupled.
 
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 RAW_DATASET = "raw_equities"
 RAW_TABLE = "prices"
 
-TICKERS_FILE = Path(__file__).resolve().parents[2] / "dbt" / "seeds" / "cac40_tickers.csv"
+TICKERS_FILE = Path(__file__).resolve().parents[2] / "dbt" / "seeds" / "pea_watchlist.csv"
 
 
 def _load_tickers() -> List[str]:

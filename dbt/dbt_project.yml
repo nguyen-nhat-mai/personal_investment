@@ -59,3 +59,12 @@ vars:
   # both columns are null instead - same "not enough reliable history yet" policy this project
   # already uses for price_cagr - rather than a fabricated number.
   min_trading_days_for_return: 60
+  # Risk-free rate for Sharpe ratio, used in equity_performance_summary.sql. Not market data -
+  # a single flat annual figure (French OAT 10-year, a common French-investor Rf proxy), not a
+  # real yield curve/time series, same "dated hand-set constant" treatment as every rate in
+  # scripts/export_wealth_assumptions.py's CONSTANTS.
+  risk_free_rate_pct: 0.025  # VERIFY: illustrative French OAT baseline, drifts with ECB policy
+  # Benchmark ticker for relative_performance_vs_benchmark in equity_performance_summary.sql -
+  # must exist in pea_watchlist.csv. A world-equity index tracker (not a France-only one) since
+  # the watchlist itself is no longer France-only.
+  benchmark_ticker: CW8.PA
