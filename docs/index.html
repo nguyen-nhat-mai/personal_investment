@@ -177,7 +177,7 @@
       <figure class="chart-card">
         <figcaption>
           <span class="title">Net worth by vehicle, year by year</span>
-          <span class="caption-note">Pre-tax balances &middot; tax applied only at the final-year liquidation figure above</span>
+          <span class="caption-note">CAT is net of tax paid annually as accrued; other vehicles are pre-tax, taxed at the final-year liquidation figure above</span>
         </figcaption>
         <div class="legend" id="ws-legend"></div>
         <div class="chart-wrap" id="ws-chart"></div>
@@ -329,9 +329,13 @@
           <p>Client-side only &mdash; slider values never leave the browser, only aggregate
           market-assumption JSON is fetched. Every euro fills Livret A then LDDS first
           (safety-first), then splits between a preservation tier (Assurance Vie fonds euro,
-          SCPI-in-AV, CAT) and a growth tier (PEA, leveraged real estate) by risk tolerance.
-          French capital-gains tax rules are applied once, to the final year's liquidation
-          figure, not annually. Illustrative starting heuristic, not investment advice &mdash;
+          SCPI-in-AV, CAT) and a growth tier (PEA, leveraged real estate) by risk tolerance;
+          PEA overflow past its real &euro;150,000 cap falls back into the preservation tier.
+          Most French capital-gains tax rules are applied once, to the final year's liquidation
+          figure, not annually &mdash; CAT is the exception, taxed annually as its interest
+          accrues (flat 30% PFU). Leveraged real estate needs a &euro;15,000 minimum down
+          payment to trigger at all; below that, the allocation goes to SCPI-in-AV instead.
+          Illustrative starting heuristic, not investment advice &mdash;
           see the tab's own "How is this calculated?" panel for every assumption and
           simplification.</p>
         </div>

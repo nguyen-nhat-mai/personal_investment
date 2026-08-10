@@ -104,6 +104,11 @@ var WEALTH_MAX_EQUITY_ANNUALIZED_RETURN = 0.5; // +/-50%/year
 var WEALTH_MAX_REAL_ESTATE_CAGR = 0.15; // +/-15%/year, matches dbt's max_price_cagr_pct
 var WEALTH_EQUITY_RETURN_FALLBACK = 0.07; // matches export_wealth_assumptions.py's equities_fallback
 var WEALTH_REAL_ESTATE_CAGR_FALLBACK = 0.03; // matches export_wealth_assumptions.py's real_estate_fallback
+// Minimum down payment (apport) to realistically trigger a leveraged property purchase - a
+// EUR500 "down payment" doesn't buy any real French property. Below this, the growth-tier real
+// estate allocation goes to SCPI-in-AV instead (same "real estate flavor" exposure within the
+// preservation tier's AV wrapper, just unlevered). Lower bound of a EUR15k-20k range.
+var WEALTH_MIN_REAL_ESTATE_DOWN_PAYMENT = 15000;
 function wealthClamp(v, maxAbs, fallback) {
   if (typeof v !== "number" || !isFinite(v)) return fallback;
   return Math.max(-maxAbs, Math.min(maxAbs, v));
@@ -137,17 +142,38 @@ function wealthComputeProjection(params, assumptions) {
   wealthDepositInto(state.avFondsEuro, peaOverflowInit / 3, Infinity);
   wealthDepositInto(state.scpiInAv, peaOverflowInit / 3, Infinity);
   wealthDepositInto(state.cat, peaOverflowInit / 3, Infinity);
-  var realEstate = wealthBuildRealEstatePosition(init.tier4 * WEALTH_TIER4_SUBSPLIT.realEstate, C.mortgage, reCagr);
+
+  // Below the minimum realistic down payment, no leveraged property purchase triggers - route
+  // that portion to SCPI-in-AV instead (not the general 3-way preservation split: this money
+  // was earmarked for "real estate flavor" exposure specifically, and SCPI-in-AV is the closest
+  // unlevered equivalent already in this model).
+  var reEquityCandidate = init.tier4 * WEALTH_TIER4_SUBSPLIT.realEstate;
+  var realEstate = null;
+  if (reEquityCandidate >= WEALTH_MIN_REAL_ESTATE_DOWN_PAYMENT) {
+    realEstate = wealthBuildRealEstatePosition(reEquityCandidate, C.mortgage, reCagr);
+  } else {
+    wealthDepositInto(state.scpiInAv, reEquityCandidate, Infinity);
+  }
 
   var annualContribution = params.monthlySavings * 12;
   var rows = [wealthSnapshot(0, state, realEstate)];
+  // CAT interest is taxed annually as it accrues (30% PFU, always - not cheaper-of-PFU-or-
+  // bareme like AV/PEA get at liquidation, since French CAT interest doesn't get a holding-
+  // period-based deferral the way AV/PEA do), so only the NET interest compounds forward -
+  // unlike every other vehicle here, state.cat.balance is already after-tax at every point in
+  // time, not gross-pending-liquidation-tax. Tracked cumulatively so the UI can still show a
+  // complete "total tax paid over the whole horizon" figure alongside the liquidation-time tax.
+  var catTaxPaidCumulative = 0;
 
   for (var year = 1; year <= params.horizonYears; year++) {
     state.livretA.balance *= (1 + C.livret_a.rate);
     state.ldds.balance *= (1 + C.ldds.rate);
     state.avFondsEuro.balance *= (1 + C.av_fonds_euro.rate);
     state.scpiInAv.balance *= (1 + C.scpi_in_av.distribution_rate);
-    state.cat.balance *= (1 + C.cat.rate);
+    var catInterest = state.cat.balance * C.cat.rate;
+    var catTaxThisYear = catInterest * C.pfu.total_rate;
+    state.cat.balance += catInterest - catTaxThisYear;
+    catTaxPaidCumulative += catTaxThisYear;
     state.pea.balance *= (1 + eq.annualized_return);
 
     var yr = wealthWaterfallAllocate(annualContribution, state, C, split);
@@ -164,14 +190,7 @@ function wealthComputeProjection(params, assumptions) {
 
     rows.push(wealthSnapshot(year, state, realEstate));
   }
-  return { rows: rows, state: state, realEstate: realEstate };
-}
-
-// Cheaper-of PFU-or-progressive-bareme on a gain, plus social charges (17.2%) always.
-function wealthTaxFlatOrBareme(gain, tmiRate, C) {
-  var pfuIr = gain * (C.pfu.total_rate - C.pfu.ps_component);
-  var baremeIr = gain * tmiRate;
-  return C.pfu.ps_component * gain + Math.min(pfuIr, baremeIr);
+  return { rows: rows, state: state, realEstate: realEstate, catTaxPaidCumulative: catTaxPaidCumulative };
 }
 
 // Assurance Vie (and SCPI-in-AV, same wrapper): social charges always apply to the full
@@ -200,17 +219,19 @@ function wealthTaxPEA(gain, holdingYears, C) {
 }
 
 // Applied once, to the final year's accumulated gain per vehicle - not annually. Livret A
-// and LDDS are always tax-free, so they're absent here. Real estate is shown pre-tax in v1
-// (French property capital-gains taper relief is its own multi-year schedule - a v2 item).
+// and LDDS are always tax-free, so they're absent here. CAT is also absent here - its tax is
+// already paid annually as it accrues (see wealthComputeProjection's catTaxPaidCumulative),
+// so state.cat.balance is already net and taxing it again here would double-count. Real estate
+// is shown pre-tax in v1 (French property capital-gains taper relief is its own multi-year
+// schedule - a v2 item). taxPaid here is tax due AT LIQUIDATION only - add
+// catTaxPaidCumulative for the complete lifetime tax picture (the caller does this for display).
 function wealthComputeAfterTaxLiquidation(finalRow, state, params, C) {
   var avGain = Math.max(0, (state.avFondsEuro.balance + state.scpiInAv.balance) - (state.avFondsEuro.contributionsCum + state.scpiInAv.contributionsCum));
-  var catGain = Math.max(0, state.cat.balance - state.cat.contributionsCum);
   var peaGain = Math.max(0, state.pea.balance - state.pea.contributionsCum);
 
   var avTax = wealthTaxAV(avGain, params.horizonYears, params.household, params.tmiRate, C);
-  var catTax = wealthTaxFlatOrBareme(catGain, params.tmiRate, C);
   var peaTax = wealthTaxPEA(peaGain, params.horizonYears, C);
-  var taxPaid = avTax + catTax + peaTax;
+  var taxPaid = avTax + peaTax;
 
   return { total: finalRow.totalNetWorth - taxPaid, taxPaid: taxPaid };
 }
@@ -282,11 +303,11 @@ function renderWealthChart(container, legendEl, rows) {
 
 var WEALTH_METHODOLOGY_HTML =
   "<h3>The waterfall</h3>" +
-  "<p>Every euro - starting capital and monthly savings alike - fills Livret A first (up to &euro;22,950), then LDDS (up to &euro;12,000), before anything else. Only the overflow beyond those caps splits between a preservation tier (Assurance Vie fonds euro, SCPI held as unit&eacute;s de compte inside an AV wrapper, CAT) and a growth tier (PEA, leveraged real estate), by your risk tolerance slider. This is a safety-first model, not a real financial plan for your specific situation.</p>" +
+  "<p>Every euro - starting capital and monthly savings alike - fills Livret A first (up to &euro;22,950), then LDDS (up to &euro;12,000), before anything else. Only the overflow beyond those caps splits between a preservation tier (Assurance Vie fonds euro, SCPI held as unit&eacute;s de compte inside an AV wrapper, CAT) and a growth tier (PEA, leveraged real estate), by your risk tolerance slider. PEA itself is also capped, at its real &euro;150,000 contribution limit - once hit, further growth-tier money doesn't vanish or sit idle, it falls back into the preservation tier instead, same as a real investor keeps saving through a different vehicle once PEA is maxed. This is a safety-first model, not a real financial plan for your specific situation.</p>" +
   "<h3>Real estate is modeled as a one-time purchase</h3>" +
-  "<p>Monthly savings are too small to realistically drip into lumpy real-estate purchases, so leveraged real estate is sized once, from the risk-tolerance-driven growth-tier split of your STARTING capital only - a single mortgage amortization schedule, appreciating at the national median DVF price CAGR from year zero (see \"Growth assumption guard rails\" below for what happens when that figure isn't reliable yet). Ongoing monthly savings allocated to the growth tier go entirely to PEA instead. Appreciation-only: no rental income is assumed, since DVF has sale prices, not rent data.</p>" +
+  "<p>Monthly savings are too small to realistically drip into lumpy real-estate purchases, so leveraged real estate is sized once, from the risk-tolerance-driven growth-tier split of your STARTING capital only - a single mortgage amortization schedule, appreciating at the national median DVF price CAGR from year zero (see \"Growth assumption guard rails\" below for what happens when that figure isn't reliable yet). Ongoing monthly savings allocated to the growth tier go entirely to PEA instead. Appreciation-only: no rental income is assumed, since DVF has sale prices, not rent data. Below a &euro;15,000 minimum down payment (apport), no leveraged purchase triggers at all - a real down payment that small doesn't buy any real French property - and that allocation goes to SCPI-in-AV instead (unlevered, but the closest \"real estate flavor\" exposure this model has).</p>" +
   "<h3>Tax</h3>" +
-  "<p>Tax is applied once, at the end of your horizon, to each vehicle's realized gain - not annually - since French capital-gains tax is due on withdrawal, not on paper gains (a simplification for CAT interest too, which is technically taxable as received). Livret A and LDDS are always tax-free. AV/SCPI-in-AV and CAT use whichever is cheaper: the 30% flat tax (PFU) or your marginal bracket (TMI) plus 17.2% social charges; AV additionally gets an 8-year holding abatement (&euro;4,600 single / &euro;9,200 couple) and a reduced 24.7% rate on gains above it, assuming your cumulative AV premiums stay under &euro;150k. PEA is 0% income tax + 17.2% social charges after 5 years. Real estate is shown pre-tax (French real-estate capital-gains taper relief is its own complex schedule - a v2 item).</p>" +
+  "<p>Tax is applied once, at the end of your horizon, to each vehicle's realized gain - not annually - since French capital-gains tax is due on withdrawal, not on paper gains. Livret A and LDDS are always tax-free. AV/SCPI-in-AV use whichever is cheaper: the 30% flat tax (PFU) or your marginal bracket (TMI) plus 17.2% social charges; AV additionally gets an 8-year holding abatement (&euro;4,600 single / &euro;9,200 couple) and a reduced 24.7% rate on gains above it, assuming your cumulative AV premiums stay under &euro;150k. PEA is 0% income tax + 17.2% social charges after 5 years. Real estate is shown pre-tax (French real-estate capital-gains taper relief is its own complex schedule - a v2 item). <strong>CAT is the one exception</strong>: its interest is taxed annually as it accrues, always at the flat 30% PFU (12.8% income tax + 17.2% social charges, no TMI-bareme option) - only the net interest compounds into the next year, unlike every other vehicle here. The \"Tax:\" figure shown above adds this cumulative annual CAT tax to the liquidation-time tax on AV/PEA, for a complete lifetime total.</p>" +
   "<h3>Growth assumption guard rails</h3>" +
   "<p><strong>PEA</strong>: the average annualized return across PEA-eligible tickers with enough trading-day history to be trustworthy (this pipeline ingests daily, so early on that can mean few or no tickers qualify yet) - a dated illustrative fallback (~7%/year) is used until real history accumulates. <strong>Real estate</strong>: the national median DVF price CAGR across d&eacute;partements with a reliable multi-year window - a dated illustrative fallback (~3%/year) is used if none do yet. Both figures are also hard-capped (&plusmn;50%/year equities, &plusmn;15%/year real estate) before being compounded over your horizon, so neither a data hiccup nor a genuinely extreme historical figure can produce an absurd multi-decade projection. Which one applied for your current numbers is visible in the underlying <code>wealth_assumptions.json</code> export (<code>equities.blended_default.method</code>, <code>real_estate.national_median_price_cagr_is_fallback</code>).</p>" +
   "<h3>What's not modeled</h3>" +
@@ -389,10 +410,16 @@ function initWealthSimulator(assumptions) {
       );
     });
 
+    // Total tax paid over the whole horizon = tax due at liquidation (AV/PEA) + CAT's tax,
+    // already paid annually as it accrued (see wealthComputeProjection). afterTax.total is
+    // still the correct final after-tax figure either way - CAT's tax is already baked into
+    // its balance, not double-counted here, this is just for a complete "Tax:" display.
+    var totalTaxOverHorizon = afterTax.taxPaid + result.catTaxPaidCumulative;
+
     var statsEl = document.getElementById("ws-stats");
     statsEl.innerHTML = "";
-    addStatTile(statsEl, "Pre-tax net worth (year " + params.horizonYears + ")", fmtEUR0.format(finalRow.totalNetWorth), null);
-    addStatTile(statsEl, "After-tax net worth if liquidated", fmtEUR0.format(afterTax.total), "Tax: " + fmtEUR0.format(afterTax.taxPaid));
+    addStatTile(statsEl, "Net worth (year " + params.horizonYears + ")", fmtEUR0.format(finalRow.totalNetWorth), "CAT taxed annually as accrued; other vehicles' tax is due at liquidation, below");
+    addStatTile(statsEl, "After-tax net worth if liquidated", fmtEUR0.format(afterTax.total), "Total tax over the horizon: " + fmtEUR0.format(totalTaxOverHorizon));
     addStatTile(statsEl, "Total contributed", fmtEUR0.format(params.startingCapital + params.monthlySavings * 12 * params.horizonYears), null);
 
     currentRows = result.rows;
