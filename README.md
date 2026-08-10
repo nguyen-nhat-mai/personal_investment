@@ -30,10 +30,14 @@ Two pipelines feed one warehouse:
 ## What it builds
 
 - **`marts/real_estate/commune_opportunity_score`** — every French commune (DVF-covered
-  départements) with at least 5 qualifying sales in the latest year, ranked on price/m² vs.
-  the national median, year-over-year price momentum, and local median income. Excludes
-  non-market transactions (forced auctions, exchanges, expropriations) and implausible prices
-  (below €100/m² or above €30,000/m² — both found via a real data anomaly, see
+  départements) with at least 5 qualifying sales in the latest year, ranked on four factors:
+  price/m² vs. the national median, multi-year price CAGR (see
+  [`int_dvf__commune_price_cagr.sql`](dbt/models/intermediate/int_dvf__commune_price_cagr.sql)),
+  transaction liquidity (sales per capita), and local median income. Weights are proportionally
+  rescaled from a suggested six-factor model (this pipeline doesn't yet have data for population
+  growth or property tax/DPE — see the dashboard's "How it works" tab). Excludes non-market
+  transactions (forced auctions, exchanges, expropriations) and implausible prices (below
+  €100/m² or above €30,000/m² — both found via a real data anomaly, see
   [`int_dvf__commune_period_stats.sql`](dbt/models/intermediate/int_dvf__commune_period_stats.sql)).
 - **`marts/real_estate/department_opportunity_score`** — department-level median rollup of the
   above, for the dashboard's choropleth map.

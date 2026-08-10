@@ -32,3 +32,7 @@ vars:
   # is trustworthy (int_dvf__commune_period_stats) and to drop thin markets from the final
   # opportunity score (commune_opportunity_score).
   min_reliable_transaction_count: 5
+  # Opportunity-score caps, used in commune_opportunity_score.sql. Both bound how much a
+  # single extreme commune can dominate its sub-score, same spirit as the YoY cap.
+  max_price_cagr_pct: 0.15  # +/-15%/year - generous for real estate, still bounds small-sample noise
+  high_liquidity_transactions_per_capita: 0.02  # per-type annual sales / population treated as "high" liquidity

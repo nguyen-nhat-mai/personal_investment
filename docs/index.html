@@ -260,6 +260,62 @@
   .bar-row { outline: none; }
   .bar-row:focus-visible .bar-track { outline: 1px solid var(--series-1); outline-offset: 2px; }
 
+  /* "How it works" tab */
+  .about-section h2 {
+    font-size: 15px;
+    margin: 28px 0 12px;
+  }
+  .about-section h2:first-child { margin-top: 4px; }
+  .about-section > p { font-size: 13px; color: var(--text-secondary); max-width: 72ch; margin: 0 0 16px; }
+  .about-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+  }
+  .about-card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .about-card h3 { font-size: 13px; margin: 0 0 6px; }
+  .about-card p { font-size: 12.5px; color: var(--text-secondary); margin: 0; line-height: 1.5; }
+  .about-section code {
+    background: var(--surface-1);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+
+  .pipeline-flow {
+    display: flex;
+    align-items: stretch;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 4px 0 24px;
+  }
+  .pipeline-step {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    min-width: 110px;
+  }
+  .pipeline-step span { font-size: 11px; font-weight: 400; color: var(--text-muted); margin-top: 2px; }
+  .pipeline-arrow {
+    display: flex;
+    align-items: center;
+    color: var(--text-muted);
+    font-size: 16px;
+  }
+
   /* Methodology disclosure */
   .methodology-toggle {
     background: transparent;
@@ -434,6 +490,7 @@
   <nav class="tabs" role="tablist">
     <button role="tab" id="tab-btn-re" aria-selected="true" aria-controls="tab-real-estate" type="button">Real estate</button>
     <button role="tab" id="tab-btn-pf" aria-selected="false" aria-controls="tab-portfolio" type="button">Portfolio</button>
+    <button role="tab" id="tab-btn-how" aria-selected="false" aria-controls="tab-how-it-works" type="button">How it works</button>
   </nav>
 
   <section class="panel" id="tab-real-estate" role="tabpanel" aria-labelledby="tab-btn-re">
@@ -521,6 +578,120 @@
     </div>
     <div class="empty-state" id="pf-empty" hidden></div>
   </section>
+
+  <section class="panel" id="tab-how-it-works" role="tabpanel" aria-labelledby="tab-btn-how" hidden>
+    <div class="about-section">
+      <h2>Where the data comes from</h2>
+      <div class="about-grid">
+        <div class="about-card">
+          <h3>French real estate &mdash; DVF</h3>
+          <p>"Demandes de Valeurs Fonci&egrave;res" &mdash; essentially every property sale in
+          France, published as open data by the French government
+          (<code>data.gouv.fr</code>). Refreshed roughly twice a year. Doesn't cover
+          Alsace-Moselle (57/67/68), which uses a different land registry, or most overseas
+          d&eacute;partements.</p>
+        </div>
+        <div class="about-card">
+          <h3>Commune demographics &amp; income &mdash; INSEE</h3>
+          <p>Population, area, density, and median household disposable income per commune,
+          from two INSEE-sourced <code>data.gouv.fr</code> datasets. Reference data, refreshed
+          roughly yearly.</p>
+        </div>
+        <div class="about-card">
+          <h3>Equities &mdash; Yahoo Finance</h3>
+          <p>Daily prices, dividends, and splits for the CAC 40 constituents plus two popular
+          PEA-eligible ETFs (Amundi MSCI World, Amundi S&amp;P 500), pulled via
+          <code>yfinance</code> on weekday evenings.</p>
+        </div>
+      </div>
+
+      <h2>How it's processed</h2>
+      <p>Each source has its own Airflow pipeline that downloads, lightly cleans, and lands raw
+      data in BigQuery. dbt then transforms it through three layers &mdash; staging (1:1
+      cleanup per source), intermediate (aggregations, joins, YoY math), and marts (the
+      business-facing tables this dashboard reads) &mdash; with automated tests checking things
+      like uniqueness and non-null keys along the way. A small script then exports the marts to
+      the static JSON files this page fetches, which get published to GitHub Pages.</p>
+
+      <div class="pipeline-flow" aria-hidden="true">
+        <div class="pipeline-step">DVF / INSEE / Yahoo Finance</div>
+        <div class="pipeline-arrow">&rarr;</div>
+        <div class="pipeline-step">Airflow<br><span>scheduled ingestion</span></div>
+        <div class="pipeline-arrow">&rarr;</div>
+        <div class="pipeline-step">BigQuery<br><span>raw tables</span></div>
+        <div class="pipeline-arrow">&rarr;</div>
+        <div class="pipeline-step">dbt<br><span>staging &rarr; intermediate &rarr; marts</span></div>
+        <div class="pipeline-arrow">&rarr;</div>
+        <div class="pipeline-step">export script<br><span>static JSON</span></div>
+        <div class="pipeline-arrow">&rarr;</div>
+        <div class="pipeline-step">this page</div>
+      </div>
+
+      <h2>How the metrics are calculated</h2>
+      <div class="about-grid">
+        <div class="about-card">
+          <h3>Real-estate opportunity score</h3>
+          <p>Per commune and property type, for the most recent DVF year, with at least 5
+          qualifying sales that year. Blends four factors (0&ndash;100 total), proportionally
+          rescaled from a suggested six-factor weighting: price/m&sup2; below the national
+          median, multi-year price CAGR, transaction liquidity (sales per capita), and local
+          median income each contribute roughly a quarter to a fifth of the score. Population
+          growth and property tax/DPE were in the original suggestion but aren't wired in yet
+          &mdash; see "What's not included" below. Full breakdown on the Real estate tab's own
+          "How is this calculated?" panel.</p>
+        </div>
+        <div class="about-card">
+          <h3>Price CAGR &amp; year-over-year change</h3>
+          <p><strong>CAGR</strong> (what drives the score) compounds growth between the
+          earliest and latest years with at least 5 qualifying sales for that commune/type
+          &mdash; currently up to a 2021&ndash;2024 span, capped at &plusmn;15%/year.
+          <strong>Year-over-year</strong> (shown for reference only) compares just the latest
+          two reliable years. Both are "&ndash;"/neutral rather than a number when there isn't
+          enough reliable history.</p>
+        </div>
+        <div class="about-card">
+          <h3>Transaction liquidity</h3>
+          <p>This year's qualifying sales for that property type, divided by the commune's
+          population &mdash; a rough proxy for how easy a property might be to resell, capped
+          at 2% for full marks. It's an approximation (population isn't housing-unit count),
+          not a precise turnover rate.</p>
+        </div>
+        <div class="about-card">
+          <h3>Département map</h3>
+          <p>Median opportunity score across the communes currently shown by your filters &mdash;
+          recomputed in the browser, not a fixed snapshot, so it always matches the rest of the
+          page.</p>
+        </div>
+        <div class="about-card">
+          <h3>Portfolio return &amp; volatility</h3>
+          <p><strong>Period return</strong> is simply last price over first price ingested so
+          far, minus one. <strong>Annualized volatility</strong> is the standard deviation of
+          daily returns scaled by &radic;252 (trading days/year) &mdash; a standard, if rough,
+          way to compare risk across tickers with different price levels. <strong>Dividends</strong>
+          are just summed over the ingested history.</p>
+        </div>
+      </div>
+
+      <h2>What's not included (yet)</h2>
+      <p>The opportunity score started from a broader six-factor idea &mdash; price, price
+      appreciation, liquidity, population growth, income, and property tax/DPE &mdash; and this
+      pipeline currently has real data for four of those six. <strong>Population growth</strong>
+      needs a historical multi-year INSEE population series; the dataset actually ingested here
+      is a single current-year snapshot, so growth can't be computed from it as-is.
+      <strong>Property tax rate and DPE (energy rating) distribution</strong> aren't ingested at
+      all &mdash; they'd need two new sources (likely DGFiP for taxe fonci&egrave;re, ADEME for
+      DPE) and new Airflow/dbt pipelines, the same pattern as everything else in this repo. Both
+      are natural next additions, not ruled out &mdash; just not built.</p>
+
+      <h2>Known limitations</h2>
+      <p>This is a research aid built for learning, not investment advice. The real-estate score
+      weights are hand-picked and meant to be tuned, not authoritative; CAC 40/ETF constituents
+      drift over time and the watchlist is a snapshot; and even after the data-quality filters,
+      communes with only a handful of sales can still show noisier numbers than well-traded
+      ones &mdash; the transaction count is shown everywhere precisely so you can judge that
+      yourself.</p>
+    </div>
+  </section>
 </main>
 
 <footer>
@@ -551,19 +722,21 @@
   applyTheme(currentTheme());
 
   /* ---------- tabs ---------- */
-  var tabBtnRe = document.getElementById("tab-btn-re");
-  var tabBtnPf = document.getElementById("tab-btn-pf");
-  var panelRe = document.getElementById("tab-real-estate");
-  var panelPf = document.getElementById("tab-portfolio");
+  var TABS = [
+    { id: "re", btn: document.getElementById("tab-btn-re"), panel: document.getElementById("tab-real-estate") },
+    { id: "pf", btn: document.getElementById("tab-btn-pf"), panel: document.getElementById("tab-portfolio") },
+    { id: "how", btn: document.getElementById("tab-btn-how"), panel: document.getElementById("tab-how-it-works") }
+  ];
   function selectTab(which) {
-    var reOn = which === "re";
-    tabBtnRe.setAttribute("aria-selected", String(reOn));
-    tabBtnPf.setAttribute("aria-selected", String(!reOn));
-    panelRe.hidden = !reOn;
-    panelPf.hidden = reOn;
+    TABS.forEach(function (t) {
+      var on = t.id === which;
+      t.btn.setAttribute("aria-selected", String(on));
+      t.panel.hidden = !on;
+    });
   }
-  tabBtnRe.addEventListener("click", function () { selectTab("re"); });
-  tabBtnPf.addEventListener("click", function () { selectTab("pf"); });
+  TABS.forEach(function (t) {
+    t.btn.addEventListener("click", function () { selectTab(t.id); });
+  });
 
   /* ---------- formatting ---------- */
   var fmtInt = new Intl.NumberFormat("fr-FR");
@@ -992,9 +1165,11 @@
     methodologyPanel.innerHTML =
       "<h3>Opportunity score</h3>" +
       "<p>For each commune and property type, using the most recent DVF year in the data, communes need at least 5 qualifying sales that year to be scored at all &mdash; thinner markets are dropped rather than shown with a noisy number.</p>" +
-      "<p>The score (0&ndash;100) blends three factors: up to 50 points for being cheaper than the national median price/m&sup2; (capped once a commune reaches 2&times; the national median); up to 25 points for positive year-over-year price momentum, capped at &plusmn;20%; up to 25 points for local median disposable income, capped at &euro;30,000. See <code>dbt/models/marts/real_estate/commune_opportunity_score.sql</code> for the exact formula &mdash; it's simple and transparent on purpose, tune the weights to what you actually care about.</p>" +
+      "<p>The score (0&ndash;100) blends four factors, proportionally rescaled from a suggested six-factor weighting so they still sum to 100: up to ~27 points for being cheaper than the national median price/m&sup2; (capped at 2&times; the national median); up to ~27 points for multi-year price CAGR (capped at &plusmn;15%/year); up to ~27 points for transaction liquidity (this year's sales per capita, capped at 2%); up to 20 points for local median disposable income, capped at &euro;30,000. Two suggested factors &mdash; population growth and property tax/DPE &mdash; aren't wired in yet (need data sources this pipeline doesn't ingest); see the &ldquo;How it works&rdquo; tab. See <code>dbt/models/marts/real_estate/commune_opportunity_score.sql</code> for the exact formula &mdash; it's simple and transparent on purpose, tune the weights to what you actually care about.</p>" +
+      "<h3>Price CAGR</h3>" +
+      "<p>Compound annual growth rate between the earliest and latest years with at least 5 qualifying sales for that commune/type &mdash; not a fixed 3&ndash;5 year window, just whatever span of reliable years the ingested DVF data actually covers (currently up to 2021&ndash;2024). Communes without at least a 2-year reliable window score as neutral (0% CAGR) rather than being excluded.</p>" +
       "<h3>Year-over-year change</h3>" +
-      "<p>Compares the current year's median price/m&sup2; to the prior year's, but only when the prior year also had at least 5 qualifying sales &mdash; otherwise shown as “–” rather than a number a single outlier sale could swing wildly.</p>" +
+      "<p>Shown for reference (it no longer drives the score directly, CAGR does): compares the current year's median price/m&sup2; to the prior year's, but only when the prior year also had at least 5 qualifying sales &mdash; otherwise shown as “–” rather than a number a single outlier sale could swing wildly.</p>" +
       "<h3>Data-quality filters</h3>" +
       "<p>Excludes forced auctions, property exchanges, and expropriations (none reflect a market price), and excludes transactions priced below &euro;100/m&sup2; or above &euro;30,000/m&sup2; (data-entry errors, not real outliers &mdash; found via a real anomaly that showed a +2,933,233% year-over-year change before these filters existed).</p>";
     var methodologyBtn = document.getElementById("re-methodology-toggle");
@@ -1052,7 +1227,9 @@
       { key: "code_departement", label: "Dept" },
       { key: "type_local", label: "Type" },
       { key: "median_price_per_sqm", label: "Price/m²", format: function (v) { return v == null ? "–" : fmtEUR0.format(v); } },
+      { key: "price_cagr", label: "CAGR", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
       { key: "yoy_price_change_pct", label: "YoY", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
+      { key: "transactions_per_capita", label: "Sales/capita", format: function (v) { return v == null ? "–" : fmtPct1Plain.format(v); } },
       { key: "median_disposable_income", label: "Median income", format: function (v) { return v == null ? "–" : fmtEUR0.format(v); } },
       { key: "opportunity_score", label: "Score", format: function (v) { return fmtScore.format(v); } }
     ];
@@ -1118,7 +1295,7 @@
           label: d.nom_commune,
           value: d.opportunity_score,
           color: typeColor(d.type_local),
-          extra: [["Type", d.type_local], ["Price/m²", fmtEUR0.format(d.median_price_per_sqm)], ["Dept", d.code_departement]]
+          extra: [["Type", d.type_local], ["Price/m²", fmtEUR0.format(d.median_price_per_sqm)], ["CAGR", d.price_cagr == null ? "–" : fmtPct1.format(d.price_cagr)], ["Dept", d.code_departement]]
         };
       }), { valueFormatter: function (v) { return fmtScore.format(v); } });
 
@@ -1130,7 +1307,7 @@
           label: d.nom_commune,
           color: typeColor(d.type_local),
           group: d.type_local,
-          extra: [["Type", d.type_local], ["Price/m²", fmtEUR0.format(d.median_price_per_sqm)], ["Score", fmtScore.format(d.opportunity_score)], ["Dept", d.code_departement]]
+          extra: [["Type", d.type_local], ["Price/m²", fmtEUR0.format(d.median_price_per_sqm)], ["CAGR", d.price_cagr == null ? "–" : fmtPct1.format(d.price_cagr)], ["Score", fmtScore.format(d.opportunity_score)], ["Dept", d.code_departement]]
         };
       }), {
         width: 900, height: 340,
