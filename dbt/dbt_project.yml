@@ -1,0 +1,26 @@
+name: france_investment_insights
+version: "1.0.0"
+config-version: 2
+
+profile: france_investment_insights
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  france_investment_insights:
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: view
+    marts:
+      +materialized: table
+
+seeds:
+  france_investment_insights:
+    +schema: seeds

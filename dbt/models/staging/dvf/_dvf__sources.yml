@@ -1,0 +1,49 @@
+version: 2
+
+sources:
+  - name: raw_dvf
+    description: >
+      Raw landing zone for DVF (Demandes de Valeurs Foncieres) property transactions, loaded
+      by the dvf_ingest Airflow DAG from https://files.data.gouv.fr/geo-dvf. Append-only: the
+      same disposition line can appear multiple times across runs since DVF republishes a
+      given year's file with corrections - dedupe in staging.
+    database: "{{ env_var('GCP_PROJECT') }}"
+    schema: raw_dvf
+    tables:
+      - name: transactions
+        description: >
+          One row per DVF disposition line (a single sale/"mutation" can span several rows for
+          multi-lot sales - not unique on id_mutation alone).
+        columns:
+          - name: id_mutation
+            description: DVF's identifier for the sale/mutation.
+          - name: date_mutation
+            description: Date the sale was recorded.
+          - name: valeur_fonciere
+            description: Sale price in EUR.
+          - name: code_commune
+            description: INSEE commune code.
+          - name: code_departement
+            description: INSEE department code.
+          - name: type_local
+            description: Property type (Maison, Appartement, Local industriel, ...).
+          - name: surface_reelle_bati
+            description: Built surface area in m2.
+          - name: nombre_pieces_principales
+            description: Number of main rooms.
+          - name: longitude
+          - name: latitude
+
+models:
+  - name: stg_dvf__transactions
+    description: Deduped, typed DVF transactions - one row per disposition line.
+    columns:
+      - name: id_mutation
+        tests:
+          - not_null
+      - name: code_commune
+        tests:
+          - not_null
+      - name: valeur_fonciere
+        tests:
+          - not_null

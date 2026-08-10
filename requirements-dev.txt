@@ -1,0 +1,7 @@
+# Optional: install locally (outside Docker) if you want to run `dbt` commands directly from
+# your own terminal while iterating on models, instead of always going through the Airflow
+# container. Also covers scripts/export_marts.py (google-cloud-bigquery is a dbt-bigquery
+# dependency already, listed explicitly here so the export script works standalone).
+# Requires GCP_PROJECT and GOOGLE_APPLICATION_CREDENTIALS set in your shell.
+dbt-bigquery~=1.8
+google-cloud-bigquery~=3.25

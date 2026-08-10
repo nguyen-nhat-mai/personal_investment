@@ -1,0 +1,36 @@
+version: 2
+
+sources:
+  - name: raw_insee
+    description: >
+      Raw landing zone for INSEE-sourced commune reference data, loaded by the insee_ingest
+      Airflow DAG (full WRITE_TRUNCATE refresh each run - reference data, not a transaction
+      log). Column names are normalized to snake_case on load; if a column referenced in
+      staging is missing, inspect the raw table directly (see dags/include/insee.py docstring).
+    database: "{{ env_var('GCP_PROJECT') }}"
+    schema: raw_insee
+    tables:
+      - name: commune_population
+        description: >
+          Population, area, density per commune ("Communes et villes de France",
+          data.gouv.fr).
+      - name: commune_income
+        description: >
+          INSEE Filosofi median disposable income per commune ("Revenu des Francais a la
+          commune", data.gouv.fr). Median disposable income is column disp_mediane.
+
+models:
+  - name: stg_insee__commune_population
+    description: Population, area, and density per commune.
+    columns:
+      - name: code_insee
+        tests:
+          - not_null
+          - unique
+  - name: stg_insee__commune_income
+    description: Median disposable income per commune.
+    columns:
+      - name: code_insee
+        tests:
+          - not_null
+          - unique

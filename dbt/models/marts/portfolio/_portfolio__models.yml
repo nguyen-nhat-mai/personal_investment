@@ -1,0 +1,10 @@
+version: 2
+
+models:
+  - name: equity_performance_summary
+    description: One row per ticker summarizing return, volatility, and dividends ingested so far.
+    columns:
+      - name: ticker
+        tests:
+          - not_null
+          - unique

@@ -1,0 +1,43 @@
+ticker,name,asset_type,sector,pea_eligible
+AC.PA,Accor,stock,Hospitality,true
+AI.PA,Air Liquide,stock,Industrial Gases,true
+AIR.PA,Airbus,stock,Aerospace & Defense,true
+MT.AS,ArcelorMittal,stock,Steel,true
+CS.PA,Axa,stock,Insurance,true
+BNP.PA,BNP Paribas,stock,Banking,true
+EN.PA,Bouygues,stock,Construction & Media,true
+BVI.PA,Bureau Veritas,stock,Testing & Certification,true
+CAP.PA,Capgemini,stock,IT Services,true
+CA.PA,Carrefour,stock,Retail,true
+ACA.PA,Credit Agricole,stock,Banking,true
+BN.PA,Danone,stock,Food & Beverage,true
+DSY.PA,Dassault Systemes,stock,Software,true
+EDEN.PA,Edenred,stock,Payments & Benefits,true
+ENGI.PA,Engie,stock,Utilities,true
+EL.PA,EssilorLuxottica,stock,Eyewear,true
+ERF.PA,Eurofins Scientific,stock,Laboratory Testing,true
+RMS.PA,Hermes,stock,Luxury Goods,true
+KER.PA,Kering,stock,Luxury Goods,true
+OR.PA,L'Oreal,stock,Cosmetics,true
+LR.PA,Legrand,stock,Electrical Equipment,true
+MC.PA,LVMH,stock,Luxury Goods,true
+ML.PA,Michelin,stock,Tires,true
+ORA.PA,Orange,stock,Telecom,true
+RI.PA,Pernod Ricard,stock,Beverages,true
+PUB.PA,Publicis,stock,Advertising,true
+RNO.PA,Renault,stock,Automotive,true
+SAF.PA,Safran,stock,Aerospace & Defense,true
+SGO.PA,Saint-Gobain,stock,Building Materials,true
+SAN.PA,Sanofi,stock,Pharmaceuticals,true
+SU.PA,Schneider Electric,stock,Electrical Equipment,true
+GLE.PA,Societe Generale,stock,Banking,true
+STLAP.PA,Stellantis,stock,Automotive,true
+STMPA.PA,STMicroelectronics,stock,Semiconductors,true
+TEP.PA,Teleperformance,stock,Business Services,true
+HO.PA,Thales,stock,Aerospace & Defense,true
+TTE.PA,TotalEnergies,stock,Energy,true
+URW.PA,Unibail-Rodamco-Westfield,stock,Real Estate,true
+VIE.PA,Veolia,stock,Utilities,true
+DG.PA,Vinci,stock,Construction,true
+CW8.PA,Amundi MSCI World UCITS ETF,etf,World Equity ETF,true
+PE500.PA,Amundi PEA S&P 500 UCITS ETF,etf,US Equity ETF,true

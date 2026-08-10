@@ -1,0 +1,17 @@
+# No secrets live in this file (it only references env vars and a keyfile path mounted at
+# runtime), so unlike most dbt profiles.yml it's safe to commit. GCP_PROJECT and
+# GOOGLE_APPLICATION_CREDENTIALS are set in docker/docker-compose.yml's Airflow environment;
+# if running dbt locally outside Docker, export them yourself first.
+france_investment_insights:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account
+      project: "{{ env_var('GCP_PROJECT') }}"
+      dataset: analytics
+      keyfile: "{{ env_var('GOOGLE_APPLICATION_CREDENTIALS') }}"
+      location: EU
+      threads: 4
+      job_execution_timeout_seconds: 300
+      job_retries: 1

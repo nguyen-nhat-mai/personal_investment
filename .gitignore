@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# dbt
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/
+dbt/.user.yml
+
+# Airflow
+docker/logs/
+*.log
+
+# Secrets / credentials - never commit
+.env
+docker/.env
+keys/
+docker/keys/
+gcp-service-account*.json
+*.serviceaccount.json
+
+# OS
+.DS_Store
+Thumbs.db

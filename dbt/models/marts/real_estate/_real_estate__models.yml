@@ -1,0 +1,20 @@
+version: 2
+
+models:
+  - name: commune_opportunity_score
+    description: >
+      Ranks French communes on price/m2, price momentum, and local income for the most recent
+      DVF year available. Illustrative starting heuristic, not investment advice.
+    columns:
+      - name: code_commune
+        tests:
+          - not_null
+      - name: opportunity_score
+        tests:
+          - not_null
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - code_commune
+            - type_local
+            - year

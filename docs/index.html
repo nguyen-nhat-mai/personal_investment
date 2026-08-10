@@ -1,0 +1,989 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>France Investment Insights</title>
+<meta name="description" content="Real-estate opportunity and equities dashboard built on dbt + Airflow + BigQuery.">
+<style>
+  :root {
+    color-scheme: light;
+    --page-plane:     #f9f9f7;
+    --surface-1:      #fcfcfb;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --baseline:       #c3c2b7;
+    --series-1:       #2a78d6; /* blue */
+    --series-2:       #eb6834; /* orange */
+    --diverging-pos:  #2a78d6; /* blue */
+    --diverging-neg:  #e34948; /* red */
+    --good-text:      #006300;
+    --border:         rgba(11, 11, 11, 0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page-plane:     #0d0d0d;
+      --surface-1:      #1a1a19;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --baseline:       #383835;
+      --series-1:       #3987e5;
+      --series-2:       #d95926;
+      --diverging-pos:  #3987e5;
+      --diverging-neg:  #e66767;
+      --good-text:      #0ca30c;
+      --border:         rgba(255, 255, 255, 0.10);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page-plane:     #0d0d0d;
+    --surface-1:      #1a1a19;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --baseline:       #383835;
+    --series-1:       #3987e5;
+    --series-2:       #d95926;
+    --diverging-pos:  #3987e5;
+    --diverging-neg:  #e66767;
+    --good-text:      #0ca30c;
+    --border:         rgba(255, 255, 255, 0.10);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--page-plane);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.45;
+  }
+  main { max-width: 1080px; margin: 0 auto; padding: 0 20px 64px; }
+
+  header.page-header {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 28px 20px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .subtitle { color: var(--text-secondary); font-size: 14px; margin: 0; max-width: 60ch; }
+  .meta-line { color: var(--text-muted); font-size: 12px; margin-top: 6px; }
+  .disclaimer {
+    font-size: 12px;
+    color: var(--text-muted);
+    border-left: 2px solid var(--border);
+    padding-left: 10px;
+    margin-top: 10px;
+    max-width: 60ch;
+  }
+
+  button.theme-toggle {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  button.theme-toggle:hover { color: var(--text-primary); }
+
+  nav.tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+    margin: 20px 0 24px;
+  }
+  nav.tabs button {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 14px;
+    cursor: pointer;
+  }
+  nav.tabs button[aria-selected="true"] {
+    color: var(--text-primary);
+    border-bottom-color: var(--series-1);
+  }
+  nav.tabs button:hover { color: var(--text-primary); }
+
+  section.panel[hidden] { display: none; }
+
+  .filters-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .filters-row label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .filters-row select {
+    background: var(--surface-1);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 13px;
+  }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat-tile {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .stat-tile .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+  .stat-tile .value { font-size: 24px; font-weight: 600; }
+  .stat-tile .sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+  figure.chart-card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px 16px;
+    margin: 0 0 20px;
+  }
+  figure.chart-card figcaption {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  figure.chart-card figcaption .title { font-size: 14px; font-weight: 600; }
+  figure.chart-card figcaption .caption-note { font-size: 12px; color: var(--text-muted); }
+
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 4px;
+  }
+  .legend-item[aria-pressed="false"] { opacity: 0.4; }
+  .legend-swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+  /* Bar chart (HTML/CSS) */
+  .bar-chart { display: flex; flex-direction: column; }
+  .bar-row {
+    display: grid;
+    grid-template-columns: 150px 1fr 70px;
+    align-items: center;
+    gap: 10px;
+    padding: 3px 0;
+  }
+  .bar-row + .bar-row { margin-top: 2px; }
+  .bar-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .bar-track {
+    position: relative;
+    height: 18px;
+    background: transparent;
+    border-bottom: 1px solid var(--gridline);
+  }
+  .bar-track.diverging { border-bottom: none; border-top: 1px solid var(--gridline); }
+  .bar-fill {
+    position: absolute;
+    top: 0;
+    height: 18px;
+    border-radius: 0 4px 4px 0;
+  }
+  .bar-fill.neg { border-radius: 4px 0 0 4px; }
+  .bar-zero-line {
+    position: absolute;
+    top: -3px;
+    bottom: -3px;
+    width: 1px;
+    background: var(--baseline);
+  }
+  .bar-value {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+  .bar-row:hover .bar-label, .bar-row:focus-within .bar-label { color: var(--text-primary); }
+  .bar-row { outline: none; }
+  .bar-row:focus-visible .bar-track { outline: 1px solid var(--series-1); outline-offset: 2px; }
+
+  /* Scatter (SVG) */
+  .scatter-wrap { width: 100%; }
+  svg.scatter { width: 100%; height: auto; display: block; }
+  .scatter .gridline { stroke: var(--gridline); stroke-width: 1; }
+  .scatter .axis-line { stroke: var(--baseline); stroke-width: 1; }
+  .scatter .axis-label { fill: var(--text-muted); font-size: 10px; }
+  .scatter .dot { stroke: var(--surface-1); stroke-width: 2; cursor: pointer; }
+  .scatter .dot-hit { fill: transparent; cursor: pointer; }
+  .scatter .dot.dim { opacity: 0.15; }
+
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  table.data-table th, table.data-table td {
+    text-align: left;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--gridline);
+    white-space: nowrap;
+  }
+  table.data-table th { color: var(--text-secondary); font-weight: 600; }
+  table.data-table td { font-variant-numeric: tabular-nums; }
+  .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+
+  .table-toggle {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-bottom: 12px;
+  }
+  .table-toggle:hover { color: var(--text-primary); }
+
+  .empty-state {
+    color: var(--text-muted);
+    font-size: 13px;
+    padding: 32px 20px;
+    text-align: center;
+    background: var(--surface-1);
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+  }
+  .empty-state code {
+    background: var(--page-plane);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  #tooltip {
+    position: fixed;
+    z-index: 50;
+    background: var(--text-primary);
+    color: var(--page-plane);
+    font-size: 12px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    pointer-events: none;
+    max-width: 240px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  }
+  #tooltip[hidden] { display: none; }
+  #tooltip .tt-title { font-weight: 600; margin-bottom: 4px; }
+  #tooltip .tt-row { display: flex; justify-content: space-between; gap: 12px; }
+  #tooltip .tt-row .tt-key { opacity: 0.75; }
+  #tooltip .tt-row .tt-val { font-variant-numeric: tabular-nums; }
+
+  footer {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 24px 20px 40px;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+  footer a { color: var(--text-secondary); }
+
+  @media (max-width: 560px) {
+    .bar-row { grid-template-columns: 96px 1fr 56px; }
+    .bar-label { font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <div>
+    <h1>France Investment Insights</h1>
+    <p class="subtitle">
+      Real-estate opportunity by commune (DVF + INSEE) and a CAC40/PEA-ETF watchlist,
+      built with dbt + Airflow + BigQuery.
+    </p>
+    <p class="meta-line" id="meta-line">Loading...</p>
+    <p class="disclaimer">
+      Illustrative research aid, not investment advice. The opportunity score uses simple,
+      transparent, hand-picked weights &mdash; see
+      <code>dbt/models/marts/real_estate/commune_opportunity_score.sql</code> in the repo for
+      the exact formula and tune it to what you actually care about.
+    </p>
+  </div>
+  <button class="theme-toggle" id="theme-toggle" type="button">Theme: system</button>
+</header>
+
+<main>
+  <nav class="tabs" role="tablist">
+    <button role="tab" id="tab-btn-re" aria-selected="true" aria-controls="tab-real-estate" type="button">Real estate</button>
+    <button role="tab" id="tab-btn-pf" aria-selected="false" aria-controls="tab-portfolio" type="button">Portfolio</button>
+  </nav>
+
+  <section class="panel" id="tab-real-estate" role="tabpanel" aria-labelledby="tab-btn-re">
+    <div class="filters-row">
+      <label>Département
+        <select id="re-filter-dept"><option value="">All</option></select>
+      </label>
+      <label>Property type
+        <select id="re-filter-type"><option value="">All</option></select>
+      </label>
+    </div>
+
+    <div id="re-content">
+      <div class="stat-row" id="re-stats"></div>
+
+      <figure class="chart-card">
+        <figcaption>
+          <span class="title">Top 15 communes by opportunity score</span>
+          <span class="caption-note">Most recent DVF year in the data</span>
+        </figcaption>
+        <div class="bar-chart" id="re-bar"></div>
+      </figure>
+
+      <figure class="chart-card">
+        <figcaption>
+          <span class="title">Price per m&sup2; vs. opportunity score</span>
+          <span class="caption-note">One dot per commune (filtered set)</span>
+        </figcaption>
+        <div class="scatter-wrap" id="re-scatter"></div>
+      </figure>
+
+      <button class="table-toggle" id="re-table-toggle" type="button" aria-expanded="false">Show table view</button>
+      <div class="table-scroll" id="re-table-wrap" hidden></div>
+    </div>
+    <div class="empty-state" id="re-empty" hidden></div>
+  </section>
+
+  <section class="panel" id="tab-portfolio" role="tabpanel" aria-labelledby="tab-btn-pf" hidden>
+    <div class="filters-row">
+      <label>Asset type
+        <select id="pf-filter-type">
+          <option value="">All</option>
+          <option value="stock">Stock</option>
+          <option value="etf">ETF</option>
+        </select>
+      </label>
+    </div>
+
+    <div id="pf-content">
+      <div class="stat-row" id="pf-stats"></div>
+
+      <figure class="chart-card">
+        <figcaption>
+          <span class="title">Period return by ticker</span>
+          <span class="caption-note">Over whatever history has been ingested so far</span>
+        </figcaption>
+        <div class="bar-chart" id="pf-bar"></div>
+      </figure>
+
+      <figure class="chart-card">
+        <figcaption>
+          <span class="title">Risk vs. return</span>
+          <span class="caption-note">Annualized volatility vs. period return</span>
+        </figcaption>
+        <div class="legend" id="pf-legend"></div>
+        <div class="scatter-wrap" id="pf-scatter"></div>
+      </figure>
+
+      <button class="table-toggle" id="pf-table-toggle" type="button" aria-expanded="false">Show table view</button>
+      <div class="table-scroll" id="pf-table-wrap" hidden></div>
+    </div>
+    <div class="empty-state" id="pf-empty" hidden></div>
+  </section>
+</main>
+
+<footer>
+  Data refreshed manually via <code>scripts/export_marts.py</code> &mdash; see the repo README
+  for the full pipeline (Airflow ingestion &rarr; BigQuery &rarr; dbt marts &rarr; this export).
+</footer>
+
+<div id="tooltip" role="tooltip" hidden></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- theme toggle ---------- */
+  var themeBtn = document.getElementById("theme-toggle");
+  var THEME_ORDER = ["system", "light", "dark"];
+  function currentTheme() { return localStorage.getItem("theme") || "system"; }
+  function applyTheme(t) {
+    if (t === "system") document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.setAttribute("data-theme", t);
+    themeBtn.textContent = "Theme: " + t;
+  }
+  themeBtn.addEventListener("click", function () {
+    var next = THEME_ORDER[(THEME_ORDER.indexOf(currentTheme()) + 1) % THEME_ORDER.length];
+    localStorage.setItem("theme", next);
+    applyTheme(next);
+  });
+  applyTheme(currentTheme());
+
+  /* ---------- tabs ---------- */
+  var tabBtnRe = document.getElementById("tab-btn-re");
+  var tabBtnPf = document.getElementById("tab-btn-pf");
+  var panelRe = document.getElementById("tab-real-estate");
+  var panelPf = document.getElementById("tab-portfolio");
+  function selectTab(which) {
+    var reOn = which === "re";
+    tabBtnRe.setAttribute("aria-selected", String(reOn));
+    tabBtnPf.setAttribute("aria-selected", String(!reOn));
+    panelRe.hidden = !reOn;
+    panelPf.hidden = reOn;
+  }
+  tabBtnRe.addEventListener("click", function () { selectTab("re"); });
+  tabBtnPf.addEventListener("click", function () { selectTab("pf"); });
+
+  /* ---------- formatting ---------- */
+  var fmtInt = new Intl.NumberFormat("fr-FR");
+  var fmtEUR0 = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+  // Signed: for deltas (YoY change, period return) where +/- is the point.
+  var fmtPct1 = new Intl.NumberFormat("fr-FR", { style: "percent", maximumFractionDigits: 1, signDisplay: "exceptZero" });
+  // Unsigned: for magnitudes that are never negative (volatility) - a "+" there would
+  // misread as a delta.
+  var fmtPct1Plain = new Intl.NumberFormat("fr-FR", { style: "percent", maximumFractionDigits: 1 });
+  var fmtScore = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 });
+
+  /* ---------- tooltip ---------- */
+  var tooltipEl = document.getElementById("tooltip");
+  function showTooltip(evt, title, rows) {
+    tooltipEl.innerHTML = "";
+    var t = document.createElement("div");
+    t.className = "tt-title";
+    t.textContent = title;
+    tooltipEl.appendChild(t);
+    rows.forEach(function (r) {
+      var row = document.createElement("div");
+      row.className = "tt-row";
+      var k = document.createElement("span");
+      k.className = "tt-key";
+      k.textContent = r[0];
+      var v = document.createElement("span");
+      v.className = "tt-val";
+      v.textContent = r[1];
+      row.appendChild(k);
+      row.appendChild(v);
+      tooltipEl.appendChild(row);
+    });
+    tooltipEl.hidden = false;
+    positionTooltip(evt);
+  }
+  function positionTooltip(evt) {
+    var x = evt.clientX, y = evt.clientY;
+    var pad = 14;
+    var rect = tooltipEl.getBoundingClientRect();
+    var left = Math.min(x + pad, window.innerWidth - rect.width - 8);
+    var top = Math.min(y + pad, window.innerHeight - rect.height - 8);
+    tooltipEl.style.left = Math.max(8, left) + "px";
+    tooltipEl.style.top = Math.max(8, top) + "px";
+  }
+  function hideTooltip() { tooltipEl.hidden = true; }
+
+  /* ---------- generic table view ---------- */
+  function renderTable(container, rows, columns) {
+    container.innerHTML = "";
+    var table = document.createElement("table");
+    table.className = "data-table";
+    var thead = document.createElement("thead");
+    var htr = document.createElement("tr");
+    columns.forEach(function (c) {
+      var th = document.createElement("th");
+      th.textContent = c.label;
+      htr.appendChild(th);
+    });
+    thead.appendChild(htr);
+    table.appendChild(thead);
+    var tbody = document.createElement("tbody");
+    rows.forEach(function (row) {
+      var tr = document.createElement("tr");
+      columns.forEach(function (c) {
+        var td = document.createElement("td");
+        td.textContent = c.format ? c.format(row[c.key]) : (row[c.key] == null ? "" : row[c.key]);
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    container.appendChild(table);
+  }
+  function wireTableToggle(btnId, wrapId, renderFn) {
+    var btn = document.getElementById(btnId);
+    var wrap = document.getElementById(wrapId);
+    var rendered = false;
+    btn.addEventListener("click", function () {
+      var expanded = btn.getAttribute("aria-expanded") === "true";
+      if (!expanded && !rendered) { renderFn(); rendered = true; }
+      btn.setAttribute("aria-expanded", String(!expanded));
+      wrap.hidden = expanded;
+      btn.textContent = expanded ? "Show table view" : "Hide table view";
+    });
+    return function invalidate() { rendered = false; };
+  }
+
+  /* ---------- HTML bar chart (sequential, single hue, magnitude) ---------- */
+  function renderMagnitudeBarChart(container, items, opts) {
+    // items: [{label, value}], all values assumed >= 0
+    container.innerHTML = "";
+    var max = Math.max.apply(null, items.map(function (i) { return i.value; }).concat([0]));
+    items.forEach(function (item) {
+      var row = document.createElement("div");
+      row.className = "bar-row";
+      row.tabIndex = 0;
+
+      var label = document.createElement("div");
+      label.className = "bar-label";
+      label.textContent = item.label;
+      label.title = item.label;
+
+      var track = document.createElement("div");
+      track.className = "bar-track";
+      var fill = document.createElement("div");
+      fill.className = "bar-fill";
+      var widthPct = max > 0 ? (item.value / max) * 100 : 0;
+      fill.style.width = widthPct + "%";
+      fill.style.left = "0";
+      fill.style.background = "var(--series-1)";
+      track.appendChild(fill);
+
+      var value = document.createElement("div");
+      value.className = "bar-value";
+      value.textContent = opts.valueFormatter(item.value);
+
+      row.appendChild(label);
+      row.appendChild(track);
+      row.appendChild(value);
+
+      var tipRows = [["Value", opts.valueFormatter(item.value)]];
+      if (item.extra) tipRows = item.extra.concat(tipRows);
+      row.addEventListener("pointermove", function (e) { showTooltip(e, item.label, tipRows); });
+      row.addEventListener("pointerleave", hideTooltip);
+      row.addEventListener("focus", function (e) { showTooltip(e, item.label, tipRows); });
+      row.addEventListener("blur", hideTooltip);
+
+      container.appendChild(row);
+    });
+  }
+
+  /* ---------- HTML bar chart (diverging around zero) ---------- */
+  function renderDivergingBarChart(container, items, opts) {
+    // items: [{label, value, extra}]
+    container.innerHTML = "";
+    var maxAbs = Math.max.apply(null, items.map(function (i) { return Math.abs(i.value); }).concat([0.0001]));
+    items.forEach(function (item) {
+      var row = document.createElement("div");
+      row.className = "bar-row";
+      row.tabIndex = 0;
+
+      var label = document.createElement("div");
+      label.className = "bar-label";
+      label.textContent = item.label;
+      label.title = item.label;
+
+      var track = document.createElement("div");
+      track.className = "bar-track diverging";
+
+      var zero = document.createElement("div");
+      zero.className = "bar-zero-line";
+      zero.style.left = "50%";
+      track.appendChild(zero);
+
+      var fill = document.createElement("div");
+      var pct = (Math.abs(item.value) / maxAbs) * 50; // half-width max
+      var isNeg = item.value < 0;
+      fill.className = "bar-fill" + (isNeg ? " neg" : "");
+      fill.style.width = pct + "%";
+      fill.style.left = isNeg ? (50 - pct) + "%" : "50%";
+      fill.style.background = isNeg ? "var(--diverging-neg)" : "var(--diverging-pos)";
+      track.appendChild(fill);
+
+      var value = document.createElement("div");
+      value.className = "bar-value";
+      value.textContent = opts.valueFormatter(item.value);
+      // Text stays in the neutral ink token regardless of sign - the bar's fill color
+      // already carries the positive/negative signal; the label doesn't repeat it.
+
+      row.appendChild(label);
+      row.appendChild(track);
+      row.appendChild(value);
+
+      var tipRows = (item.extra || []).concat([["Return", opts.valueFormatter(item.value)]]);
+      row.addEventListener("pointermove", function (e) { showTooltip(e, item.label, tipRows); });
+      row.addEventListener("pointerleave", hideTooltip);
+      row.addEventListener("focus", function (e) { showTooltip(e, item.label, tipRows); });
+      row.addEventListener("blur", hideTooltip);
+
+      container.appendChild(row);
+    });
+  }
+
+  /* ---------- SVG scatter chart ---------- */
+  var SVGNS = "http://www.w3.org/2000/svg";
+  function svgEl(tag, attrs) {
+    var el = document.createElementNS(SVGNS, tag);
+    for (var k in attrs) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+  function renderScatterChart(container, points, opts) {
+    // points: [{x, y, label, color, group, extra}]
+    container.innerHTML = "";
+    var W = opts.width || 640, H = opts.height || 320;
+    var margin = { top: 12, right: 16, bottom: 34, left: 56 };
+    var innerW = W - margin.left - margin.right;
+    var innerH = H - margin.top - margin.bottom;
+
+    var xs = points.map(function (p) { return p.x; });
+    var ys = points.map(function (p) { return p.y; });
+    var xMin = Math.min.apply(null, xs), xMax = Math.max.apply(null, xs);
+    var yMin = Math.min.apply(null, ys), yMax = Math.max.apply(null, ys);
+    var xPad = (xMax - xMin) * 0.08 || 1, yPad = (yMax - yMin) * 0.08 || 1;
+    xMin -= xPad; xMax += xPad; yMin -= yPad; yMax += yPad;
+
+    function sx(v) { return margin.left + ((v - xMin) / (xMax - xMin)) * innerW; }
+    function sy(v) { return margin.top + innerH - ((v - yMin) / (yMax - yMin)) * innerH; }
+
+    var svg = svgEl("svg", { class: "scatter", viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": opts.ariaLabel || "scatter chart" });
+
+    // gridlines (4 horizontal, 4 vertical)
+    var GRID = 4;
+    for (var i = 0; i <= GRID; i++) {
+      var gy = margin.top + (innerH / GRID) * i;
+      svg.appendChild(svgEl("line", { class: "gridline", x1: margin.left, x2: margin.left + innerW, y1: gy, y2: gy }));
+      var yVal = yMax - ((yMax - yMin) / GRID) * i;
+      var yLabel = svgEl("text", { class: "axis-label", x: margin.left - 8, y: gy + 3, "text-anchor": "end" });
+      yLabel.textContent = opts.yTickFormatter(yVal);
+      svg.appendChild(yLabel);
+    }
+    for (var j = 0; j <= GRID; j++) {
+      var gx = margin.left + (innerW / GRID) * j;
+      var xVal = xMin + ((xMax - xMin) / GRID) * j;
+      var xLabel = svgEl("text", { class: "axis-label", x: gx, y: H - 8, "text-anchor": "middle" });
+      xLabel.textContent = opts.xTickFormatter(xVal);
+      svg.appendChild(xLabel);
+    }
+    // axes baseline
+    svg.appendChild(svgEl("line", { class: "axis-line", x1: margin.left, x2: margin.left, y1: margin.top, y2: margin.top + innerH }));
+    svg.appendChild(svgEl("line", { class: "axis-line", x1: margin.left, x2: margin.left + innerW, y1: margin.top + innerH, y2: margin.top + innerH }));
+
+    points.forEach(function (p) {
+      var cx = sx(p.x), cy = sy(p.y);
+      var g = svgEl("g", {});
+      var hit = svgEl("circle", { class: "dot-hit", cx: cx, cy: cy, r: 12 });
+      var dot = svgEl("circle", { class: "dot", cx: cx, cy: cy, r: 5, fill: p.color || "var(--series-1)", "data-group": p.group || "" });
+      g.appendChild(hit);
+      g.appendChild(dot);
+      g.setAttribute("tabindex", "0");
+      var tipRows = (p.extra || []);
+      g.addEventListener("pointermove", function (e) { showTooltip(e, p.label, tipRows); });
+      g.addEventListener("pointerleave", hideTooltip);
+      g.addEventListener("focus", function (e) { showTooltip(e, p.label, tipRows); });
+      g.addEventListener("blur", hideTooltip);
+      svg.appendChild(g);
+    });
+
+    container.appendChild(svg);
+    return svg;
+  }
+
+  /* ---------- data loading ---------- */
+  function fetchJson(path) {
+    return fetch(path, { cache: "no-cache" }).then(function (r) {
+      if (!r.ok) throw new Error("missing " + path);
+      return r.json();
+    }).catch(function () { return null; });
+  }
+
+  Promise.all([
+    fetchJson("data/commune_opportunity_score.json"),
+    fetchJson("data/equity_performance_summary.json"),
+    fetchJson("data/meta.json")
+  ]).then(function (res) {
+    var realEstate = res[0] || [];
+    var portfolio = res[1] || [];
+    var meta = res[2];
+
+    var metaLine = document.getElementById("meta-line");
+    if (meta && meta.exported_at) {
+      metaLine.textContent = "Last refreshed " + new Date(meta.exported_at).toLocaleString("en-GB");
+    } else {
+      metaLine.textContent = "No export yet — see footer for how to publish one.";
+    }
+
+    initRealEstate(realEstate);
+    initPortfolio(portfolio);
+  });
+
+  /* ---------- Real estate tab ---------- */
+  function initRealEstate(data) {
+    var emptyEl = document.getElementById("re-empty");
+    var contentEl = document.getElementById("re-content");
+    if (!data.length) {
+      contentEl.style.display = "none";
+      emptyEl.hidden = false;
+      emptyEl.innerHTML = "No real-estate data published yet. Run <code>python scripts/export_marts.py</code> after dvf_ingest, insee_ingest, and dbt_transform have run at least once.";
+      return;
+    }
+
+    var depts = Array.from(new Set(data.map(function (d) { return d.code_departement + " — " + (d.nom_departement || ""); })))
+      .sort();
+    var deptSelect = document.getElementById("re-filter-dept");
+    depts.forEach(function (d) {
+      var code = d.split(" — ")[0];
+      var opt = document.createElement("option");
+      opt.value = code;
+      opt.textContent = d;
+      deptSelect.appendChild(opt);
+    });
+    var types = Array.from(new Set(data.map(function (d) { return d.type_local; }))).sort();
+    var typeSelect = document.getElementById("re-filter-type");
+    types.forEach(function (t) {
+      var opt = document.createElement("option");
+      opt.value = t;
+      opt.textContent = t;
+      typeSelect.appendChild(opt);
+    });
+
+    var invalidateTable = wireTableToggle("re-table-toggle", "re-table-wrap", function () {
+      renderTable(document.getElementById("re-table-wrap"), currentFiltered(), [
+        { key: "nom_commune", label: "Commune" },
+        { key: "code_departement", label: "Dept" },
+        { key: "type_local", label: "Type" },
+        { key: "median_price_per_sqm", label: "Price/m²", format: function (v) { return v == null ? "–" : fmtEUR0.format(v); } },
+        { key: "yoy_price_change_pct", label: "YoY", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
+        { key: "median_disposable_income", label: "Median income", format: function (v) { return v == null ? "–" : fmtEUR0.format(v); } },
+        { key: "opportunity_score", label: "Score", format: function (v) { return fmtScore.format(v); } }
+      ]);
+    });
+
+    var currentFilteredData = data;
+    function currentFiltered() { return currentFilteredData; }
+
+    function applyFilters() {
+      var dept = deptSelect.value, type = typeSelect.value;
+      var filtered = data.filter(function (d) {
+        return (!dept || d.code_departement === dept) && (!type || d.type_local === type);
+      });
+      currentFilteredData = filtered.slice().sort(function (a, b) { return b.opportunity_score - a.opportunity_score; });
+      render(currentFilteredData);
+      invalidateTable();
+      var wrap = document.getElementById("re-table-wrap");
+      if (!wrap.hidden) renderTable(wrap, currentFilteredData, [
+        { key: "nom_commune", label: "Commune" },
+        { key: "code_departement", label: "Dept" },
+        { key: "type_local", label: "Type" },
+        { key: "median_price_per_sqm", label: "Price/m²", format: function (v) { return v == null ? "–" : fmtEUR0.format(v); } },
+        { key: "yoy_price_change_pct", label: "YoY", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
+        { key: "median_disposable_income", label: "Median income", format: function (v) { return v == null ? "–" : fmtEUR0.format(v); } },
+        { key: "opportunity_score", label: "Score", format: function (v) { return fmtScore.format(v); } }
+      ]);
+    }
+
+    function render(filtered) {
+      // stats
+      var statsEl = document.getElementById("re-stats");
+      statsEl.innerHTML = "";
+      var communeCount = new Set(filtered.map(function (d) { return d.code_commune; })).size;
+      var top = filtered.slice().sort(function (a, b) { return b.opportunity_score - a.opportunity_score; })[0];
+      var nationalMedian = filtered.length ? filtered[0].national_median_price_per_sqm : null;
+      addStatTile(statsEl, "Communes analyzed", fmtInt.format(communeCount), null);
+      addStatTile(statsEl, "Top opportunity", top ? top.nom_commune : "–", top ? "Score " + fmtScore.format(top.opportunity_score) : null);
+      addStatTile(statsEl, "National median price/m²", nationalMedian != null ? fmtEUR0.format(nationalMedian) : "–", filtered.length ? "Year " + filtered[0].year : null);
+
+      // bar chart: top 15
+      var top15 = filtered.slice().sort(function (a, b) { return b.opportunity_score - a.opportunity_score; }).slice(0, 15);
+      renderMagnitudeBarChart(document.getElementById("re-bar"), top15.map(function (d) {
+        return {
+          label: d.nom_commune,
+          value: d.opportunity_score,
+          extra: [["Price/m²", fmtEUR0.format(d.median_price_per_sqm)], ["Dept", d.code_departement]]
+        };
+      }), { valueFormatter: function (v) { return fmtScore.format(v); } });
+
+      // scatter
+      renderScatterChart(document.getElementById("re-scatter"), filtered.filter(function (d) { return d.median_price_per_sqm != null; }).map(function (d) {
+        return {
+          x: d.median_price_per_sqm,
+          y: d.opportunity_score,
+          label: d.nom_commune,
+          color: "var(--series-1)",
+          extra: [["Price/m²", fmtEUR0.format(d.median_price_per_sqm)], ["Score", fmtScore.format(d.opportunity_score)], ["Dept", d.code_departement]]
+        };
+      }), {
+        width: 900, height: 340,
+        xTickFormatter: function (v) { return fmtEUR0.format(v); },
+        yTickFormatter: function (v) { return fmtScore.format(v); },
+        ariaLabel: "Price per square meter versus opportunity score, one dot per commune"
+      });
+    }
+
+    deptSelect.addEventListener("change", applyFilters);
+    typeSelect.addEventListener("change", applyFilters);
+    applyFilters();
+  }
+
+  /* ---------- Portfolio tab ---------- */
+  // Sort helper: treats a real 0% return correctly (unlike `value || fallback`, which
+  // would coerce 0 to the fallback since 0 is falsy) and sorts missing values last.
+  function retVal(d) {
+    return typeof d.period_return_pct === "number" ? d.period_return_pct : -Infinity;
+  }
+
+  function initPortfolio(data) {
+    var emptyEl = document.getElementById("pf-empty");
+    var contentEl = document.getElementById("pf-content");
+    if (!data.length) {
+      contentEl.style.display = "none";
+      emptyEl.hidden = false;
+      emptyEl.innerHTML = "No portfolio data published yet. Run <code>python scripts/export_marts.py</code> after equities_ingest and dbt_transform have run at least once.";
+      return;
+    }
+
+    var typeSelect = document.getElementById("pf-filter-type");
+    var legendState = { stock: true, etf: true };
+
+    var legendEl = document.getElementById("pf-legend");
+    [["stock", "Stock", "var(--series-1)"], ["etf", "ETF", "var(--series-2)"]].forEach(function (g) {
+      var btn = document.createElement("button");
+      btn.className = "legend-item";
+      btn.setAttribute("aria-pressed", "true");
+      var sw = document.createElement("span");
+      sw.className = "legend-swatch";
+      sw.style.background = g[2];
+      btn.appendChild(sw);
+      var lbl = document.createElement("span");
+      lbl.textContent = g[1];
+      btn.appendChild(lbl);
+      btn.addEventListener("click", function () {
+        legendState[g[0]] = !legendState[g[0]];
+        btn.setAttribute("aria-pressed", String(legendState[g[0]]));
+        applyFilters();
+      });
+      legendEl.appendChild(btn);
+    });
+
+    var columns = [
+      { key: "ticker", label: "Ticker" },
+      { key: "name", label: "Name" },
+      { key: "asset_type", label: "Type" },
+      { key: "period_return_pct", label: "Return", format: function (v) { return v == null ? "–" : fmtPct1.format(v); } },
+      { key: "annualized_volatility", label: "Volatility", format: function (v) { return v == null ? "–" : fmtPct1Plain.format(v); } },
+      { key: "total_dividends", label: "Dividends", format: function (v) { return v == null ? "–" : fmtEUR0.format(v); } }
+    ];
+
+    var currentFilteredData = data;
+    var invalidateTable = wireTableToggle("pf-table-toggle", "pf-table-wrap", function () {
+      renderTable(document.getElementById("pf-table-wrap"), currentFilteredData, columns);
+    });
+
+    function applyFilters() {
+      var type = typeSelect.value;
+      var filtered = data.filter(function (d) {
+        if (type && d.asset_type !== type) return false;
+        if (d.asset_type === "stock" && !legendState.stock) return false;
+        if (d.asset_type === "etf" && !legendState.etf) return false;
+        return true;
+      });
+      currentFilteredData = filtered.slice().sort(function (a, b) { return retVal(b) - retVal(a); });
+      render(currentFilteredData);
+      var wrap = document.getElementById("pf-table-wrap");
+      if (!wrap.hidden) { renderTable(wrap, currentFilteredData, columns); }
+      invalidateTable();
+    }
+
+    function render(filtered) {
+      var statsEl = document.getElementById("pf-stats");
+      statsEl.innerHTML = "";
+      var best = filtered.slice().sort(function (a, b) { return retVal(b) - retVal(a); })[0];
+      var avgVol = filtered.length ? filtered.reduce(function (s, d) { return s + (d.annualized_volatility || 0); }, 0) / filtered.length : null;
+      addStatTile(statsEl, "Tickers tracked", fmtInt.format(filtered.length), null);
+      addStatTile(statsEl, "Best performer", best ? best.ticker : "–", best ? fmtPct1.format(best.period_return_pct) : null);
+      addStatTile(statsEl, "Avg. annualized volatility", avgVol != null ? fmtPct1Plain.format(avgVol) : "–", null);
+
+      renderDivergingBarChart(document.getElementById("pf-bar"), filtered.map(function (d) {
+        return {
+          label: d.ticker,
+          value: d.period_return_pct || 0,
+          extra: [["Name", d.name || d.ticker], ["Type", d.asset_type || "–"]]
+        };
+      }), { valueFormatter: function (v) { return fmtPct1.format(v); } });
+
+      renderScatterChart(document.getElementById("pf-scatter"), filtered.filter(function (d) { return d.annualized_volatility != null && d.period_return_pct != null; }).map(function (d) {
+        return {
+          x: d.annualized_volatility,
+          y: d.period_return_pct,
+          label: d.ticker,
+          color: d.asset_type === "etf" ? "var(--series-2)" : "var(--series-1)",
+          group: d.asset_type,
+          extra: [["Name", d.name || d.ticker], ["Return", fmtPct1.format(d.period_return_pct)], ["Volatility", fmtPct1Plain.format(d.annualized_volatility)]]
+        };
+      }), {
+        width: 900, height: 340,
+        xTickFormatter: function (v) { return fmtPct1Plain.format(v); },
+        yTickFormatter: function (v) { return fmtPct1.format(v); },
+        ariaLabel: "Annualized volatility versus period return, one dot per ticker"
+      });
+    }
+
+    typeSelect.addEventListener("change", applyFilters);
+    applyFilters();
+  }
+
+  function addStatTile(container, label, value, sub) {
+    var tile = document.createElement("div");
+    tile.className = "stat-tile";
+    var l = document.createElement("div");
+    l.className = "label";
+    l.textContent = label;
+    var v = document.createElement("div");
+    v.className = "value";
+    v.textContent = value;
+    tile.appendChild(l);
+    tile.appendChild(v);
+    if (sub) {
+      var s = document.createElement("div");
+      s.className = "sub";
+      s.textContent = sub;
+      tile.appendChild(s);
+    }
+    container.appendChild(tile);
+  }
+})();
+</script>
+</body>
+</html>

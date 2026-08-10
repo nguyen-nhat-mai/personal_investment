@@ -1,0 +1,31 @@
+version: 2
+
+sources:
+  - name: raw_equities
+    description: >
+      Raw landing zone for daily OHLCV data pulled via yfinance by the equities_ingest DAG.
+      Append-only; the same (ticker, date) can be re-loaded across runs on purpose (a rolling
+      5-day window is pulled every run so a missed run gets backfilled) - dedupe in staging.
+    database: "{{ env_var('GCP_PROJECT') }}"
+    schema: raw_equities
+    tables:
+      - name: prices
+
+models:
+  - name: stg_equities__prices
+    description: Deduped, typed daily OHLCV per ticker.
+    columns:
+      - name: ticker
+        tests:
+          - not_null
+          - relationships:
+              to: ref('cac40_tickers')
+              field: ticker
+      - name: date
+        tests:
+          - not_null
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - ticker
+            - date
