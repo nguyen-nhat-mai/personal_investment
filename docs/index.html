@@ -3,20 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>France Investment Insights</title>
-<meta name="description" content="Real-estate opportunity and equities dashboard built on dbt + Airflow + BigQuery.">
+<title>Personal Investment Lab</title>
+<meta name="description" content="A personal wealth simulator and French investment dashboard - built on dbt + Airflow + BigQuery.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <header class="page-header">
   <div>
-    <h1>France Investment Insights</h1>
+    <h1>Personal Investment Lab</h1>
     <p class="subtitle">
-      Real-estate opportunity by commune (DVF + INSEE), a PEA watchlist (CAC40 + non-French EU
-      blue chips + PEA ETFs), a gold/crypto alternatives watchlist, and a French wealth
-      simulator (Livret A/LDDS, PEA, Assurance Vie, leveraged real estate, alternatives)
-      &mdash; built with dbt + Airflow + BigQuery.
+      A wealth simulator (Livret A/LDDS, PEA, Assurance Vie, leveraged real estate,
+      alternatives) with adjustable allocation, inflation and market-crash scenarios &mdash;
+      plus a real-estate opportunity map by commune (DVF + INSEE), a PEA watchlist (CAC40 +
+      non-French EU blue chips + PEA ETFs), and a gold/crypto alternatives watchlist. Built
+      with dbt + Airflow + BigQuery.
     </p>
     <p class="meta-line" id="meta-line">Loading...</p>
   </div>
@@ -33,6 +34,9 @@
   </nav>
 
   <section class="panel" id="tab-wealth-sim" role="tabpanel" aria-labelledby="tab-btn-ws">
+    <button class="methodology-toggle" id="ws-methodology-toggle" type="button" aria-expanded="false">How is this calculated?</button>
+    <div class="methodology-panel" id="ws-methodology-panel" hidden></div>
+
     <div class="sim-controls" id="ws-controls">
       <fieldset class="sim-controls-group">
         <legend>Capital &amp; horizon</legend>
@@ -117,9 +121,6 @@
     </fieldset>
 
     <div id="ws-content">
-      <button class="methodology-toggle" id="ws-methodology-toggle" type="button" aria-expanded="false">How is this calculated?</button>
-      <div class="methodology-panel" id="ws-methodology-panel" hidden></div>
-
       <div class="stat-row" id="ws-stats"></div>
 
       <figure class="chart-card">
@@ -129,6 +130,18 @@
         </figcaption>
         <div class="stat-row" id="ws-risk-compare"></div>
       </figure>
+
+      <figure class="chart-card">
+        <figcaption>
+          <span class="title">Net worth by vehicle, year by year</span>
+          <span class="caption-note">CAT is net of tax paid annually as accrued; other vehicles are pre-tax, taxed at the final-year liquidation figure above</span>
+        </figcaption>
+        <div class="legend" id="ws-legend"></div>
+        <div class="chart-wrap" id="ws-chart"></div>
+      </figure>
+
+      <button class="table-toggle" id="ws-table-toggle" type="button" aria-expanded="false">Show table view</button>
+      <div class="table-scroll" id="ws-table-wrap" hidden></div>
 
       <figure class="chart-card">
         <figcaption>
@@ -153,18 +166,6 @@
         <button type="button" class="table-toggle" id="ws-shocks-add">+ Add crash year</button>
         <div class="stat-row" id="ws-shocks-compare"></div>
       </figure>
-
-      <figure class="chart-card">
-        <figcaption>
-          <span class="title">Net worth by vehicle, year by year</span>
-          <span class="caption-note">CAT is net of tax paid annually as accrued; other vehicles are pre-tax, taxed at the final-year liquidation figure above</span>
-        </figcaption>
-        <div class="legend" id="ws-legend"></div>
-        <div class="chart-wrap" id="ws-chart"></div>
-      </figure>
-
-      <button class="table-toggle" id="ws-table-toggle" type="button" aria-expanded="false">Show table view</button>
-      <div class="table-scroll" id="ws-table-wrap" hidden></div>
     </div>
     <div class="empty-state" id="ws-empty" hidden></div>
   </section>
