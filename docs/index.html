@@ -50,7 +50,7 @@
         </label>
       </fieldset>
       <fieldset class="sim-controls-group">
-        <legend>Tax, inflation &amp; risk</legend>
+        <legend>Tax profile &amp; risk</legend>
         <label>Marginal tax bracket (TMI)
           <select id="ws-tmi">
             <option value="0">0%</option>
@@ -65,10 +65,6 @@
             <option value="single" selected>Single</option>
             <option value="couple">Couple</option>
           </select>
-        </label>
-        <label>Assumed inflation
-          <input type="range" id="ws-inflation" min="0" max="6" step="0.1" value="2">
-          <output id="ws-inflation-out"></output>
         </label>
         <label>Risk tolerance
           <select id="ws-risk">
@@ -120,13 +116,6 @@
       <button type="button" class="table-toggle" id="ws-alloc-reset">Reset allocation to risk-tolerance default</button>
     </fieldset>
 
-    <fieldset class="sim-allocation" id="ws-shocks">
-      <legend>Market stress test</legend>
-      <p class="caption-note">Model a crash in any year(s) of your horizon &mdash; hits PEA, SCPI-in-AV, Real estate (equity) &amp; Alternatives only. Livret A, LDDS, AV Fonds Euro &amp; CAT are capital-guaranteed in this model and unaffected.</p>
-      <div class="sim-shocks-rows" id="ws-shocks-rows"></div>
-      <button type="button" class="table-toggle" id="ws-shocks-add">+ Add crash year</button>
-    </fieldset>
-
     <div id="ws-content">
       <button class="methodology-toggle" id="ws-methodology-toggle" type="button" aria-expanded="false">How is this calculated?</button>
       <div class="methodology-panel" id="ws-methodology-panel" hidden></div>
@@ -144,16 +133,24 @@
       <figure class="chart-card">
         <figcaption>
           <span class="title">Inflation comparison</span>
-          <span class="caption-note">Assumed inflation: <output id="ws-inflation-compare-out"></output>/yr &mdash; adjust in Tax, inflation &amp; risk above</span>
+          <span class="caption-note">Your portfolio (pre-tax) vs. the same contributions compounded at inflation only, year by year</span>
         </figcaption>
-        <div class="stat-row" id="ws-inflation-compare"></div>
+        <label class="sim-inline-slider">Assumed inflation
+          <input type="range" id="ws-inflation" min="0" max="6" step="0.1" value="2">
+          <output id="ws-inflation-out"></output>
+        </label>
+        <div class="legend" id="ws-inflation-legend"></div>
+        <div class="chart-wrap" id="ws-inflation-chart"></div>
+        <p class="chart-verdict" id="ws-inflation-verdict"></p>
       </figure>
 
       <figure class="chart-card">
         <figcaption>
           <span class="title">Market stress test</span>
-          <span class="caption-note">Base case vs. your configured crash year(s) &mdash; edit above</span>
+          <span class="caption-note">Hits PEA, SCPI-in-AV, Real estate (equity) &amp; Alternatives only &mdash; Livret A, LDDS, AV Fonds Euro &amp; CAT are capital-guaranteed in this model and unaffected</span>
         </figcaption>
+        <div class="sim-shocks-rows" id="ws-shocks-rows"></div>
+        <button type="button" class="table-toggle" id="ws-shocks-add">+ Add crash year</button>
         <div class="stat-row" id="ws-shocks-compare"></div>
       </figure>
 

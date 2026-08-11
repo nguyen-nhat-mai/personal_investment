@@ -11,21 +11,36 @@
 // picked (see initWealthSimulator's applyAllocationPreset) - the actual split/mix used by
 // wealthComputeProjection always comes from params.split/tier3Mix/tier4Mix/tier4OngoingMix,
 // read live from the sliders, since the user can drag any of them away from these defaults
-// (which is what flips the risk-tolerance select to "Customized").
+// (which is what flips the risk-tolerance select to "Customized"). See
+// WEALTH_TIER4_SUBSPLIT_BY_RISK below for how the growth tier's own sub-mix also varies by
+// preset, not just this top-level split.
 var WEALTH_TIER_SPLIT_DEFAULT = {
   conservative: { preservation: 0.70, growth: 0.30 },
   balanced:     { preservation: 0.50, growth: 0.50 },
   aggressive:   { preservation: 0.25, growth: 0.75 }
 };
-// v1 simplification: within the growth tier, PEA/leveraged real estate/alternatives defaults to
-// a fixed 3-way split regardless of risk tolerance - only the preservation/growth ratio itself
-// is risk-driven by default, to avoid an under-specified second "how aggressive is the mix" axis
-// - though the user can now override this split directly via the allocation sliders. Weights are
-// hand-picked and illustrative (same treatment the original 50/50 PEA/real-estate split got),
-// not derived from anything - alternatives gets the smallest slice, reflecting that it's the
-// newest, most speculative-in-practice leg of the three (gold+crypto's realized volatility is
-// materially higher than a diversified PEA ETF blend or national median real-estate CAGR).
-var WEALTH_TIER4_SUBSPLIT_DEFAULT = { pea: 0.45, realEstate: 0.35, alternatives: 0.20 };
+// Growth-tier sub-mix DEFAULT, PER RISK-TOLERANCE PRESET - unlike the preservation tier (fixed
+// equal-thirds regardless of preset, see WEALTH_TIER3_SUBSPLIT_DEFAULT below), the growth tier's
+// PEA/real estate/alternatives mix tilts with risk tolerance, so "Aggressive" changes both how
+// MUCH goes to the growth tier (via WEALTH_TIER_SPLIT_DEFAULT above) and WHERE within it:
+//   - Conservative leans PEA-heavy: PEA is the lowest-volatility of the three growth vehicles
+//     (~16%/yr) and, as of the live ETF-blended data, also the highest-returning (~11.8%/yr) -
+//     the safest place within an already-risky tier.
+//   - Aggressive leans into real estate's leverage (80% LTV amplifies price moves roughly 5x on
+//     the equity stake) and Alternatives (by far the most volatile growth vehicle, ~40%/yr) -
+//     note Alternatives is NOT currently the highest-returning one (~5.75%/yr, below even real
+//     estate's leveraged equity return), so this is a genuine risk-seeking tilt, not a
+//     return-chasing one; a return-maximizing tilt would instead concentrate in PEA at every
+//     preset. Both readings are defensible - this one keeps "Aggressive" meaning what it says.
+//   - Balanced keeps the original hand-picked 45/35/20.
+// All three are illustrative and hand-picked, same treatment the original single fixed split
+// got - not derived from an optimization, and each still fully overridable via the growth-tier
+// sliders (which is what flips risk tolerance to "Customized").
+var WEALTH_TIER4_SUBSPLIT_BY_RISK = {
+  conservative: { pea: 0.70, realEstate: 0.20, alternatives: 0.10 },
+  balanced:     { pea: 0.45, realEstate: 0.35, alternatives: 0.20 },
+  aggressive:   { pea: 0.25, realEstate: 0.40, alternatives: 0.35 }
+};
 // Equal-thirds default for the preservation tier's AV Fonds Euro / SCPI-in-AV / CAT mix -
 // same "no reason to prefer one over another by default" reasoning as the growth tier above.
 var WEALTH_TIER3_SUBSPLIT_DEFAULT = { avFondsEuro: 1 / 3, scpiInAv: 1 / 3, cat: 1 / 3 };
@@ -42,6 +57,26 @@ function wealthNormalize(weights) {
     out[k] = sum > 0 ? Math.max(0, weights[k]) / sum : 1 / keys.length;
   });
   return out;
+}
+
+// Rounds a set of fractions that sum to ~1 into whole-number percentages GUARANTEED to sum to
+// exactly 100 - naive independent rounding of each value (e.g. three-way 33.33%/33.33%/33.33%)
+// can otherwise display as "33% + 33% + 33% = 99%", which reads as a bug even though the
+// underlying allocation (wealthNormalize) is mathematically exact. Uses the "largest remainder"
+// method (same technique used for seat apportionment): round every value down first, then hand
+// out the few missing points to whichever values were closest to rounding up - so no single slot
+// systematically absorbs all the rounding error. fractions is an array; returns an array of
+// same-length integers.
+function wealthPctTrio(fractions) {
+  var scaled = fractions.map(function (f) { return Math.max(0, f) * 100; });
+  var floors = scaled.map(Math.floor);
+  var remainder = 100 - floors.reduce(function (s, v) { return s + v; }, 0);
+  var byRemainder = scaled
+    .map(function (v, i) { return { i: i, frac: v - Math.floor(v) }; })
+    .sort(function (a, b) { return b.frac - a.frac; });
+  var result = floors.slice();
+  for (var k = 0; k < remainder && k < byRemainder.length; k++) { result[byRemainder[k].i] += 1; }
+  return result;
 }
 
 var WEALTH_SERIES = [
@@ -385,19 +420,116 @@ function wealthComputeAfterTaxLiquidation(finalRow, state, params, C) {
 }
 
 // "If every euro you put in had merely tracked inflation instead of being invested, what would
-// you have at the end?" - same contribution schedule as the real projection (starting capital
-// at year 0, annualContribution at the end of each year 1..horizonYears), each euro compounding
-// at the assumed inflation rate instead of any vehicle's return. This is the benchmark the
-// Inflation comparison panel measures your actual after-tax total against - a fair,
-// timing-matched "did I even keep up with inflation" bar, not just today's total contributed.
-function wealthComputeInflationBenchmark(params) {
+// you have BY A GIVEN YEAR?" - same contribution schedule as the real projection (starting
+// capital at year 0, annualContribution at the end of each year 1..throughYear), each euro
+// compounding at the assumed inflation rate instead of any vehicle's return. throughYear
+// defaults to the full horizon (the original single-number use, still used by the "ahead/behind
+// inflation" verdict); the Inflation comparison chart calls this once per row's year instead, to
+// plot the benchmark as a full trajectory alongside the real projection, not just an endpoint.
+function wealthComputeInflationBenchmark(params, throughYear) {
+  var year = throughYear == null ? params.horizonYears : throughYear;
   var infl = params.inflationRate;
-  var fv = params.startingCapital * Math.pow(1 + infl, params.horizonYears);
+  var fv = params.startingCapital * Math.pow(1 + infl, year);
   var annualContribution = params.monthlySavings * 12;
-  for (var year = 1; year <= params.horizonYears; year++) {
-    fv += annualContribution * Math.pow(1 + infl, params.horizonYears - year);
+  for (var y = 1; y <= year; y++) {
+    fv += annualContribution * Math.pow(1 + infl, year - y);
   }
   return fv;
+}
+
+// Two-line comparison: your actual (pre-tax) projection vs. the inflation-only benchmark above,
+// year by year - deliberately pre-tax on both sides (tax in this model is only realized at
+// liquidation, see wealthComputeAfterTaxLiquidation, so an "after-tax as of year N" figure for
+// every intermediate year would need to assume a hypothetical liquidation at each one; the
+// chart-verdict paragraph below the chart carries the real after-tax endpoint instead). Same
+// axis/gridline/margin conventions as renderWealthChart for visual consistency, but two line
+// paths instead of a stacked area, plus a per-year hover band (crosshair-style) showing both
+// values at once rather than one tooltip per series.
+function renderInflationChart(container, legendEl, rows, params) {
+  container.innerHTML = "";
+  legendEl.innerHTML = "";
+
+  var series = rows.map(function (r) {
+    return { year: r.year, portfolio: r.totalNetWorth, benchmark: wealthComputeInflationBenchmark(params, r.year) };
+  });
+
+  var W = 900, H = 340;
+  var margin = { top: 12, right: 16, bottom: 34, left: 64 };
+  var innerW = W - margin.left - margin.right, innerH = H - margin.top - margin.bottom;
+  var xMax = series[series.length - 1].year || 1;
+  var yMax = Math.max.apply(null, series.map(function (s) { return Math.max(s.portfolio, s.benchmark); }).concat([1])) * 1.08;
+
+  function sx(year) { return margin.left + (year / xMax) * innerW; }
+  function sy(v) { return margin.top + innerH - (v / yMax) * innerH; }
+
+  var svg = svgEl("svg", { class: "wealth-chart", viewBox: "0 0 " + W + " " + H, role: "img",
+    "aria-label": "Your portfolio vs. an inflation-only benchmark, year by year" });
+
+  var GRID = 4;
+  for (var i = 0; i <= GRID; i++) {
+    var gy = margin.top + (innerH / GRID) * i;
+    svg.appendChild(svgEl("line", { class: "gridline", x1: margin.left, x2: margin.left + innerW, y1: gy, y2: gy }));
+    var yVal = yMax - (yMax / GRID) * i;
+    var yLabel = svgEl("text", { class: "axis-label", x: margin.left - 8, y: gy + 3, "text-anchor": "end" });
+    yLabel.textContent = fmtEUR0.format(yVal);
+    svg.appendChild(yLabel);
+  }
+  for (var j = 0; j <= GRID; j++) {
+    var gx = margin.left + (innerW / GRID) * j;
+    var xVal = (xMax / GRID) * j;
+    var xLabel = svgEl("text", { class: "axis-label", x: gx, y: H - 8, "text-anchor": "middle" });
+    xLabel.textContent = "Yr " + Math.round(xVal);
+    svg.appendChild(xLabel);
+  }
+  svg.appendChild(svgEl("line", { class: "axis-line", x1: margin.left, x2: margin.left, y1: margin.top, y2: margin.top + innerH }));
+  svg.appendChild(svgEl("line", { class: "axis-line", x1: margin.left, x2: margin.left + innerW, y1: margin.top + innerH, y2: margin.top + innerH }));
+
+  // Fixed categorical order (--series-1 then --series-2), same slots this codebase already uses
+  // for every other "two comparable things" chart (stock/ETF, Maison/Appartement, ...) - the
+  // benchmark line is additionally dashed so the two are never distinguished by color alone.
+  var LINES = [
+    { key: "portfolio", label: "Your portfolio (pre-tax)", color: "var(--series-1)", dashed: false },
+    { key: "benchmark", label: "Inflation-only benchmark", color: "var(--series-2)", dashed: true }
+  ];
+
+  LINES.forEach(function (ln) {
+    var d = series.map(function (s, idx) { return (idx === 0 ? "M" : "L") + sx(s.year) + "," + sy(s[ln.key]); }).join(" ");
+    var path = svgEl("path", { d: d, fill: "none", stroke: ln.color, "stroke-width": 2 });
+    if (ln.dashed) path.setAttribute("stroke-dasharray", "5,4");
+    svg.appendChild(path);
+    series.forEach(function (s) {
+      svg.appendChild(svgEl("circle", { cx: sx(s.year), cy: sy(s[ln.key]), r: 3, fill: ln.color }));
+    });
+
+    var item = document.createElement("span");
+    item.className = "legend-item";
+    var sw = document.createElement("span");
+    sw.className = "legend-swatch";
+    sw.style.background = ln.color;
+    item.appendChild(sw);
+    var lbl = document.createElement("span");
+    lbl.textContent = ln.label;
+    item.appendChild(lbl);
+    legendEl.appendChild(item);
+  });
+
+  // Hover crosshair: one invisible full-height band per year (not per-series), so a single
+  // tooltip shows both values for that year at once - more useful here than two independent
+  // per-line tooltips, since the whole point is comparing them at the same point in time.
+  var bandW = innerW / Math.max(1, series.length - 1);
+  series.forEach(function (s) {
+    var hit = svgEl("rect", { x: sx(s.year) - bandW / 2, y: margin.top, width: bandW, height: innerH, fill: "transparent" });
+    hit.addEventListener("pointermove", function (e) {
+      showTooltip(e, "Year " + s.year, [
+        ["Your portfolio (pre-tax)", fmtEUR0.format(s.portfolio)],
+        ["Inflation-only benchmark", fmtEUR0.format(s.benchmark)]
+      ]);
+    });
+    hit.addEventListener("pointerleave", hideTooltip);
+    svg.appendChild(hit);
+  });
+
+  container.appendChild(svg);
 }
 
 function renderWealthChart(container, legendEl, rows) {
@@ -467,7 +599,9 @@ function renderWealthChart(container, legendEl, rows) {
 
 var WEALTH_METHODOLOGY_HTML =
   "<h3>The waterfall</h3>" +
-  "<p>Every euro - starting capital and monthly savings alike - fills Livret A first (up to &euro;22,950), then LDDS (up to &euro;12,000), before anything else. Only the overflow beyond those caps splits between a preservation tier (Assurance Vie fonds euro, SCPI held as unit&eacute;s de compte inside an AV wrapper, CAT) and a growth tier (PEA, leveraged real estate, alternatives - gold+crypto), by the preservation/growth ratio in the allocation panel above (seeded from your risk tolerance: 70/30 conservative, 50/50 balanced, 25/75 aggressive). Within the growth tier, your STARTING capital splits three ways - PEA / real estate / alternatives, defaulting to 45%/35%/20% (hand-picked and illustrative - alternatives defaults to the smallest slice, reflecting its higher realized volatility) but adjustable via the growth-tier sliders; ongoing monthly savings allocated to the growth tier split two ways instead, PEA and alternatives only, in the same ratio as their two sliders above - real estate doesn't get ongoing contributions at all, see below. Dragging any allocation slider away from its risk-tolerance default switches the Risk tolerance selector to \"Customized\". PEA itself is also capped, at its real &euro;150,000 contribution limit - once hit, further growth-tier money doesn't vanish or sit idle, it falls back into the preservation tier instead, same as a real investor keeps saving through a different vehicle once PEA is maxed (alternatives has no such cap). This is a safety-first model, not a real financial plan for your specific situation.</p>" +
+  "<p>Every euro - starting capital and monthly savings alike - fills Livret A first (up to &euro;22,950), then LDDS (up to &euro;12,000), before anything else. Only the overflow beyond those caps splits between a preservation tier (Assurance Vie fonds euro, SCPI held as unit&eacute;s de compte inside an AV wrapper, CAT) and a growth tier (PEA, leveraged real estate, alternatives - gold+crypto), by the preservation/growth ratio in the allocation panel above (seeded from your risk tolerance: 70/30 conservative, 50/50 balanced, 25/75 aggressive). Within the growth tier, your STARTING capital splits three ways - PEA / real estate / alternatives - and risk tolerance seeds THIS mix too, not just the top-level ratio: Conservative defaults to a PEA-heavy 70/20/10 (PEA is both the lowest-volatility and, on live data, the highest-returning of the three), Balanced to the original 45/35/20, and Aggressive to a more speculative 25/40/35 (leaning into leveraged real estate and Alternatives' volatility - see \"Risk tolerance also tilts where growth money goes\" below). Every slider is still adjustable by hand; ongoing monthly savings allocated to the growth tier split two ways instead, PEA and alternatives only, in the same ratio as their two sliders above - real estate doesn't get ongoing contributions at all, see below. Dragging any allocation slider away from its risk-tolerance default switches the Risk tolerance selector to \"Customized\". PEA itself is also capped, at its real &euro;150,000 contribution limit - once hit, further growth-tier money doesn't vanish or sit idle, it falls back into the preservation tier instead, same as a real investor keeps saving through a different vehicle once PEA is maxed (alternatives has no such cap). This is a safety-first model, not a real financial plan for your specific situation.</p>" +
+  "<h3>Risk tolerance also tilts where growth money goes</h3>" +
+  "<p>It would be easy to assume \"more risk tolerance\" just means \"more money in the growth tier\" - but within this model's live data, that's not the whole story: PEA (~11.8%/yr, ~16%/yr volatility) is currently BOTH the highest-returning AND the least volatile of the three growth vehicles, while Alternatives (~5.75%/yr, ~40%/yr volatility) is the most volatile but not the highest-returning, and leveraged real estate (80% LTV) amplifies whatever the underlying price does roughly 5x on your equity stake, for better or worse. So risk tolerance tilts the growth-tier mix itself, not just its size: Conservative leans further into PEA (the safest place within an already-risky tier), Aggressive leans further into real estate's leverage and Alternatives' volatility, deliberately accepting more swings rather than chasing the currently-highest return - a genuinely risk-seeking tilt, not a \"smarter allocation\" one. The Risk tolerance comparison panel reflects this fully: each alternative preset's tile uses that preset's own growth-tier mix, not your current one (the preservation-tier mix stays fixed at your current setting either way, since it doesn't vary by preset). All these ratios are illustrative and hand-picked, not derived from any optimization - drag the growth-tier sliders directly if you want a different tilt.</p>" +
   "<h3>Real estate is modeled as a one-time purchase</h3>" +
   "<p>Monthly savings are too small to realistically drip into lumpy real-estate purchases, so leveraged real estate is sized once, from the risk-tolerance-driven growth-tier split of your STARTING capital only - a single mortgage amortization schedule, appreciating at the national median DVF price CAGR from year zero (see \"Growth assumption guard rails\" below for what happens when that figure isn't reliable yet). Ongoing monthly savings allocated to the growth tier go to PEA and alternatives instead (gold/crypto, unlike a house, can genuinely be bought a little at a time). Appreciation-only: no rental income is assumed, since DVF has sale prices, not rent data. Below a &euro;15,000 minimum down payment (apport), no leveraged purchase triggers at all - a real down payment that small doesn't buy any real French property - and that allocation goes to SCPI-in-AV instead (unlevered, but the closest \"real estate flavor\" exposure this model has).</p>" +
   "<h3>Tax</h3>" +
@@ -527,7 +661,7 @@ function initWealthSimulator(assumptions) {
   // The allocation editor: one slider for the top-level preservation/growth split, plus two
   // groups of relative weights (preservation tier's AV Fonds Euro/SCPI-in-AV/CAT, growth tier's
   // PEA/real estate/alternatives) that wealthNormalize turns into fractions summing to 1. Seeded
-  // from WEALTH_TIER_SPLIT_DEFAULT/WEALTH_TIER3_SUBSPLIT_DEFAULT/WEALTH_TIER4_SUBSPLIT_DEFAULT
+  // from WEALTH_TIER_SPLIT_DEFAULT/WEALTH_TIER3_SUBSPLIT_DEFAULT/WEALTH_TIER4_SUBSPLIT_BY_RISK
   // whenever a risk-tolerance preset is (re)selected - see applyAllocationPreset below.
   var allocControls = {
     growth: document.getElementById("ws-alloc-growth"),
@@ -565,16 +699,19 @@ function initWealthSimulator(assumptions) {
 
   // Sets every allocation slider back to a risk-tolerance preset's defaults - does NOT
   // re-render, callers do that themselves (so they can also update controls.risk.value first).
+  // The preservation tier (av/scpi/cat) is the same equal-thirds default at every preset; the
+  // growth tier (pea/re/alt) tilts per WEALTH_TIER4_SUBSPLIT_BY_RISK.
   function applyAllocationPreset(risk) {
     var preset = WEALTH_TIER_SPLIT_DEFAULT[risk];
-    if (!preset) return;
+    var tier4 = WEALTH_TIER4_SUBSPLIT_BY_RISK[risk];
+    if (!preset || !tier4) return;
     allocControls.growth.value = String(Math.round(preset.growth * 100));
     allocControls.av.value = String(Math.round(WEALTH_TIER3_SUBSPLIT_DEFAULT.avFondsEuro * 100));
     allocControls.scpi.value = String(Math.round(WEALTH_TIER3_SUBSPLIT_DEFAULT.scpiInAv * 100));
     allocControls.cat.value = String(Math.round(WEALTH_TIER3_SUBSPLIT_DEFAULT.cat * 100));
-    allocControls.pea.value = String(Math.round(WEALTH_TIER4_SUBSPLIT_DEFAULT.pea * 100));
-    allocControls.re.value = String(Math.round(WEALTH_TIER4_SUBSPLIT_DEFAULT.realEstate * 100));
-    allocControls.alt.value = String(Math.round(WEALTH_TIER4_SUBSPLIT_DEFAULT.alternatives * 100));
+    allocControls.pea.value = String(Math.round(tier4.pea * 100));
+    allocControls.re.value = String(Math.round(tier4.realEstate * 100));
+    allocControls.alt.value = String(Math.round(tier4.alternatives * 100));
   }
 
   // Tracks the last risk-tolerance preset explicitly chosen (not "custom"), so the "Reset
@@ -731,27 +868,35 @@ function initWealthSimulator(assumptions) {
 
     // Allocation sliders show the NORMALIZED percentage they resolve to, not the raw 0-100
     // weight underneath - e.g. if every growth-tier weight is dragged down evenly, each output
-    // still reads its true (unchanged) share of the tier, not a shrinking raw number.
+    // still reads its true (unchanged) share of the tier, not a shrinking raw number. The
+    // preservation/growth split is a plain complementary pair (growth = 100 - preservation, by
+    // construction), but the two 3-way tiers go through wealthPctTrio so their displayed
+    // percentages always sum to exactly 100 (see that function's comment for why a naive
+    // independent rounding of each value can't guarantee that).
     document.getElementById("ws-alloc-preservation-out").textContent = fmtPct1Plain.format(params.split.preservation);
     document.getElementById("ws-alloc-growth-out").textContent = fmtPct1Plain.format(params.split.growth);
-    document.getElementById("ws-alloc-av-out").textContent = fmtPct1Plain.format(params.tier3Mix.avFondsEuro);
-    document.getElementById("ws-alloc-scpi-out").textContent = fmtPct1Plain.format(params.tier3Mix.scpiInAv);
-    document.getElementById("ws-alloc-cat-out").textContent = fmtPct1Plain.format(params.tier3Mix.cat);
-    document.getElementById("ws-alloc-pea-out").textContent = fmtPct1Plain.format(params.tier4Mix.pea);
-    document.getElementById("ws-alloc-re-out").textContent = fmtPct1Plain.format(params.tier4Mix.realEstate);
-    document.getElementById("ws-alloc-alt-out").textContent = fmtPct1Plain.format(params.tier4Mix.alternatives);
+    var tier3Pct = wealthPctTrio([params.tier3Mix.avFondsEuro, params.tier3Mix.scpiInAv, params.tier3Mix.cat]);
+    document.getElementById("ws-alloc-av-out").textContent = tier3Pct[0] + "%";
+    document.getElementById("ws-alloc-scpi-out").textContent = tier3Pct[1] + "%";
+    document.getElementById("ws-alloc-cat-out").textContent = tier3Pct[2] + "%";
+    var tier4Pct = wealthPctTrio([params.tier4Mix.pea, params.tier4Mix.realEstate, params.tier4Mix.alternatives]);
+    document.getElementById("ws-alloc-pea-out").textContent = tier4Pct[0] + "%";
+    document.getElementById("ws-alloc-re-out").textContent = tier4Pct[1] + "%";
+    document.getElementById("ws-alloc-alt-out").textContent = tier4Pct[2] + "%";
     document.getElementById("ws-inflation-out").textContent = fmtPct1Plain.format(params.inflationRate);
-    document.getElementById("ws-inflation-compare-out").textContent = fmtPct1Plain.format(params.inflationRate);
     var result = wealthComputeProjection(params, assumptions);
     var finalRow = result.rows[result.rows.length - 1];
     var afterTax = wealthComputeAfterTaxLiquidation(finalRow, result.state, params, assumptions.constants);
 
-    // Same capital/savings/horizon/tax settings AND the same preservation/growth sub-mix
-    // (tier3Mix/tier4Mix/tier4OngoingMix) - only the top-level preservation/growth split
-    // varies, so it's clear what the risk-tolerance dial itself is trading off, not a mix of
-    // that and whatever the allocation sliders happen to be set to right now. When "Customized"
-    // is selected, none of these three matches params.riskTolerance, so all three show as
-    // alternatives (no tile is marked "current") - still a meaningful comparison.
+    // Each non-current tile reflects EVERYTHING picking that preset would change: the top-level
+    // preservation/growth split (WEALTH_TIER_SPLIT_DEFAULT) AND that preset's own growth-tier
+    // mix (WEALTH_TIER4_SUBSPLIT_BY_RISK - Conservative leans PEA-heavy, Aggressive leans into
+    // real estate leverage + Alternatives' volatility - see that constant's comment for why).
+    // The preservation-tier mix (tier3Mix) is held constant across all three tiles at your
+    // CURRENT setting, since it doesn't vary by preset (see WEALTH_TIER3_SUBSPLIT_DEFAULT) -
+    // only the growth tier does. When "Customized" is selected, none of these three matches
+    // params.riskTolerance, so all three show as alternatives (no tile is marked "current") -
+    // still a meaningful "what if I fully switched to this preset" comparison.
     // The other two tiles' sub-line is a colored delta vs. the current selection (same
     // --diverging-pos/--diverging-neg tokens the bar charts already use for gains/losses) -
     // the absolute value itself stays neutral ink, since "higher net worth" isn't unambiguously
@@ -763,7 +908,13 @@ function initWealthSimulator(assumptions) {
     var currentAfterTaxTotal = afterTax.total;
     Object.keys(RISK_TOLERANCE_LABELS).forEach(function (risk) {
       var isCurrent = risk === params.riskTolerance;
-      var riskParams = Object.assign({}, params, { riskTolerance: risk, split: WEALTH_TIER_SPLIT_DEFAULT[risk] });
+      var presetTier4Mix = WEALTH_TIER4_SUBSPLIT_BY_RISK[risk];
+      var riskParams = Object.assign({}, params, {
+        riskTolerance: risk,
+        split: WEALTH_TIER_SPLIT_DEFAULT[risk],
+        tier4Mix: presetTier4Mix,
+        tier4OngoingMix: wealthNormalize({ pea: presetTier4Mix.pea, alternatives: presetTier4Mix.alternatives })
+      });
       var riskResult = isCurrent ? result : wealthComputeProjection(riskParams, assumptions);
       var riskFinalRow = riskResult.rows[riskResult.rows.length - 1];
       var riskAfterTax = isCurrent ? afterTax : wealthComputeAfterTaxLiquidation(riskFinalRow, riskResult.state, riskParams, assumptions.constants);
@@ -778,30 +929,24 @@ function initWealthSimulator(assumptions) {
       );
     });
 
-    // Answers "did this investment actually beat inflation, or just grow in nominal terms?"
-    // wealthComputeInflationBenchmark runs the SAME contribution schedule (starting capital +
-    // annual savings) forward at the assumed inflation rate instead of any vehicle's return -
-    // a fair, timing-matched floor, not just today's nominal total contributed. Tile 1 is your
-    // actual after-tax result (neutral ink, same "current" treatment as the risk-tolerance row);
-    // tile 2 is that inflation-only floor (also neutral - it's a benchmark, not a choice you
-    // made); tile 3 carries the verdict as a signed, colored delta between the two - positive
-    // and green means you beat inflation, negative and red means inflation beat you.
-    var inflationEl = document.getElementById("ws-inflation-compare");
-    inflationEl.innerHTML = "";
-    var inflationBenchmark = wealthComputeInflationBenchmark(params);
+    // Answers "did this investment actually beat inflation, or just grow in nominal terms?" -
+    // as a chart now (see renderInflationChart), plotting your pre-tax projection against the
+    // inflation-only benchmark year by year, instead of a single endpoint comparison. The
+    // one-line verdict below the chart still surfaces the AFTER-TAX endpoint figure (the chart
+    // itself is pre-tax on both lines, since tax is only realized at liquidation in this model -
+    // see renderInflationChart's comment), plus the "today's purchasing power" real-terms figure.
+    renderInflationChart(document.getElementById("ws-inflation-chart"), document.getElementById("ws-inflation-legend"), result.rows, params);
+    var inflationBenchmarkFinal = wealthComputeInflationBenchmark(params);
     var realAfterTax = afterTax.total / Math.pow(1 + params.inflationRate, params.horizonYears);
-    var gainVsInflation = afterTax.total - inflationBenchmark;
-    addStatTile(inflationEl, "Your portfolio (after-tax)", fmtEUR0.format(afterTax.total), "Pre-tax: " + fmtEUR0.format(finalRow.totalNetWorth), true, null);
-    addStatTile(inflationEl, "If it only kept pace with inflation", fmtEUR0.format(inflationBenchmark), "Same contributions, no investment growth", false, null);
-    addStatTile(
-      inflationEl,
-      gainVsInflation >= 0 ? "Ahead of inflation by" : "Behind inflation by",
-      fmtEUR0Signed.format(gainVsInflation),
-      "In today's purchasing power: " + fmtEUR0.format(realAfterTax),
-      false,
-      null,
-      gainVsInflation >= 0 ? "var(--diverging-pos)" : "var(--diverging-neg)"
-    );
+    var gainVsInflation = afterTax.total - inflationBenchmarkFinal;
+    var verdictEl = document.getElementById("ws-inflation-verdict");
+    verdictEl.innerHTML = "";
+    var verdictColor = gainVsInflation >= 0 ? "var(--diverging-pos)" : "var(--diverging-neg)";
+    var verdictStrong = document.createElement("strong");
+    verdictStrong.style.color = verdictColor;
+    verdictStrong.textContent = (gainVsInflation >= 0 ? "Ahead of inflation by " : "Behind inflation by ") + fmtEUR0Signed.format(gainVsInflation);
+    verdictEl.appendChild(verdictStrong);
+    verdictEl.appendChild(document.createTextNode(" (after-tax, at year " + params.horizonYears + ") — in today's purchasing power, your portfolio is worth " + fmtEUR0.format(realAfterTax) + "."));
 
     // Market stress test: "Base case" is the same result already computed above (no shocks -
     // every other tile/chart/table on this tab is always shock-free, so configuring a crash

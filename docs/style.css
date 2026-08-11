@@ -374,6 +374,27 @@
   figure.chart-card figcaption .title { font-size: 14px; font-weight: 600; }
   figure.chart-card figcaption .caption-note { font-size: 12px; color: var(--text-muted); }
 
+  /* An assumption control living inside a chart-card, directly above the chart/cards it drives
+     (e.g. Inflation comparison's "Assumed inflation" slider) - a compact single-row variant of
+     .sim-controls-group's label, not a full grid cell. */
+  .sim-inline-slider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 0 0 16px;
+    max-width: 360px;
+  }
+  .sim-inline-slider input[type="range"] { flex: 1; margin: 0; }
+  .sim-inline-slider output { font-variant-numeric: tabular-nums; color: var(--text-primary); font-weight: 600; min-width: 42px; text-align: right; }
+
+  /* One-line colored takeaway under a chart (e.g. Inflation comparison's ahead/behind figure) -
+     lighter-weight than a stat-tile, for when the chart itself already carries the detail and
+     only a short verdict sentence is needed alongside it. */
+  .chart-verdict { margin: 12px 0 0; font-size: 13px; color: var(--text-secondary); }
+  .chart-verdict strong { font-variant-numeric: tabular-nums; }
+
   .view-by-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
   .view-by-row .view-by-label { font-size: 12px; color: var(--text-secondary); }
 
