@@ -1,4 +1,4 @@
-# France Investment Insights
+# Personal Investment Lab
 
 A dbt + Airflow + BigQuery project with two purposes: learn real data-engineering patterns
 (orchestration, incremental/dedup loading, staging→intermediate→marts modeling, dbt testing),
