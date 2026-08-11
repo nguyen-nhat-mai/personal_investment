@@ -999,6 +999,9 @@
       "default_ltv": 0.8,
       "default_term_years": 20
     },
+    "inflation": {
+      "rate": 0.02
+    },
     "equities_fallback": {
       "annualized_return": 0.07,
       "annualized_volatility": 0.15

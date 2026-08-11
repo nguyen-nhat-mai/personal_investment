@@ -114,8 +114,12 @@ function svgEl(tag, attrs) {
 /* ---------- stat tile (used by every tab) ---------- */
 // sub accepts either a plain string (existing callers, colored via subColor) or an array of
 // { text, color } lines (e.g. two independent notes on one tile) - both render as stacked
-// ".sub" divs, so no new CSS is needed either way.
-function addStatTile(container, label, value, sub, selected, subColor) {
+// ".sub" divs, so no new CSS is needed either way. valueColor is optional and colors the
+// headline number itself (default: neutral --text-primary, inherited) - only pass it when the
+// value's sign is unambiguously good/bad on its own (e.g. "+/-X vs. inflation"), not for a
+// plain comparison figure where "bigger" isn't inherently better (see the risk-tolerance
+// comparison's tiles, which deliberately leave the value neutral and color only the sub-line).
+function addStatTile(container, label, value, sub, selected, subColor, valueColor) {
   var tile = document.createElement("div");
   tile.className = "stat-tile" + (selected ? " selected" : "");
   var l = document.createElement("div");
@@ -124,6 +128,7 @@ function addStatTile(container, label, value, sub, selected, subColor) {
   var v = document.createElement("div");
   v.className = "value";
   v.textContent = value;
+  if (valueColor) v.style.color = valueColor;
   tile.appendChild(l);
   tile.appendChild(v);
   var subLines = Array.isArray(sub) ? sub : (sub ? [{ text: sub, color: subColor }] : []);
