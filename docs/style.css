@@ -203,6 +203,105 @@
     color: var(--text-primary);
     font-variant-numeric: tabular-nums;
   }
+  .sim-controls-group {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+    border: none;
+    margin: 0;
+    padding: 0;
+  }
+  .sim-controls-group legend {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    padding: 0 0 4px;
+  }
+
+  /* Wealth simulator's allocation editor: a risk-tolerance-seeded set of sliders the user can
+     drag to override the auto-computed mix (see wealth-sim.js's wealthNormalize - each slider is
+     a relative weight, not a literal percentage, so siblings never need to be nudged to keep a
+     sum of 100). */
+  .sim-allocation {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px 16px;
+    margin: 0 0 20px;
+  }
+  .sim-allocation legend {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 0 4px;
+  }
+  .sim-allocation > .caption-note { display: block; margin: 0 0 14px; }
+  .sim-allocation-split { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+  .sim-allocation-split span { font-size: 12px; color: var(--text-secondary); }
+  .sim-allocation-split output { font-variant-numeric: tabular-nums; color: var(--text-primary); font-weight: 600; }
+  .sim-allocation-groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px 24px;
+  }
+  .sim-allocation-group { display: flex; flex-direction: column; gap: 10px; }
+  .sim-allocation-group-title { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+  .sim-allocation-group-title .caption-note { display: block; font-weight: 400; margin-top: 2px; }
+  .sim-allocation-group label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .sim-allocation-group output { font-variant-numeric: tabular-nums; color: var(--text-primary); }
+  #ws-alloc-reset { margin-top: 16px; }
+
+  /* Market stress test: one row per configured crash year, built/rebuilt in JS (see
+     renderShockRows in wealth-sim.js) - #ws-shocks reuses .sim-allocation's fieldset chrome
+     (border/legend/padding), only the row list itself needs new rules. */
+  .sim-shocks-rows { display: flex; flex-direction: column; gap: 10px; margin: 4px 0 14px; }
+  .sim-shock-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    padding: 10px 12px;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .sim-shock-row label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .sim-shock-row input[type="number"],
+  .sim-shock-row select {
+    background: var(--page-plane);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 13px;
+    width: 90px;
+  }
+  .sim-shock-remove {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    width: 28px;
+    height: 28px;
+    line-height: 1;
+    font-size: 15px;
+    cursor: pointer;
+    margin-left: auto;
+  }
+  .sim-shock-remove:hover { color: var(--text-primary); border-color: var(--text-secondary); }
+  #ws-shocks-add[disabled] { opacity: 0.5; cursor: not-allowed; }
   input[type="range"] {
     -webkit-appearance: none;
     appearance: none;

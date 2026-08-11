@@ -6,19 +6,43 @@
 // only governs how the OVERFLOW beyond those caps splits between the preservation tier
 // (Assurance Vie fonds euro / SCPI-in-AV / CAT) and the growth tier (PEA / leveraged real
 // estate). See the tab's own methodology panel for the full explanation.
-var WEALTH_TIER_SPLIT = {
+//
+// These are DEFAULTS only, used to seed the allocation sliders when a risk-tolerance preset is
+// picked (see initWealthSimulator's applyAllocationPreset) - the actual split/mix used by
+// wealthComputeProjection always comes from params.split/tier3Mix/tier4Mix/tier4OngoingMix,
+// read live from the sliders, since the user can drag any of them away from these defaults
+// (which is what flips the risk-tolerance select to "Customized").
+var WEALTH_TIER_SPLIT_DEFAULT = {
   conservative: { preservation: 0.70, growth: 0.30 },
   balanced:     { preservation: 0.50, growth: 0.50 },
   aggressive:   { preservation: 0.25, growth: 0.75 }
 };
-// v1 simplification: within the growth tier, PEA/leveraged real estate/alternatives is a fixed
-// 3-way split regardless of risk tolerance - only the preservation/growth ratio itself is
-// risk-driven, to avoid an under-specified second "how aggressive is the mix" axis. Weights are
+// v1 simplification: within the growth tier, PEA/leveraged real estate/alternatives defaults to
+// a fixed 3-way split regardless of risk tolerance - only the preservation/growth ratio itself
+// is risk-driven by default, to avoid an under-specified second "how aggressive is the mix" axis
+// - though the user can now override this split directly via the allocation sliders. Weights are
 // hand-picked and illustrative (same treatment the original 50/50 PEA/real-estate split got),
 // not derived from anything - alternatives gets the smallest slice, reflecting that it's the
 // newest, most speculative-in-practice leg of the three (gold+crypto's realized volatility is
 // materially higher than a diversified PEA ETF blend or national median real-estate CAGR).
-var WEALTH_TIER4_SUBSPLIT = { pea: 0.45, realEstate: 0.35, alternatives: 0.20 };
+var WEALTH_TIER4_SUBSPLIT_DEFAULT = { pea: 0.45, realEstate: 0.35, alternatives: 0.20 };
+// Equal-thirds default for the preservation tier's AV Fonds Euro / SCPI-in-AV / CAT mix -
+// same "no reason to prefer one over another by default" reasoning as the growth tier above.
+var WEALTH_TIER3_SUBSPLIT_DEFAULT = { avFondsEuro: 1 / 3, scpiInAv: 1 / 3, cat: 1 / 3 };
+
+// Turns a set of relative slider weights into fractions that sum to 1 - lets each allocation
+// slider act as an independent weight (drag one, others don't need to be nudged to keep a sum
+// of 100) rather than a literal percentage. Falls back to an equal split if every weight is 0
+// (all sliders dragged to the floor), so a caller always gets a well-formed mix back.
+function wealthNormalize(weights) {
+  var keys = Object.keys(weights);
+  var sum = keys.reduce(function (s, k) { return s + Math.max(0, weights[k]); }, 0);
+  var out = {};
+  keys.forEach(function (k) {
+    out[k] = sum > 0 ? Math.max(0, weights[k]) / sum : 1 / keys.length;
+  });
+  return out;
+}
 
 var WEALTH_SERIES = [
   { key: "livretA", label: "Livret A", color: "var(--wealth-livret-a)" },
@@ -52,8 +76,14 @@ function wealthWaterfallAllocate(amount, state, C, split) {
 // only (see methodology panel: monthly savings routed to the growth tier go 100% to PEA
 // instead, since fractional-house purchases aren't realistic). Appreciation-only - no
 // rental income assumed, since DVF has no rent data, only sale prices.
-function wealthBuildRealEstatePosition(equity0, mortgageCfg, priceCagr) {
+//
+// shocks (see wealthComputeProjection) rescale the property's PRICE trajectory only, from each
+// shock's year onward - the mortgage's outstandingBalance is a fixed amortization schedule tied
+// to the original loan, not the market price, so a crash doesn't forgive (or inflate) what's
+// owed. Multiple shocks compound multiplicatively.
+function wealthBuildRealEstatePosition(equity0, mortgageCfg, priceCagr, shocks) {
   if (!(equity0 > 0)) return null;
+  shocks = shocks || [];
   var ltv = mortgageCfg.default_ltv;
   var propertyPrice0 = equity0 / (1 - ltv);
   var principal = propertyPrice0 * ltv;
@@ -72,14 +102,40 @@ function wealthBuildRealEstatePosition(equity0, mortgageCfg, priceCagr) {
     return Math.max(0, bal);
   }
 
+  function shockMultiplier(year) {
+    return shocks.reduce(function (m, s) { return s.year <= year ? m * (1 + s.magnitude) : m; }, 1);
+  }
+
   return {
     propertyPrice0: propertyPrice0,
     principal: principal,
     equityAtYear: function (year) {
-      var value = propertyPrice0 * Math.pow(1 + priceCagr, year);
-      return Math.max(0, value - outstandingBalance(year * 12));
+      var value = propertyPrice0 * Math.pow(1 + priceCagr, year) * shockMultiplier(year);
+      var equity = value - outstandingBalance(year * 12);
+      // Floored at 0 in the unshocked (base-case) path - a modeling simplification, since
+      // without a crash only an extreme negative price CAGR could push this below 0. A
+      // configured market-stress-test shock is deliberately allowed to go negative - being
+      // underwater on the mortgage after a crash is a real, worth-surfacing outcome, not
+      // something to hide behind a floor.
+      return shocks.length ? equity : Math.max(0, equity);
     }
   };
+}
+
+// Multiplies the market-priced vehicles' balances (PEA, SCPI-in-AV, alternatives - NOT the
+// capital-guaranteed Livret A/LDDS/AV Fonds Euro/CAT, and not real estate, which gets its own
+// price-curve treatment in wealthBuildRealEstatePosition above) by every shock scheduled for
+// this exact year. Called once at year 0 (right after the initial lump-sum deposit) and once at
+// the start of each loop year in wealthComputeProjection, before that year's growth/contribution
+// - so money contributed AFTER a crash year isn't retroactively marked down, only the balance
+// that already existed is.
+function wealthApplyMarketShocksForYear(state, shocks, year) {
+  shocks.forEach(function (s) {
+    if (s.year !== year) return;
+    state.pea.balance *= (1 + s.magnitude);
+    state.scpiInAv.balance *= (1 + s.magnitude);
+    state.alternatives.balance *= (1 + s.magnitude);
+  });
 }
 
 function wealthSnapshot(year, state, realEstate) {
@@ -127,10 +183,11 @@ var WEALTH_MIN_REAL_ESTATE_DOWN_PAYMENT = 15000;
 // Ongoing (year-by-year) growth-tier contributions split between PEA and alternatives only -
 // real estate doesn't participate here (it's a one-time lump sum sized from starting capital
 // only, see wealthBuildRealEstatePosition's comment: monthly savings are too small to buy
-// fractional houses, unlike gold/crypto which can genuinely be dollar-cost-averaged into).
-// Roughly matches WEALTH_TIER4_SUBSPLIT's pea:alternatives ratio (0.45:0.20), rounded to clean
-// numbers for the ongoing-contribution case specifically.
-var WEALTH_TIER4_ONGOING_SUBSPLIT = { pea: 0.7, alternatives: 0.3 };
+// fractional houses, unlike gold/crypto which can genuinely be dollar-cost-averaged into). The
+// actual ratio (params.tier4OngoingMix) is derived from the growth-tier allocation sliders'
+// PEA:alternatives weights, renormalized after dropping real estate - see readAllocation in
+// initWealthSimulator - so it tracks whatever the user (or risk-tolerance preset) has PEA and
+// alternatives set to, not a separate hardcoded ratio.
 function wealthClamp(v, maxAbs, fallback) {
   if (typeof v !== "number" || !isFinite(v)) return fallback;
   return Math.max(-maxAbs, Math.min(maxAbs, v));
@@ -168,7 +225,20 @@ function wealthComputeProjection(params, assumptions) {
   var eq = { annualized_return: growth.peaAnnualizedReturn };
   var reCagr = growth.realEstateCagr;
   var altReturn = growth.alternativesAnnualizedReturn;
-  var split = WEALTH_TIER_SPLIT[params.riskTolerance];
+  var split = params.split;
+  // tier3Mix (AV Fonds Euro/SCPI-in-AV/CAT) and tier4Mix (PEA/real estate/alternatives) drive
+  // BOTH the initial lump-sum deposit and the preservation-tier overflow-routing below;
+  // tier4OngoingMix (PEA/alternatives only, real estate excluded) drives the per-year
+  // contribution loop instead - see initWealthSimulator's readAllocation for how these three are
+  // derived from the allocation sliders (or a risk-tolerance preset, if unmodified).
+  var tier3Mix = params.tier3Mix;
+  var tier4Mix = params.tier4Mix;
+  // Optional market-stress-test shocks - [{ year, magnitude }], magnitude e.g. -0.30 for a -30%
+  // crash. Defaults to none, so every existing call site (risk-tolerance/inflation comparisons,
+  // the main projection) that doesn't set params.shocks behaves exactly as before. See
+  // wealthApplyMarketShocksForYear and wealthBuildRealEstatePosition for how each vehicle
+  // responds.
+  var shocks = params.shocks || [];
 
   var state = {
     livretA: { balance: 0, contributionsCum: 0 },
@@ -181,31 +251,35 @@ function wealthComputeProjection(params, assumptions) {
   };
 
   var init = wealthWaterfallAllocate(params.startingCapital, state, C, split);
-  wealthDepositInto(state.avFondsEuro, init.tier3 / 3, Infinity);
-  wealthDepositInto(state.scpiInAv, init.tier3 / 3, Infinity);
-  wealthDepositInto(state.cat, init.tier3 / 3, Infinity);
+  wealthDepositInto(state.avFondsEuro, init.tier3 * tier3Mix.avFondsEuro, Infinity);
+  wealthDepositInto(state.scpiInAv, init.tier3 * tier3Mix.scpiInAv, Infinity);
+  wealthDepositInto(state.cat, init.tier3 * tier3Mix.cat, Infinity);
   // PEA's EUR150k contribution cap can bind even on the initial deposit for a large starting
   // capital - route any overflow into the (uncapped) preservation tier rather than losing it,
   // same treatment the ongoing per-year contribution loop below uses.
-  var peaOverflowInit = wealthDepositInto(state.pea, init.tier4 * WEALTH_TIER4_SUBSPLIT.pea, C.pea.cap);
-  wealthDepositInto(state.avFondsEuro, peaOverflowInit / 3, Infinity);
-  wealthDepositInto(state.scpiInAv, peaOverflowInit / 3, Infinity);
-  wealthDepositInto(state.cat, peaOverflowInit / 3, Infinity);
+  var peaOverflowInit = wealthDepositInto(state.pea, init.tier4 * tier4Mix.pea, C.pea.cap);
+  wealthDepositInto(state.avFondsEuro, peaOverflowInit * tier3Mix.avFondsEuro, Infinity);
+  wealthDepositInto(state.scpiInAv, peaOverflowInit * tier3Mix.scpiInAv, Infinity);
+  wealthDepositInto(state.cat, peaOverflowInit * tier3Mix.cat, Infinity);
   // No contribution cap on alternatives (unlike PEA's real EUR150k one), so no overflow
   // handling needed here.
-  wealthDepositInto(state.alternatives, init.tier4 * WEALTH_TIER4_SUBSPLIT.alternatives, Infinity);
+  wealthDepositInto(state.alternatives, init.tier4 * tier4Mix.alternatives, Infinity);
 
   // Below the minimum realistic down payment, no leveraged property purchase triggers - route
-  // that portion to SCPI-in-AV instead (not the general 3-way preservation split: this money
-  // was earmarked for "real estate flavor" exposure specifically, and SCPI-in-AV is the closest
+  // that portion to SCPI-in-AV instead (not the general preservation-tier mix: this money was
+  // earmarked for "real estate flavor" exposure specifically, and SCPI-in-AV is the closest
   // unlevered equivalent already in this model).
-  var reEquityCandidate = init.tier4 * WEALTH_TIER4_SUBSPLIT.realEstate;
+  var reEquityCandidate = init.tier4 * tier4Mix.realEstate;
   var realEstate = null;
   if (reEquityCandidate >= WEALTH_MIN_REAL_ESTATE_DOWN_PAYMENT) {
-    realEstate = wealthBuildRealEstatePosition(reEquityCandidate, C.mortgage, reCagr);
+    realEstate = wealthBuildRealEstatePosition(reEquityCandidate, C.mortgage, reCagr, shocks);
   } else {
     wealthDepositInto(state.scpiInAv, reEquityCandidate, Infinity);
   }
+
+  // A shock scheduled for year 0 hits right after the initial lump-sum deposit above, before
+  // any growth has even happened - "the market crashes the moment I invest".
+  wealthApplyMarketShocksForYear(state, shocks, 0);
 
   var annualContribution = params.monthlySavings * 12;
   var rows = [wealthSnapshot(0, state, realEstate)];
@@ -218,6 +292,10 @@ function wealthComputeProjection(params, assumptions) {
   var catTaxPaidCumulative = 0;
 
   for (var year = 1; year <= params.horizonYears; year++) {
+    // A shock scheduled for this year hits the balance carried in from last year, before this
+    // year's own growth and contribution - so it lands as "the market dropped during year N"
+    // rather than retroactively marking down money that arrives later in the same year.
+    wealthApplyMarketShocksForYear(state, shocks, year);
     state.livretA.balance *= (1 + C.livret_a.rate);
     state.ldds.balance *= (1 + C.ldds.rate);
     state.avFondsEuro.balance *= (1 + C.av_fonds_euro.rate);
@@ -230,19 +308,19 @@ function wealthComputeProjection(params, assumptions) {
     state.alternatives.balance *= (1 + altReturn);
 
     var yr = wealthWaterfallAllocate(annualContribution, state, C, split);
-    wealthDepositInto(state.avFondsEuro, yr.tier3 / 3, Infinity);
-    wealthDepositInto(state.scpiInAv, yr.tier3 / 3, Infinity);
-    wealthDepositInto(state.cat, yr.tier3 / 3, Infinity);
-    // Ongoing tier-4 splits between PEA and alternatives (see WEALTH_TIER4_ONGOING_SUBSPLIT -
+    wealthDepositInto(state.avFondsEuro, yr.tier3 * tier3Mix.avFondsEuro, Infinity);
+    wealthDepositInto(state.scpiInAv, yr.tier3 * tier3Mix.scpiInAv, Infinity);
+    wealthDepositInto(state.cat, yr.tier3 * tier3Mix.cat, Infinity);
+    // Ongoing tier-4 splits between PEA and alternatives only (see params.tier4OngoingMix -
     // real estate doesn't get ongoing contributions), until PEA's EUR150k contribution cap is
     // hit; overflow past that falls back to the (uncapped) preservation tier instead of
     // vanishing - a real investor keeps saving through a different vehicle once PEA is maxed,
     // not stops saving. Alternatives has no such cap, so no overflow handling needed there.
-    var peaOverflow = wealthDepositInto(state.pea, yr.tier4 * WEALTH_TIER4_ONGOING_SUBSPLIT.pea, C.pea.cap);
-    wealthDepositInto(state.avFondsEuro, peaOverflow / 3, Infinity);
-    wealthDepositInto(state.scpiInAv, peaOverflow / 3, Infinity);
-    wealthDepositInto(state.cat, peaOverflow / 3, Infinity);
-    wealthDepositInto(state.alternatives, yr.tier4 * WEALTH_TIER4_ONGOING_SUBSPLIT.alternatives, Infinity);
+    var peaOverflow = wealthDepositInto(state.pea, yr.tier4 * params.tier4OngoingMix.pea, C.pea.cap);
+    wealthDepositInto(state.avFondsEuro, peaOverflow * tier3Mix.avFondsEuro, Infinity);
+    wealthDepositInto(state.scpiInAv, peaOverflow * tier3Mix.scpiInAv, Infinity);
+    wealthDepositInto(state.cat, peaOverflow * tier3Mix.cat, Infinity);
+    wealthDepositInto(state.alternatives, yr.tier4 * params.tier4OngoingMix.alternatives, Infinity);
 
     rows.push(wealthSnapshot(year, state, realEstate));
   }
@@ -304,6 +382,22 @@ function wealthComputeAfterTaxLiquidation(finalRow, state, params, C) {
   var taxPaid = avTax + peaTax + altTax;
 
   return { total: finalRow.totalNetWorth - taxPaid, taxPaid: taxPaid };
+}
+
+// "If every euro you put in had merely tracked inflation instead of being invested, what would
+// you have at the end?" - same contribution schedule as the real projection (starting capital
+// at year 0, annualContribution at the end of each year 1..horizonYears), each euro compounding
+// at the assumed inflation rate instead of any vehicle's return. This is the benchmark the
+// Inflation comparison panel measures your actual after-tax total against - a fair,
+// timing-matched "did I even keep up with inflation" bar, not just today's total contributed.
+function wealthComputeInflationBenchmark(params) {
+  var infl = params.inflationRate;
+  var fv = params.startingCapital * Math.pow(1 + infl, params.horizonYears);
+  var annualContribution = params.monthlySavings * 12;
+  for (var year = 1; year <= params.horizonYears; year++) {
+    fv += annualContribution * Math.pow(1 + infl, params.horizonYears - year);
+  }
+  return fv;
 }
 
 function renderWealthChart(container, legendEl, rows) {
@@ -373,13 +467,17 @@ function renderWealthChart(container, legendEl, rows) {
 
 var WEALTH_METHODOLOGY_HTML =
   "<h3>The waterfall</h3>" +
-  "<p>Every euro - starting capital and monthly savings alike - fills Livret A first (up to &euro;22,950), then LDDS (up to &euro;12,000), before anything else. Only the overflow beyond those caps splits between a preservation tier (Assurance Vie fonds euro, SCPI held as unit&eacute;s de compte inside an AV wrapper, CAT) and a growth tier (PEA, leveraged real estate, alternatives - gold+crypto), by your risk tolerance slider. Within the growth tier, your STARTING capital splits three ways (PEA 45% / real estate 35% / alternatives 20%, hand-picked and illustrative - alternatives gets the smallest slice, reflecting its higher realized volatility); ongoing monthly savings allocated to the growth tier split two ways instead, PEA and alternatives only (roughly 70%/30%) - real estate doesn't get ongoing contributions at all, see below. PEA itself is also capped, at its real &euro;150,000 contribution limit - once hit, further growth-tier money doesn't vanish or sit idle, it falls back into the preservation tier instead, same as a real investor keeps saving through a different vehicle once PEA is maxed (alternatives has no such cap). This is a safety-first model, not a real financial plan for your specific situation.</p>" +
+  "<p>Every euro - starting capital and monthly savings alike - fills Livret A first (up to &euro;22,950), then LDDS (up to &euro;12,000), before anything else. Only the overflow beyond those caps splits between a preservation tier (Assurance Vie fonds euro, SCPI held as unit&eacute;s de compte inside an AV wrapper, CAT) and a growth tier (PEA, leveraged real estate, alternatives - gold+crypto), by the preservation/growth ratio in the allocation panel above (seeded from your risk tolerance: 70/30 conservative, 50/50 balanced, 25/75 aggressive). Within the growth tier, your STARTING capital splits three ways - PEA / real estate / alternatives, defaulting to 45%/35%/20% (hand-picked and illustrative - alternatives defaults to the smallest slice, reflecting its higher realized volatility) but adjustable via the growth-tier sliders; ongoing monthly savings allocated to the growth tier split two ways instead, PEA and alternatives only, in the same ratio as their two sliders above - real estate doesn't get ongoing contributions at all, see below. Dragging any allocation slider away from its risk-tolerance default switches the Risk tolerance selector to \"Customized\". PEA itself is also capped, at its real &euro;150,000 contribution limit - once hit, further growth-tier money doesn't vanish or sit idle, it falls back into the preservation tier instead, same as a real investor keeps saving through a different vehicle once PEA is maxed (alternatives has no such cap). This is a safety-first model, not a real financial plan for your specific situation.</p>" +
   "<h3>Real estate is modeled as a one-time purchase</h3>" +
   "<p>Monthly savings are too small to realistically drip into lumpy real-estate purchases, so leveraged real estate is sized once, from the risk-tolerance-driven growth-tier split of your STARTING capital only - a single mortgage amortization schedule, appreciating at the national median DVF price CAGR from year zero (see \"Growth assumption guard rails\" below for what happens when that figure isn't reliable yet). Ongoing monthly savings allocated to the growth tier go to PEA and alternatives instead (gold/crypto, unlike a house, can genuinely be bought a little at a time). Appreciation-only: no rental income is assumed, since DVF has sale prices, not rent data. Below a &euro;15,000 minimum down payment (apport), no leveraged purchase triggers at all - a real down payment that small doesn't buy any real French property - and that allocation goes to SCPI-in-AV instead (unlevered, but the closest \"real estate flavor\" exposure this model has).</p>" +
   "<h3>Tax</h3>" +
   "<p>Tax is applied once, at the end of your horizon, to each vehicle's realized gain - not annually - since French capital-gains tax is due on withdrawal, not on paper gains. Livret A and LDDS are always tax-free. AV/SCPI-in-AV use whichever is cheaper: the 30% flat tax (PFU) or your marginal bracket (TMI) plus 17.2% social charges; AV additionally gets an 8-year holding abatement (&euro;4,600 single / &euro;9,200 couple) and a reduced 24.7% rate on gains above it, assuming your cumulative AV premiums stay under &euro;150k. PEA is 0% income tax + 17.2% social charges after 5 years. Real estate is shown pre-tax (French real-estate capital-gains taper relief is its own complex schedule - a v2 item). <strong>Alternatives</strong> (gold+crypto) uses a flat 30% PFU on the gain, no holding-period discount - a simplification: real French crypto rules are broadly this already, but physical/paper gold has its own optional flat-rate-per-sale regime (taxe forfaitaire sur les m&eacute;taux pr&eacute;cieux) not modeled here. <strong>CAT is the one exception</strong>: its interest is taxed annually as it accrues, always at the flat 30% PFU (12.8% income tax + 17.2% social charges, no TMI-bareme option) - only the net interest compounds into the next year, unlike every other vehicle here. The \"Tax:\" figure shown above adds this cumulative annual CAT tax to the liquidation-time tax on AV/PEA/alternatives, for a complete lifetime total.</p>" +
   "<h3>Growth assumption guard rails</h3>" +
   "<p><strong>PEA</strong> uses the live equal-weighted average annualized return across the PEA tab's tracked ETFs only (diversified index trackers - CW8.PA world, PE500.PA S&amp;P500, and similar), not individual stocks and not a single ticker. Averaging in individual large-cap stocks was tried and rejected: with a short ingestion window their returns were both real and extraordinarily volatile (a couple of names moved 90-120%/year), which would misrepresent what a typical diversified PEA investor experiences. The ETF-only average is clamped to &plusmn;20%/year and falls back to a fixed, dated ~7%/year assumption if no ETF has enough trading-day history yet - a defensive measure against a short/unusual data window getting compounded 20-40 years forward, not a sign the live figure is distrusted once it's reliable. <strong>Real estate</strong> gets the same defensive treatment: DVF's multi-year price CAGR is sourced from the national median across d&eacute;partements with a reliable multi-year window (a dated illustrative fallback, ~3%/year, is used if none do yet), hard-capped at &plusmn;15%/year. <strong>Alternatives</strong> uses the live equal-weighted average across the Alternatives tab's <em>liquid</em> tickers only (GLD, BTC-USD, ETH-USD) - excluding the illiquid physical-gold proxy (GC=F), same reasoning as PEA's ETF-only average - clamped to the same &plusmn;20%/year and falling back to a fixed, illustrative ~6%/year if no liquid ticker has enough trading-day history yet. This clamp matters especially here: crypto's realized annualized return over a short ingestion window can be extreme, and compounding that uncapped over a 20-40 year horizon would be a bad extrapolation.</p>" +
+  "<h3>Inflation comparison</h3>" +
+  "<p>The \"If it only kept pace with inflation\" figure runs the same starting-capital-plus-annual-savings schedule your actual projection uses, but compounds every euro at the assumed inflation rate (adjustable in Tax, inflation &amp; risk, defaulting to the ECB's 2%/year target) instead of any vehicle's return - a fair, timing-matched floor, not just today's nominal total contributed. Your after-tax total is then compared against that floor: ahead of it means your investment grew your purchasing power, not just its nominal euro count; behind it means inflation ate more than your returns produced. \"In today's purchasing power\" restates your after-tax total in year-zero euros (divided by (1+inflation)^horizon), for the same reason.</p>" +
+  "<h3>Market stress test</h3>" +
+  "<p>Each configured crash year multiplies the balance already sitting in PEA, SCPI-in-AV, and Alternatives by (1 + drop%) at the start of that year - money contributed after the crash isn't marked down, only what was already invested. Livret A, LDDS, AV Fonds Euro, and CAT are capital-guaranteed in this model and never move. Real estate gets its own treatment: the crash rescales the property's price trajectory from that year onward, but the mortgage's outstanding balance is a fixed amortization schedule tied to the original loan - a market crash doesn't forgive what's owed - so a severe enough drop can legitimately show negative equity (being underwater on the mortgage), shown as-is rather than floored at zero. Multiple crash years compound: a -30% in year 5 and another -30% in year 15 is not the same as one -51%. This is still a single deterministic path per scenario, not a recovery-speed or mean-reversion model - growth resumes at the same assumed annual rate immediately after the shock, with no rebound modeled. \"Base case\" everywhere else on this tab (stats, risk-tolerance and inflation comparisons, the chart and table) is always the shock-free projection; configuring a stress test only affects this panel's own comparison.</p>" +
   "<h3>What's not modeled</h3>" +
   "<p>Monte Carlo bands (p10/p50/p90) are out of scope - this is a single deterministic path using published mean return/CAGR figures, not a distribution. Illustrative starting heuristic, not investment advice.</p>";
 
@@ -414,8 +512,155 @@ function initWealthSimulator(assumptions) {
     horizon: document.getElementById("ws-horizon"),
     risk: document.getElementById("ws-risk"),
     tmi: document.getElementById("ws-tmi"),
-    household: document.getElementById("ws-household")
+    household: document.getElementById("ws-household"),
+    inflation: document.getElementById("ws-inflation")
   };
+  // Slider's markup ships a fixed value="2" (2%) as a reasonable static default before JS runs;
+  // once assumptions are available, sync it to assumptions.constants.inflation.rate if present -
+  // same "assumption drives the control's starting point" treatment risk tolerance's presets
+  // get, and defensive against an older export that predates this field (falls back to the
+  // markup default rather than throwing on a missing C.inflation).
+  if (assumptions.constants.inflation && typeof assumptions.constants.inflation.rate === "number") {
+    controls.inflation.value = String(Math.round(assumptions.constants.inflation.rate * 1000) / 10);
+  }
+
+  // The allocation editor: one slider for the top-level preservation/growth split, plus two
+  // groups of relative weights (preservation tier's AV Fonds Euro/SCPI-in-AV/CAT, growth tier's
+  // PEA/real estate/alternatives) that wealthNormalize turns into fractions summing to 1. Seeded
+  // from WEALTH_TIER_SPLIT_DEFAULT/WEALTH_TIER3_SUBSPLIT_DEFAULT/WEALTH_TIER4_SUBSPLIT_DEFAULT
+  // whenever a risk-tolerance preset is (re)selected - see applyAllocationPreset below.
+  var allocControls = {
+    growth: document.getElementById("ws-alloc-growth"),
+    av: document.getElementById("ws-alloc-av"),
+    scpi: document.getElementById("ws-alloc-scpi"),
+    cat: document.getElementById("ws-alloc-cat"),
+    pea: document.getElementById("ws-alloc-pea"),
+    re: document.getElementById("ws-alloc-re"),
+    alt: document.getElementById("ws-alloc-alt")
+  };
+
+  function readAllocation() {
+    var growthPct = Number(allocControls.growth.value);
+    var tier3Mix = wealthNormalize({
+      avFondsEuro: Number(allocControls.av.value),
+      scpiInAv: Number(allocControls.scpi.value),
+      cat: Number(allocControls.cat.value)
+    });
+    var tier4Mix = wealthNormalize({
+      pea: Number(allocControls.pea.value),
+      realEstate: Number(allocControls.re.value),
+      alternatives: Number(allocControls.alt.value)
+    });
+    // Ongoing (per-year) growth-tier contributions never touch real estate (see
+    // wealthComputeProjection's comment) - drop it and renormalize PEA:alternatives over just
+    // those two, so the ongoing ratio still tracks the user's growth-tier sliders.
+    var tier4OngoingMix = wealthNormalize({ pea: tier4Mix.pea, alternatives: tier4Mix.alternatives });
+    return {
+      split: { preservation: (100 - growthPct) / 100, growth: growthPct / 100 },
+      tier3Mix: tier3Mix,
+      tier4Mix: tier4Mix,
+      tier4OngoingMix: tier4OngoingMix
+    };
+  }
+
+  // Sets every allocation slider back to a risk-tolerance preset's defaults - does NOT
+  // re-render, callers do that themselves (so they can also update controls.risk.value first).
+  function applyAllocationPreset(risk) {
+    var preset = WEALTH_TIER_SPLIT_DEFAULT[risk];
+    if (!preset) return;
+    allocControls.growth.value = String(Math.round(preset.growth * 100));
+    allocControls.av.value = String(Math.round(WEALTH_TIER3_SUBSPLIT_DEFAULT.avFondsEuro * 100));
+    allocControls.scpi.value = String(Math.round(WEALTH_TIER3_SUBSPLIT_DEFAULT.scpiInAv * 100));
+    allocControls.cat.value = String(Math.round(WEALTH_TIER3_SUBSPLIT_DEFAULT.cat * 100));
+    allocControls.pea.value = String(Math.round(WEALTH_TIER4_SUBSPLIT_DEFAULT.pea * 100));
+    allocControls.re.value = String(Math.round(WEALTH_TIER4_SUBSPLIT_DEFAULT.realEstate * 100));
+    allocControls.alt.value = String(Math.round(WEALTH_TIER4_SUBSPLIT_DEFAULT.alternatives * 100));
+  }
+
+  // Tracks the last risk-tolerance preset explicitly chosen (not "custom"), so the "Reset
+  // allocation" button has somewhere to reset back to even while "Customized" is selected.
+  var lastPreset = controls.risk.value === "custom" ? "balanced" : controls.risk.value;
+
+  // ---- Market stress test: dynamic list of { year, magnitude } crash events ----
+  // shockRows is the source of truth (plain objects, not DOM) - renderShockRows() rebuilds the
+  // row elements from it. Starts with one row defaulting to the final year (the scariest single
+  // scenario: a crash right as you're about to liquidate), -30%.
+  var WEALTH_SHOCK_MAGNITUDE_OPTIONS = [-0.1, -0.2, -0.3, -0.4, -0.5, -0.6];
+  var WEALTH_MAX_SHOCK_ROWS = 5;
+  var shockRows = [{ year: Number(controls.horizon.value), magnitude: -0.3 }];
+  // Only rebuild the row DOM when the horizon actually changes (re-clamping every row's year to
+  // the new max) - NOT on every rerender(), since a shock row's own year/magnitude inputs also
+  // trigger rerender() on every edit, and rebuilding the row DOM out from under an input the
+  // user is actively typing into would drop focus/cursor position mid-edit.
+  var lastHorizonForShocks = null;
+
+  function renderShockRows() {
+    var container = document.getElementById("ws-shocks-rows");
+    container.innerHTML = "";
+    var maxYear = Number(controls.horizon.value);
+    shockRows.forEach(function (shock, idx) {
+      var row = document.createElement("div");
+      row.className = "sim-shock-row";
+
+      var yearLabel = document.createElement("label");
+      yearLabel.textContent = "Crash year";
+      var yearInput = document.createElement("input");
+      yearInput.type = "number";
+      yearInput.min = "0";
+      yearInput.max = String(maxYear);
+      yearInput.step = "1";
+      yearInput.value = String(shock.year);
+      yearInput.addEventListener("input", function () {
+        var v = Math.round(Number(yearInput.value));
+        shock.year = isFinite(v) ? Math.max(0, Math.min(maxYear, v)) : 0;
+        rerender();
+      });
+      yearLabel.appendChild(yearInput);
+
+      var magLabel = document.createElement("label");
+      magLabel.textContent = "Drop";
+      var magSelect = document.createElement("select");
+      WEALTH_SHOCK_MAGNITUDE_OPTIONS.forEach(function (m) {
+        var opt = document.createElement("option");
+        opt.value = String(m);
+        opt.textContent = Math.round(-m * 100) + "%";
+        if (m === shock.magnitude) opt.selected = true;
+        magSelect.appendChild(opt);
+      });
+      magSelect.addEventListener("change", function () {
+        shock.magnitude = Number(magSelect.value);
+        rerender();
+      });
+      magLabel.appendChild(magSelect);
+
+      var removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "sim-shock-remove";
+      removeBtn.setAttribute("aria-label", "Remove this crash year");
+      removeBtn.textContent = "×";
+      removeBtn.addEventListener("click", function () {
+        shockRows.splice(idx, 1);
+        renderShockRows();
+        rerender();
+      });
+
+      row.appendChild(yearLabel);
+      row.appendChild(magLabel);
+      row.appendChild(removeBtn);
+      container.appendChild(row);
+    });
+
+    var addBtn = document.getElementById("ws-shocks-add");
+    addBtn.disabled = shockRows.length >= WEALTH_MAX_SHOCK_ROWS;
+    addBtn.textContent = addBtn.disabled ? "Crash year limit reached (" + WEALTH_MAX_SHOCK_ROWS + ")" : "+ Add crash year";
+  }
+
+  document.getElementById("ws-shocks-add").addEventListener("click", function () {
+    if (shockRows.length >= WEALTH_MAX_SHOCK_ROWS) return;
+    shockRows.push({ year: Number(controls.horizon.value), magnitude: -0.3 });
+    renderShockRows();
+    rerender();
+  });
 
   // Column headers are annotated with each vehicle's assumed annual rate, so a reader doesn't
   // have to cross-reference the methodology panel to know what's driving a column's growth.
@@ -449,13 +694,19 @@ function initWealthSimulator(assumptions) {
   });
 
   function readParams() {
+    var alloc = readAllocation();
     return {
       startingCapital: Number(controls.capital.value),
       monthlySavings: Number(controls.monthly.value),
       horizonYears: Number(controls.horizon.value),
       riskTolerance: controls.risk.value,
       tmiRate: Number(controls.tmi.value),
-      household: controls.household.value
+      household: controls.household.value,
+      inflationRate: Number(controls.inflation.value) / 100,
+      split: alloc.split,
+      tier3Mix: alloc.tier3Mix,
+      tier4Mix: alloc.tier4Mix,
+      tier4OngoingMix: alloc.tier4OngoingMix
     };
   }
 
@@ -466,13 +717,41 @@ function initWealthSimulator(assumptions) {
     document.getElementById("ws-monthly-out").textContent = fmtEUR0.format(Number(controls.monthly.value)) + "/mo";
     document.getElementById("ws-horizon-out").textContent = controls.horizon.value + " yr";
 
+    // Only touches the shock-row DOM when the horizon slider actually moved (see shockRows'
+    // declaration above for why) - re-clamps every configured crash year down to the new max
+    // first, so a row can never point past the end of the (now-shorter) horizon.
+    var horizonForShocks = Number(controls.horizon.value);
+    if (horizonForShocks !== lastHorizonForShocks) {
+      lastHorizonForShocks = horizonForShocks;
+      shockRows.forEach(function (s) { s.year = Math.min(s.year, horizonForShocks); });
+      renderShockRows();
+    }
+
     var params = readParams();
+
+    // Allocation sliders show the NORMALIZED percentage they resolve to, not the raw 0-100
+    // weight underneath - e.g. if every growth-tier weight is dragged down evenly, each output
+    // still reads its true (unchanged) share of the tier, not a shrinking raw number.
+    document.getElementById("ws-alloc-preservation-out").textContent = fmtPct1Plain.format(params.split.preservation);
+    document.getElementById("ws-alloc-growth-out").textContent = fmtPct1Plain.format(params.split.growth);
+    document.getElementById("ws-alloc-av-out").textContent = fmtPct1Plain.format(params.tier3Mix.avFondsEuro);
+    document.getElementById("ws-alloc-scpi-out").textContent = fmtPct1Plain.format(params.tier3Mix.scpiInAv);
+    document.getElementById("ws-alloc-cat-out").textContent = fmtPct1Plain.format(params.tier3Mix.cat);
+    document.getElementById("ws-alloc-pea-out").textContent = fmtPct1Plain.format(params.tier4Mix.pea);
+    document.getElementById("ws-alloc-re-out").textContent = fmtPct1Plain.format(params.tier4Mix.realEstate);
+    document.getElementById("ws-alloc-alt-out").textContent = fmtPct1Plain.format(params.tier4Mix.alternatives);
+    document.getElementById("ws-inflation-out").textContent = fmtPct1Plain.format(params.inflationRate);
+    document.getElementById("ws-inflation-compare-out").textContent = fmtPct1Plain.format(params.inflationRate);
     var result = wealthComputeProjection(params, assumptions);
     var finalRow = result.rows[result.rows.length - 1];
     var afterTax = wealthComputeAfterTaxLiquidation(finalRow, result.state, params, assumptions.constants);
 
-    // Same capital/savings/horizon/tax settings, only riskTolerance varies - so it's clear
-    // what the slider is actually trading off, not just what the current setting produces.
+    // Same capital/savings/horizon/tax settings AND the same preservation/growth sub-mix
+    // (tier3Mix/tier4Mix/tier4OngoingMix) - only the top-level preservation/growth split
+    // varies, so it's clear what the risk-tolerance dial itself is trading off, not a mix of
+    // that and whatever the allocation sliders happen to be set to right now. When "Customized"
+    // is selected, none of these three matches params.riskTolerance, so all three show as
+    // alternatives (no tile is marked "current") - still a meaningful comparison.
     // The other two tiles' sub-line is a colored delta vs. the current selection (same
     // --diverging-pos/--diverging-neg tokens the bar charts already use for gains/losses) -
     // the absolute value itself stays neutral ink, since "higher net worth" isn't unambiguously
@@ -484,7 +763,7 @@ function initWealthSimulator(assumptions) {
     var currentAfterTaxTotal = afterTax.total;
     Object.keys(RISK_TOLERANCE_LABELS).forEach(function (risk) {
       var isCurrent = risk === params.riskTolerance;
-      var riskParams = Object.assign({}, params, { riskTolerance: risk });
+      var riskParams = Object.assign({}, params, { riskTolerance: risk, split: WEALTH_TIER_SPLIT_DEFAULT[risk] });
       var riskResult = isCurrent ? result : wealthComputeProjection(riskParams, assumptions);
       var riskFinalRow = riskResult.rows[riskResult.rows.length - 1];
       var riskAfterTax = isCurrent ? afterTax : wealthComputeAfterTaxLiquidation(riskFinalRow, riskResult.state, riskParams, assumptions.constants);
@@ -498,6 +777,60 @@ function initWealthSimulator(assumptions) {
         isCurrent ? null : (delta >= 0 ? "var(--diverging-pos)" : "var(--diverging-neg)")
       );
     });
+
+    // Answers "did this investment actually beat inflation, or just grow in nominal terms?"
+    // wealthComputeInflationBenchmark runs the SAME contribution schedule (starting capital +
+    // annual savings) forward at the assumed inflation rate instead of any vehicle's return -
+    // a fair, timing-matched floor, not just today's nominal total contributed. Tile 1 is your
+    // actual after-tax result (neutral ink, same "current" treatment as the risk-tolerance row);
+    // tile 2 is that inflation-only floor (also neutral - it's a benchmark, not a choice you
+    // made); tile 3 carries the verdict as a signed, colored delta between the two - positive
+    // and green means you beat inflation, negative and red means inflation beat you.
+    var inflationEl = document.getElementById("ws-inflation-compare");
+    inflationEl.innerHTML = "";
+    var inflationBenchmark = wealthComputeInflationBenchmark(params);
+    var realAfterTax = afterTax.total / Math.pow(1 + params.inflationRate, params.horizonYears);
+    var gainVsInflation = afterTax.total - inflationBenchmark;
+    addStatTile(inflationEl, "Your portfolio (after-tax)", fmtEUR0.format(afterTax.total), "Pre-tax: " + fmtEUR0.format(finalRow.totalNetWorth), true, null);
+    addStatTile(inflationEl, "If it only kept pace with inflation", fmtEUR0.format(inflationBenchmark), "Same contributions, no investment growth", false, null);
+    addStatTile(
+      inflationEl,
+      gainVsInflation >= 0 ? "Ahead of inflation by" : "Behind inflation by",
+      fmtEUR0Signed.format(gainVsInflation),
+      "In today's purchasing power: " + fmtEUR0.format(realAfterTax),
+      false,
+      null,
+      gainVsInflation >= 0 ? "var(--diverging-pos)" : "var(--diverging-neg)"
+    );
+
+    // Market stress test: "Base case" is the same result already computed above (no shocks -
+    // every other tile/chart/table on this tab is always shock-free, so configuring a crash
+    // here never silently changes the rest of the page). "Your scenario" re-runs the exact same
+    // params with shockRows attached, isolated to this one comparison. With no rows configured,
+    // there's nothing to compare yet - say so instead of showing a redundant second "base case"
+    // tile.
+    var shocksEl = document.getElementById("ws-shocks-compare");
+    shocksEl.innerHTML = "";
+    addStatTile(shocksEl, "Base case (after-tax)", fmtEUR0.format(afterTax.total), "Pre-tax: " + fmtEUR0.format(finalRow.totalNetWorth), true, null);
+    if (shockRows.length === 0) {
+      addStatTile(shocksEl, "Your scenario", "—", "Add a crash year above to compare", false, null);
+    } else {
+      var shocks = shockRows.map(function (s) { return { year: s.year, magnitude: s.magnitude }; });
+      var shockedParams = Object.assign({}, params, { shocks: shocks });
+      var shockedResult = wealthComputeProjection(shockedParams, assumptions);
+      var shockedFinalRow = shockedResult.rows[shockedResult.rows.length - 1];
+      var shockedAfterTax = wealthComputeAfterTaxLiquidation(shockedFinalRow, shockedResult.state, shockedParams, assumptions.constants);
+      var shockDelta = shockedAfterTax.total - afterTax.total;
+      addStatTile(
+        shocksEl,
+        "Your scenario (after-tax)",
+        fmtEUR0.format(shockedAfterTax.total),
+        fmtEUR0Signed.format(shockDelta) + " vs. base case",
+        false,
+        null,
+        shockDelta >= 0 ? "var(--diverging-pos)" : "var(--diverging-neg)"
+      );
+    }
 
     // Total tax paid over the whole horizon = tax due at liquidation (AV/PEA) + CAT's tax,
     // already paid annually as it accrued (see wealthComputeProjection). afterTax.total is
@@ -526,6 +859,36 @@ function initWealthSimulator(assumptions) {
     invalidateTable();
   }
 
-  Object.keys(controls).forEach(function (k) { controls[k].addEventListener("input", rerender); });
+  // Picking a risk-tolerance preset resets every allocation slider to that preset's defaults
+  // (overwriting any prior customization); picking "Customized" directly is a no-op on the
+  // sliders, it just keeps whatever they're currently set to.
+  controls.risk.addEventListener("input", function () {
+    if (controls.risk.value !== "custom") {
+      lastPreset = controls.risk.value;
+      applyAllocationPreset(controls.risk.value);
+    }
+    rerender();
+  });
+  Object.keys(controls).forEach(function (k) {
+    if (k === "risk") return;
+    controls[k].addEventListener("input", rerender);
+  });
+
+  // Dragging ANY allocation slider is what "customizing" means here - flip risk tolerance to
+  // "Customized" (unless it's already there) so the select never silently disagrees with what
+  // the sliders actually show.
+  Object.keys(allocControls).forEach(function (k) {
+    allocControls[k].addEventListener("input", function () {
+      if (controls.risk.value !== "custom") { controls.risk.value = "custom"; }
+      rerender();
+    });
+  });
+
+  document.getElementById("ws-alloc-reset").addEventListener("click", function () {
+    controls.risk.value = lastPreset;
+    applyAllocationPreset(lastPreset);
+    rerender();
+  });
+
   rerender();
 }

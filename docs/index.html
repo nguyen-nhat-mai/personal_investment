@@ -34,41 +34,98 @@
 
   <section class="panel" id="tab-wealth-sim" role="tabpanel" aria-labelledby="tab-btn-ws">
     <div class="sim-controls" id="ws-controls">
-      <label>Starting capital
-        <input type="range" id="ws-capital" min="0" max="500000" step="1000" value="20000">
-        <output id="ws-capital-out"></output>
-      </label>
-      <label>Monthly savings
-        <input type="range" id="ws-monthly" min="0" max="5000" step="50" value="500">
-        <output id="ws-monthly-out"></output>
-      </label>
-      <label>Horizon
-        <input type="range" id="ws-horizon" min="1" max="40" step="1" value="20">
-        <output id="ws-horizon-out"></output>
-      </label>
-      <label>Risk tolerance
-        <select id="ws-risk">
-          <option value="conservative">Conservative (70% preservation / 30% growth)</option>
-          <option value="balanced" selected>Balanced (50% / 50%)</option>
-          <option value="aggressive">Aggressive (25% / 75%)</option>
-        </select>
-      </label>
-      <label>Marginal tax bracket (TMI)
-        <select id="ws-tmi">
-          <option value="0">0%</option>
-          <option value="0.11">11%</option>
-          <option value="0.30" selected>30%</option>
-          <option value="0.41">41%</option>
-          <option value="0.45">45%</option>
-        </select>
-      </label>
-      <label>Household
-        <select id="ws-household">
-          <option value="single" selected>Single</option>
-          <option value="couple">Couple</option>
-        </select>
-      </label>
+      <fieldset class="sim-controls-group">
+        <legend>Capital &amp; horizon</legend>
+        <label>Starting capital
+          <input type="range" id="ws-capital" min="0" max="500000" step="1000" value="20000">
+          <output id="ws-capital-out"></output>
+        </label>
+        <label>Monthly savings
+          <input type="range" id="ws-monthly" min="0" max="5000" step="50" value="500">
+          <output id="ws-monthly-out"></output>
+        </label>
+        <label>Horizon
+          <input type="range" id="ws-horizon" min="1" max="40" step="1" value="20">
+          <output id="ws-horizon-out"></output>
+        </label>
+      </fieldset>
+      <fieldset class="sim-controls-group">
+        <legend>Tax, inflation &amp; risk</legend>
+        <label>Marginal tax bracket (TMI)
+          <select id="ws-tmi">
+            <option value="0">0%</option>
+            <option value="0.11">11%</option>
+            <option value="0.30" selected>30%</option>
+            <option value="0.41">41%</option>
+            <option value="0.45">45%</option>
+          </select>
+        </label>
+        <label>Household
+          <select id="ws-household">
+            <option value="single" selected>Single</option>
+            <option value="couple">Couple</option>
+          </select>
+        </label>
+        <label>Assumed inflation
+          <input type="range" id="ws-inflation" min="0" max="6" step="0.1" value="2">
+          <output id="ws-inflation-out"></output>
+        </label>
+        <label>Risk tolerance
+          <select id="ws-risk">
+            <option value="conservative">Conservative (70% preservation / 30% growth)</option>
+            <option value="balanced" selected>Balanced (50% / 50%)</option>
+            <option value="aggressive">Aggressive (25% / 75%)</option>
+            <option value="custom">Customized</option>
+          </select>
+        </label>
+      </fieldset>
     </div>
+
+    <fieldset class="sim-allocation" id="ws-allocation">
+      <legend>Allocation among investment vehicles</legend>
+      <p class="caption-note">Set automatically from risk tolerance above &mdash; drag any slider below to fine-tune it. Changing one switches risk tolerance to &ldquo;Customized&rdquo;.</p>
+
+      <label class="sim-allocation-split">
+        <span>Preservation (<output id="ws-alloc-preservation-out"></output>) &harr; Growth (<output id="ws-alloc-growth-out"></output>)</span>
+        <input type="range" id="ws-alloc-growth" min="0" max="100" step="5" value="50">
+      </label>
+
+      <div class="sim-allocation-groups">
+        <div class="sim-allocation-group">
+          <span class="sim-allocation-group-title">Preservation tier mix <span class="caption-note">Livret A/LDDS come first, unconditionally; this splits what overflows into the preservation tier</span></span>
+          <label>AV Fonds Euro <output id="ws-alloc-av-out"></output>
+            <input type="range" id="ws-alloc-av" min="0" max="100" step="5" value="33">
+          </label>
+          <label>SCPI-in-AV <output id="ws-alloc-scpi-out"></output>
+            <input type="range" id="ws-alloc-scpi" min="0" max="100" step="5" value="33">
+          </label>
+          <label>CAT <output id="ws-alloc-cat-out"></output>
+            <input type="range" id="ws-alloc-cat" min="0" max="100" step="5" value="34">
+          </label>
+        </div>
+        <div class="sim-allocation-group">
+          <span class="sim-allocation-group-title">Growth tier mix <span class="caption-note">Real estate only applies to starting capital, see methodology</span></span>
+          <label>PEA <output id="ws-alloc-pea-out"></output>
+            <input type="range" id="ws-alloc-pea" min="0" max="100" step="5" value="45">
+          </label>
+          <label>Real estate (leveraged) <output id="ws-alloc-re-out"></output>
+            <input type="range" id="ws-alloc-re" min="0" max="100" step="5" value="35">
+          </label>
+          <label>Alternatives <output id="ws-alloc-alt-out"></output>
+            <input type="range" id="ws-alloc-alt" min="0" max="100" step="5" value="20">
+          </label>
+        </div>
+      </div>
+
+      <button type="button" class="table-toggle" id="ws-alloc-reset">Reset allocation to risk-tolerance default</button>
+    </fieldset>
+
+    <fieldset class="sim-allocation" id="ws-shocks">
+      <legend>Market stress test</legend>
+      <p class="caption-note">Model a crash in any year(s) of your horizon &mdash; hits PEA, SCPI-in-AV, Real estate (equity) &amp; Alternatives only. Livret A, LDDS, AV Fonds Euro &amp; CAT are capital-guaranteed in this model and unaffected.</p>
+      <div class="sim-shocks-rows" id="ws-shocks-rows"></div>
+      <button type="button" class="table-toggle" id="ws-shocks-add">+ Add crash year</button>
+    </fieldset>
 
     <div id="ws-content">
       <button class="methodology-toggle" id="ws-methodology-toggle" type="button" aria-expanded="false">How is this calculated?</button>
@@ -82,6 +139,22 @@
           <span class="caption-note">Same capital, savings, horizon &amp; tax settings &mdash; only risk tolerance changes</span>
         </figcaption>
         <div class="stat-row" id="ws-risk-compare"></div>
+      </figure>
+
+      <figure class="chart-card">
+        <figcaption>
+          <span class="title">Inflation comparison</span>
+          <span class="caption-note">Assumed inflation: <output id="ws-inflation-compare-out"></output>/yr &mdash; adjust in Tax, inflation &amp; risk above</span>
+        </figcaption>
+        <div class="stat-row" id="ws-inflation-compare"></div>
+      </figure>
+
+      <figure class="chart-card">
+        <figcaption>
+          <span class="title">Market stress test</span>
+          <span class="caption-note">Base case vs. your configured crash year(s) &mdash; edit above</span>
+        </figcaption>
+        <div class="stat-row" id="ws-shocks-compare"></div>
       </figure>
 
       <figure class="chart-card">

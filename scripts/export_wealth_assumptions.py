@@ -146,6 +146,13 @@ CONSTANTS = {
         "default_ltv": 0.80,  # 80% loan-to-value / 20% down payment
         "default_term_years": 20,
     },
+    "inflation": {
+        "rate": 0.02,  # VERIFY: ECB's medium-term inflation target, not a live/measured French
+                       # CPI figure - used only for the Wealth simulator's "Inflation comparison"
+                       # panel (is your projected net worth actually outpacing inflation, not just
+                       # growing in nominal terms). User-adjustable in the UI; this is just the
+                       # slider's starting value.
+    },
     # Fallbacks used only when the real BigQuery-sourced figure isn't trustworthy yet (equities:
     # no pea_eligible ticker has min_trading_days_for_return days of history; real estate: no
     # department has a reliable multi-year CAGR) - see equities.blended_default.method /
