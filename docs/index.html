@@ -29,7 +29,7 @@
     <button role="tab" id="tab-btn-re" aria-selected="false" aria-controls="tab-real-estate" type="button">Real estate</button>
     <button role="tab" id="tab-btn-pf" aria-selected="false" aria-controls="tab-portfolio" type="button">PEA</button>
     <button role="tab" id="tab-btn-alt" aria-selected="false" aria-controls="tab-alternatives" type="button">Alternatives</button>
-    <button role="tab" id="tab-btn-how" aria-selected="false" aria-controls="tab-how-it-works" type="button">How it works</button>
+    <button role="tab" id="tab-btn-how" aria-selected="false" aria-controls="tab-how-it-works" type="button">Technical note</button>
   </nav>
 
   <section class="panel" id="tab-wealth-sim" role="tabpanel" aria-labelledby="tab-btn-ws">
@@ -331,6 +331,191 @@
 
   <section class="panel" id="tab-how-it-works" role="tabpanel" aria-labelledby="tab-btn-how" hidden>
     <div class="about-section">
+      <h2>What this is</h2>
+      <p>A data-engineering project with two goals at once: practice real orchestration/
+      modeling/testing patterns, and actually answer where in France spare cash is worth
+      putting &mdash; property, a PEA equities watchlist, or a gold/crypto watchlist. Five
+      Airflow DAGs land raw data in BigQuery; dbt models it through a layered warehouse with
+      automated tests; a small Python script exports the results as static JSON; and this page
+      is a dependency-free HTML/CSS/JS dashboard reading that JSON, hosted for free on GitHub
+      Pages. Stack: <code>Airflow</code> &middot; <code>BigQuery</code> &middot; <code>dbt</code>
+      &middot; <code>Python</code> &middot; vanilla <code>HTML/CSS/JS</code>. The sections below
+      focus on the architecture and the reasoning behind it &mdash; the full source, with every
+      model and DAG, is in the repo linked in the footer.</p>
+
+      <h2>Architecture at a glance</h2>
+      <div class="pipeline-flow" aria-hidden="true">
+        <div class="pipeline-step">DVF / INSEE / DGFiP<br><span>+ Yahoo Finance</span></div>
+        <div class="pipeline-arrow">&rarr;</div>
+        <div class="pipeline-step">Airflow<br><span>5 ingest DAGs</span></div>
+        <div class="pipeline-arrow">&rarr;</div>
+        <div class="pipeline-step">BigQuery<br><span>raw_* datasets</span></div>
+        <div class="pipeline-arrow">&rarr;</div>
+        <div class="pipeline-step">dbt<br><span>staging &rarr; intermediate &rarr; marts</span></div>
+        <div class="pipeline-arrow">&rarr;</div>
+        <div class="pipeline-step">export script<br><span>static JSON</span></div>
+        <div class="pipeline-arrow">&rarr;</div>
+        <div class="pipeline-step">GitHub Pages<br><span>this page</span></div>
+      </div>
+      <div class="about-grid">
+        <div class="about-card">
+          <h3>Ingestion &mdash; Airflow</h3>
+          <p>Five DAGs, one per source (<code>dvf_ingest</code>, <code>insee_ingest</code>,
+          <code>tax_ingest</code> &mdash; each roughly yearly or twice-yearly &mdash;
+          <code>equities_ingest</code> and <code>alternatives_ingest</code>, daily via
+          <code>yfinance</code>). Each downloads, lightly cleans, and appends to its own
+          <code>raw_*</code> BigQuery table.</p>
+        </div>
+        <div class="about-card">
+          <h3>Orchestration &mdash; dependency-driven, not cron</h3>
+          <p>A sixth DAG, <code>dbt_transform</code>, has no schedule of its own. Every ingest
+          task declares an Airflow Dataset outlet on its raw table; Airflow triggers
+          <code>dbt_transform</code> only once <em>every</em> raw table has updated at least
+          once since its last run &mdash; Dataset-list scheduling is AND, not OR. That's a
+          deliberate choice: a fixed cron (e.g. "run dbt nightly at 2am") would sometimes fire
+          against a half-refreshed warehouse if one source's ingest ran late or failed; this
+          can't, by construction.</p>
+        </div>
+        <div class="about-card">
+          <h3>Warehouse &amp; transforms &mdash; BigQuery + dbt</h3>
+          <p>dbt builds three layers on top of the raw tables: staging (1:1 cleanup per
+          source), intermediate (aggregations, joins, CAGR math), and marts (the four
+          business-facing tables everything else reads). dbt tests (uniqueness, non-null keys)
+          run at each layer.</p>
+        </div>
+        <div class="about-card">
+          <h3>Export &mdash; manual, reviewed</h3>
+          <p><code>scripts/export_marts.py</code> reads the marts and writes
+          <code>docs/data/*.json</code>. Run by hand, not from CI &mdash; see "Design
+          decisions" below for why.</p>
+        </div>
+        <div class="about-card">
+          <h3>Presentation &mdash; static HTML/CSS/JS</h3>
+          <p>No build step, no <code>npm install</code>, no CDN scripts &mdash; the browser
+          reads <code>&lt;link&gt;</code>/<code>&lt;script src&gt;</code> tags directly, served
+          for free by GitHub Pages.</p>
+        </div>
+      </div>
+
+      <h2>Design decisions</h2>
+      <p>The interesting parts of a data project are rarely the happy path &mdash; they're the
+      trade-offs made along the way. These are the ones worth explaining out loud.</p>
+      <div class="about-grid">
+        <div class="about-card">
+          <h3>Staging &rarr; intermediate &rarr; marts, not one big query</h3>
+          <p>Staging exists specifically to absorb source quirks so nothing downstream has to
+          know about them &mdash; e.g. the two INSEE-sourced <code>data.gouv.fr</code> commune
+          files use inconsistent <code>;</code>/<code>,</code> delimiters and non-standard
+          column names (<code>disp_mediane</code>, not the more common INSEE
+          <code>medXX</code> convention); both are handled once, in staging, and verified
+          against the real files. Intermediate holds aggregation math (population CAGR, price
+          CAGR) that multiple marts would otherwise have to duplicate. Marts are the only layer
+          the dashboard and export script are ever allowed to read &mdash; a boundary that
+          keeps "what the UI shows" and "how it was computed" decoupled.</p>
+        </div>
+        <div class="about-card">
+          <h3>Data-quality guardrails live in SQL, not in the dashboard</h3>
+          <p>Implausible DVF prices (below &euro;100/m&sup2; or above &euro;30,000/m&sup2;, a
+          bound found from a real anomaly in the data) and non-market transactions (forced
+          auctions, exchanges, expropriations) are filtered in the intermediate layer, before a
+          commune ever gets a score. A commune also needs a minimum population and sale count
+          to be scored at all. Catching this in SQL, once, means every consumer &mdash; the
+          dashboard, a future BI tool, an ad-hoc query &mdash; inherits the same clean baseline
+          instead of re-implementing the filter.</p>
+        </div>
+        <div class="about-card">
+          <h3>Derive facts instead of hand-typing them</h3>
+          <p>A ticker's <code>country</code> is derived from its ISIN prefix (legal domicile),
+          not typed by hand into the watchlist seed. That single change caught 5 real mistakes
+          in the original list: ArcelorMittal and Eurofins are Luxembourg-domiciled,
+          Airbus/Stellantis/STMicroelectronics are Netherlands-domiciled &mdash; despite all
+          five reading as "French" CAC 40 names. Legal domicile is what actually governs PEA
+          eligibility; hand-typed labels had silently encoded the wrong fact.</p>
+        </div>
+        <div class="about-card">
+          <h3>Liquidity is modeled as convertibility, not trading volume</h3>
+          <p>The alternatives watchlist's <code>liquidity</code> label (illiquid/medium/liquid)
+          describes how easily <em>you</em> could turn a holding into cash if you actually held
+          it that way &mdash; not how liquid its price ticker is. Physical gold is labeled
+          illiquid even though its price proxy, <code>GC=F</code>, is one of the most liquid
+          futures contracts that exists; conflating the two would have been an easy, wrong
+          shortcut. The label isn't just descriptive &mdash; it gates which rows the wealth
+          simulator is allowed to average into its "liquid instruments" growth assumption.</p>
+        </div>
+        <div class="about-card">
+          <h3>Null instead of a fabricated number</h3>
+          <p>Return, volatility, drawdown, Sharpe, and vs.-benchmark are all left null until a
+          ticker has 60+ trading days of ingested history. Short-history extrapolation fails in
+          both directions &mdash; an absurd annualized return from a noisy few-day average, or a
+          falsely-flattering near-zero drawdown from a ticker that just hasn't lived through a
+          bad week yet. Showing "&ndash;" is a correctness choice, not a missing feature.</p>
+        </div>
+        <div class="about-card">
+          <h3>Manual, reviewed publish step &mdash; not CI auto-deploy</h3>
+          <p>The export script is run by hand, its diff reviewed, then committed &mdash; it
+          doesn't run in CI. Two reasons: no GCP credentials need to live in a CI environment,
+          and everything under <code>docs/</code> becomes public the moment GitHub Pages
+          serves it, so publishing stays a deliberate, reviewed act rather than a side effect
+          of a green pipeline.</p>
+        </div>
+        <div class="about-card">
+          <h3>Zero-build static frontend</h3>
+          <p>Plain HTML/CSS/JS, split by concern (<code>utils.js</code>/<code>charts.js</code>
+          are shared primitives; one file per tab; <code>main.js</code> bootstraps and wires
+          load order). No framework, no npm dependency tree, no CDN scripts to trust. It's
+          auditable by view-source, has no dependency-supply-chain surface, and costs nothing
+          to host.</p>
+        </div>
+        <div class="about-card">
+          <h3>Wealth simulator runs entirely client-side</h3>
+          <p>Slider inputs never leave the browser; the only network call fetches
+          already-public aggregate assumption JSON. Its allocation logic is a waterfall, not a
+          blended-rate shortcut: every euro fills Livret A then LDDS first, then splits between
+          a preservation tier and a growth tier by risk tolerance, with PEA overflow past its
+          real &euro;150,000 contribution cap falling back into the preservation tier &mdash;
+          modeling the order a real French investor actually fills their accounts in. Modeled
+          growth rates pull a live BigQuery-sourced figure but clamp it to &plusmn;20%/year and
+          fall back to a fixed illustrative rate below a history threshold: even a diversified
+          benchmark ETF's 2-year figure (17.9%/year) was too high to compound realistically over
+          a 20&ndash;40 year horizon.</p>
+        </div>
+      </div>
+
+      <h2>Two real bugs this pipeline caught</h2>
+      <p>Worth calling out on purpose: both were found by the pipeline's own guardrails, not by
+      manually eyeballing output, and both are fixed at the source with a defensive backstop
+      downstream.</p>
+      <div class="about-grid">
+        <div class="about-card">
+          <h3>One ticker, two formula bugs &mdash; GLE.PA</h3>
+          <p>Soci&eacute;t&eacute; G&eacute;n&eacute;rale's ticker exposed two independent
+          issues. First, period return computed as a single point-to-point comparison briefly
+          showed <strong>+327%</strong> off one glitchy price; fixed by taking the median of
+          the first/last 5 trading days' price instead, so one bad data point can't swing the
+          figure alone. Second, annualizing via
+          <code>power(1 + avg_daily_return, 252) - 1</code> (raising the <em>arithmetic</em>
+          mean of daily returns to the 252nd power) briefly showed <strong>121%/year</strong>
+          against a true geometrically-annualized figure around 25&ndash;30%/year for the same
+          prices &mdash; arithmetic mean is always &ge; geometric mean, more so for volatile
+          stocks. Fixed with proper geometric annualization:
+          <code>power(last/first, 252/trading_days) - 1</code>.</p>
+        </div>
+        <div class="about-card">
+          <h3>Placeholder rows counted as trading days &mdash; GLD</h3>
+          <p>Batching weekday-only tickers (<code>GC=F</code>, <code>GLD</code>) alongside
+          7-day/week crypto (<code>BTC-USD</code>, <code>ETH-USD</code>) in one
+          <code>yf.download</code> call unions every ticker's date index, leaving an all-NaN
+          placeholder row for the weekday tickers on every weekend/holiday only crypto trades.
+          Those placeholder rows were counted as trading days, deflating the
+          <code>252/trading_days</code> annualization exponent &mdash; confirmed concretely:
+          GLD reported <strong>12.7%/year</strong> against a true <strong>~18.9%/year</strong>
+          for the same prices. Fixed at the source (the ingest DAG drops all-NaN rows before
+          upload) <em>and</em> defensively in the staging model (filters
+          <code>adj_close is not null</code>), so already-ingested raw data self-heals on the
+          next dbt run without a re-ingest.</p>
+        </div>
+      </div>
+
       <h2>Where the data comes from</h2>
       <div class="about-grid">
         <div class="about-card">
@@ -348,219 +533,55 @@
           roughly yearly.</p>
         </div>
         <div class="about-card">
-          <h3>Equities &mdash; Yahoo Finance</h3>
-          <p>Daily prices (adjusted for dividends/splits), dividends, and splits for the PEA
-          watchlist: CAC 40 constituents, a handful of non-French EU blue chips also
-          PEA-eligible under the EU/EEA-headquarters rule (e.g. ASML, SAP), and PEA-eligible
-          ETFs (world/US/emerging-markets/Europe/small-cap trackers), pulled via
-          <code>yfinance</code> on weekday evenings. Legal PEA eligibility (this list) and
-          whether your specific broker's PEA custody actually supports a given foreign-listed
-          line aren't always the same thing &mdash; verify with your broker.</p>
-        </div>
-        <div class="about-card">
-          <h3>Alternatives (gold + crypto) &mdash; Yahoo Finance</h3>
-          <p>Daily prices for a small gold/crypto watchlist: a physical-gold proxy (<code>GC=F</code>,
-          COMEX gold futures &mdash; there's no direct "gold bar in a safe" price feed, futures/spot
-          is the standard proxy), a paper-gold ETF (<code>GLD</code>), and two major
-          cryptocurrencies (<code>BTC-USD</code>, <code>ETH-USD</code>), pulled via
-          <code>yfinance</code> on the same weekday-evening schedule as the PEA watchlist. Crypto
-          trades every day, but the 5-day rolling ingestion window means a weekend move is picked
-          up by Monday's run rather than missed. <code>GC=F</code> is served by yfinance as a
-          continuous front-month futures contract, not roll-yield-adjusted &mdash; its multi-year
-          return can drift a few points from spot/<code>GLD</code> purely from contract-roll
-          effects, independent of gold's actual price move. See the Alternatives tab's own "How
-          is this calculated?" panel for that caveat and the liquidity classification (illiquid/
-          medium/liquid) each instrument carries &mdash; which describes how easily <em>you</em>
-          could convert the holding to cash, not the trading liquidity of the ticker itself
-          (<code>GC=F</code> is, in fact, one of the most liquid futures contracts that exists).</p>
+          <h3>Equities &amp; alternatives &mdash; Yahoo Finance</h3>
+          <p>Daily adjusted prices via <code>yfinance</code> on weekday evenings: the PEA
+          watchlist (CAC 40 + a handful of non-French EU blue chips also PEA-eligible under the
+          EU/EEA-headquarters rule, e.g. ASML, SAP + PEA-eligible ETFs), and a separate
+          gold/crypto watchlist (<code>GC=F</code>, <code>GLD</code>, <code>BTC-USD</code>,
+          <code>ETH-USD</code>). Legal PEA eligibility and a specific broker's actual custody
+          support aren't always the same thing &mdash; verify with your broker.</p>
         </div>
         <div class="about-card">
           <h3>Property tax rates &mdash; DGFiP</h3>
-          <p>Commune-level building property tax rates ("taxe fonci&egrave;re sur les
-          propri&eacute;t&eacute;s b&acirc;ties"), from the French tax authority's "Fiscalit&eacute;
-          locale des particuliers" dataset (<code>data.gouv.fr</code> / <code>data.economie.gouv.fr</code>).
-          Reference data, refreshed yearly. Shown in the Real estate table, not yet part of the
-          opportunity score.</p>
+          <p>Commune-level building property tax rates, from the French tax authority's
+          "Fiscalit&eacute; locale des particuliers" dataset. Reference data, refreshed yearly.
+          Shown in the Real estate table; contributes a guard-rail penalty above egregious
+          outliers, not yet a full weighted score factor.</p>
         </div>
         <div class="about-card">
           <h3>Population history &mdash; "Populations l&eacute;gales" 2017-2021</h3>
-          <p>Year-by-year official population per commune, feeding the population-growth factor
-          in the score. A community republish (<code>data.gouv.fr</code> org "icem7") of INSEE
+          <p>Year-by-year official population per commune, feeding the score's population-growth
+          factor. A community republish (<code>data.gouv.fr</code> org "icem7") of INSEE
           figures rather than first-party INSEE hosting &mdash; the official INSEE bulk API
-          proved too slow/unreliable to fetch reliably from this environment, this source is
-          hosted on the same fast infrastructure DVF uses. Static reference data (2017&ndash;2021
-          is the fullest span available as of this writing, not automatically current).</p>
+          proved too slow/unreliable to fetch reliably from this environment, so this source is
+          hosted on the same fast infrastructure DVF uses.</p>
         </div>
       </div>
+      <p>Full per-metric methodology (exact weights, formulas, and every simplification) lives
+      in each tab's own "How is this calculated?" panel, kept next to the numbers it explains
+      rather than duplicated here.</p>
 
-      <h2>How it's processed</h2>
-      <p>Each source has its own Airflow pipeline that downloads, lightly cleans, and lands raw
-      data in BigQuery. dbt then transforms it through three layers &mdash; staging (1:1
-      cleanup per source), intermediate (aggregations, joins, YoY math), and marts (the
-      business-facing tables this dashboard reads) &mdash; with automated tests checking things
-      like uniqueness and non-null keys along the way. A small script then exports the marts to
-      the static JSON files this page fetches, which get published to GitHub Pages.</p>
-
-      <div class="pipeline-flow" aria-hidden="true">
-        <div class="pipeline-step">DVF / INSEE / Yahoo Finance</div>
-        <div class="pipeline-arrow">&rarr;</div>
-        <div class="pipeline-step">Airflow<br><span>scheduled ingestion</span></div>
-        <div class="pipeline-arrow">&rarr;</div>
-        <div class="pipeline-step">BigQuery<br><span>raw tables</span></div>
-        <div class="pipeline-arrow">&rarr;</div>
-        <div class="pipeline-step">dbt<br><span>staging &rarr; intermediate &rarr; marts</span></div>
-        <div class="pipeline-arrow">&rarr;</div>
-        <div class="pipeline-step">export script<br><span>static JSON</span></div>
-        <div class="pipeline-arrow">&rarr;</div>
-        <div class="pipeline-step">this page</div>
-      </div>
-
-      <h2>How the metrics are calculated</h2>
-      <div class="about-grid">
-        <div class="about-card">
-          <h3>Real-estate opportunity score</h3>
-          <p>Per commune and property type, for the most recent DVF year, with at least 5
-          qualifying sales that year. Blends five factors (0&ndash;100 total), proportionally
-          rescaled from a suggested six-factor weighting: price/m&sup2; below the national
-          median, multi-year price CAGR, transaction liquidity (sales per capita), population
-          growth, and local median income. Property tax was in the original suggestion but isn't
-          wired into the score &mdash; see "What's not included" below. Full breakdown on the
-          Real estate tab's own "How is this calculated?" panel.</p>
-        </div>
-        <div class="about-card">
-          <h3>Price CAGR</h3>
-          <p>Compounds growth between the earliest and latest years with at least 5 qualifying
-          sales for that commune/type &mdash; currently up to a 2021&ndash;2024 span, capped at
-          &plusmn;15%/year. Shown as "&ndash;"/neutral rather than a number when there isn't
-          enough reliable history.</p>
-        </div>
-        <div class="about-card">
-          <h3>Population growth</h3>
-          <p>Compound annual growth rate in official municipal population, 2017&ndash;2021
-          (from a different, INSEE-derived source than the current-year population figure used
-          elsewhere), capped at &plusmn;5%/year. A shrinking population pulls the score down
-          just as much as a growing one pulls it up &mdash; it's not a one-way bonus.</p>
-        </div>
-        <div class="about-card">
-          <h3>Transaction liquidity</h3>
-          <p>This year's qualifying sales for that property type, divided by the commune's
-          population &mdash; a rough proxy for how easy a property might be to resell, capped
-          at 2% for full marks. It's an approximation (population isn't housing-unit count),
-          not a precise turnover rate.</p>
-        </div>
-        <div class="about-card">
-          <h3>Département map</h3>
-          <p>Median opportunity score across the communes currently shown by your filters &mdash;
-          recomputed in the browser, not a fixed snapshot, so it always matches the rest of the
-          page.</p>
-        </div>
-        <div class="about-card">
-          <h3>PEA return, risk &amp; drawdown</h3>
-          <p>Charts and stats rank by <strong>annualized return</strong>, not raw period return
-          &mdash; period return isn't comparable across tickers with different amounts of
-          ingested history, and pairing it against already-annualized volatility would mismatch
-          units. Period return itself is a median of the first/last 5 trading days' price, not a
-          single point-to-point comparison, so one glitchy data point can't swing it alone (a
-          real fix: GLE.PA briefly showed +327% from that exact failure mode before it). Every
-          figure uses adjusted close throughout (dividends and splits already priced in), and
-          return/volatility/drawdown/Sharpe/vs.-benchmark are null until a ticker has 60+
-          trading days of history &mdash; short-history extrapolation goes wrong in both
-          directions (an absurdly large annualized return from a noisy few-day average, or a
-          falsely-flattering near-zero drawdown from not having lived through a bad week yet),
-          so &ldquo;not enough history&rdquo; shows as &ldquo;&ndash;&rdquo;, never a fabricated
-          number. Per-ticker Since/Until columns in the table make the actual ingested period
-          visible. <strong>Vs. CW8.PA</strong> (simple excess return, not Beta-adjusted alpha) is computed over a
-          date-aligned common window with the benchmark, since this watchlist now spans 5
-          exchanges with different holiday calendars. <strong>Country</strong> is derived from
-          each ticker's ISIN prefix (legal domicile) rather than hand-typed &mdash; that caught 5
-          real mistakes (ArcelorMittal/Eurofins are Luxembourg, Airbus/Stellantis/
-          STMicroelectronics are Netherlands, despite all five being reputationally "French" CAC
-          40 names). <strong>Dividends</strong> are summed over the ingested history; <strong>
-          dividend yield</strong> divides that by the last observed price. Full breakdown on the
-          PEA tab's own "How is this calculated?" panel.</p>
-        </div>
-        <div class="about-card">
-          <h3>Alternatives return, risk &amp; drawdown</h3>
-          <p>Same return/volatility/drawdown/Sharpe treatment as the PEA tab (median-of-5-day
-          robust prices, geometric annualization, adjusted close throughout, null below 60
-          trading days of history), computed separately for the gold/crypto watchlist. Two
-          things the PEA tab has that this one deliberately doesn't: a benchmark comparison
-          (there's no single coherent benchmark across a physical-gold proxy, a paper-gold ETF,
-          and two cryptocurrencies) and dividends (none of the four instruments pays one).
-          <strong>Liquidity</strong> (illiquid/medium/liquid) is a hand-set label describing how
-          easily <em>you</em> could convert the holding to cash if you held it this way &mdash;
-          not the trading liquidity of the price ticker itself. Physical gold is illiquid to
-          <em>hold</em>; the paper-gold ETF and both cryptocurrencies are liquid. This matters
-          because <code>GC=F</code> (the physical-gold row's own ticker) is itself one of the
-          most liquid futures contracts that exists &mdash; it's used only as the closest
-          available price proxy for physical gold, and its own high trading liquidity isn't what
-          the label describes. Full breakdown, plus a roll-yield caveat specific to
-          <code>GC=F</code>, on the Alternatives tab's own "How is this calculated?" panel.</p>
-        </div>
-        <div class="about-card">
-          <h3>Wealth simulator</h3>
-          <p>Client-side only &mdash; slider values never leave the browser, only aggregate
-          market-assumption JSON is fetched. Every euro fills Livret A then LDDS first
-          (safety-first), then splits between a preservation tier (Assurance Vie fonds euro,
-          SCPI-in-AV, CAT) and a growth tier (PEA, leveraged real estate, alternatives) by risk
-          tolerance; PEA overflow past its real &euro;150,000 cap (cumulative contributions,
-          tracked separately from growth) falls back into the preservation tier. PEA and
-          alternatives growth both use a live BigQuery-sourced assumption (ETF-only for PEA,
-          liquid-instruments-only &mdash; i.e. excluding the illiquid physical-gold proxy &mdash;
-          for alternatives), each clamped to &plusmn;20%/year and falling back to a fixed,
-          illustrative rate when there isn't enough history yet - even the diversified benchmark
-          ETF's 2-year figure was too high (17.9%/year) to compound realistically over a 20-40
-          year horizon, and gold/crypto's realized volatility makes that guard rail just as
-          necessary there. Most French capital-gains tax rules are applied once, to the final
-          year's liquidation figure, not annually &mdash; CAT is the exception, taxed annually as
-          its interest accrues (flat 30% PFU); alternatives use a flat 30% PFU at liquidation too
-          (a simplification &mdash; physical gold has its own optional flat-rate-per-sale regime
-          in reality, not modeled here). Leveraged real estate needs a &euro;15,000 minimum down
-          payment to trigger at all; below that, the allocation goes to SCPI-in-AV instead.
-          Illustrative starting heuristic, not investment advice &mdash;
-          see the tab's own "How is this calculated?" panel for every assumption and
-          simplification.</p>
-        </div>
-      </div>
-
-      <h2>What's not included in the score (yet)</h2>
-      <p>The opportunity score started from a broader six-factor idea &mdash; price, price
-      appreciation, liquidity, population growth, income, and property tax/DPE. Five of those
-      six now genuinely drive the score. Population growth in particular took two attempts: the
-      first (INSEE's own bulk API) was too slow/unreliable to fetch from this environment
-      (repeated stalls over ~20 minutes); the fix was a community-republished dataset
-      (<code>data.gouv.fr</code> org "icem7") hosted on the same fast infrastructure DVF uses,
-      covering 2017&ndash;2021 &mdash; not perfectly current, but a real multi-year trend rather
-      than a same-year snapshot. <strong>Property tax rate</strong> (DGFiP, yearly) is ingested
-      and shown in the Real estate table; it isn't a full sixth weighted factor yet &mdash; a
-      genuinely new factor changes the weighting of everything else, so that's still a pending
-      decision, not an oversight &mdash; but it's no longer purely informational either:
-      egregious outliers (above 35%, ramping to a max 15-point deduction at 70%) now cost points
-      as a guard rail (see the Real estate tab's own methodology panel for the exact formula).
-      <strong>% of department
-      population</strong> is also
-      shown as a separate informational column: a size/concentration snapshot, distinct from
-      the population growth rate that now scores. <strong>DPE (energy rating)
-      distribution</strong> isn't ingested at all &mdash; it would need a new ADEME source and
-      its own Airflow/dbt pipeline, a natural next addition, not ruled out.</p>
-
-      <h2>Known limitations</h2>
-      <p>This is a research aid built for learning, not investment advice. The real-estate score
-      weights are hand-picked and meant to be tuned, not authoritative; PEA watchlist
-      constituents (CAC 40, non-French EU blue chips, ETFs) drift over time and the list is a
-      snapshot; the alternatives watchlist is a snapshot too, and deliberately narrow (one gold
-      proxy, one gold ETF, two cryptocurrencies) rather than a broad basket; and even after the
-      data-quality filters,
-      communes with only a handful of sales can still show noisier numbers than well-traded
-      ones &mdash; the transaction count is shown everywhere precisely so you can judge that
-      yourself.</p>
+      <h2>Known limitations &amp; what's next</h2>
+      <p>This is a research aid built for learning, not investment advice. Score weights are
+      hand-picked and meant to be tuned, not authoritative; both watchlists are snapshots that
+      drift over time (the alternatives one is also deliberately narrow &mdash; one gold proxy,
+      one gold ETF, two cryptocurrencies &mdash; rather than a broad basket); and even after the
+      data-quality filters, communes with only a handful of sales can show noisier numbers than
+      well-traded ones &mdash; transaction counts are shown everywhere precisely so that's
+      judgeable, not hidden. DPE (energy rating) isn't ingested yet &mdash; it would need a new
+      ADEME source and its own Airflow/dbt pipeline. Ideas not yet built: a BI layer (Metabase/
+      Looker Studio) on top of the marts for ad-hoc exploration, and a "where should my cash go"
+      mart comparing real, inflation-adjusted yield across Livret A, mortgage rates, and the
+      equities watchlist.</p>
     </div>
   </section>
 </main>
 
 <footer>
-  Data refreshed manually via <code>scripts/export_marts.py</code> &mdash; see the repo README
-  for the full pipeline (Airflow ingestion &rarr; BigQuery &rarr; dbt marts &rarr; this export).
+  Data refreshed manually via <code>scripts/export_marts.py</code> &mdash; see the
+  <a href="https://github.com/nguyen-nhat-mai/personal_investment" target="_blank" rel="noopener">repo on GitHub</a>
+  for the full pipeline (Airflow ingestion &rarr; BigQuery &rarr; dbt marts &rarr; this export)
+  and every DAG/model behind it.
 </footer>
 
 <div id="tooltip" role="tooltip" hidden></div>
